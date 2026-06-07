@@ -46,6 +46,7 @@ export function PageBuilder({ onBack, initialLang = 'en', initialPages, initialS
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const autosaveTimerRef = useRef<number | null>(null);
   const hydratedPageIdsRef = useRef<Set<string>>(new Set());
+  const pagesRef = useRef<BuilderPage[]>(seedPages);
 
   // Save confirmation flash
   const [saved, setSaved] = useState(false);
@@ -84,6 +85,10 @@ export function PageBuilder({ onBack, initialLang = 'en', initialPages, initialS
     }
     return [];
   })();
+
+  useEffect(() => {
+    pagesRef.current = pages;
+  }, [pages]);
 
   useEffect(() => {
     if (!selectedPage) {
@@ -334,7 +339,7 @@ export function PageBuilder({ onBack, initialLang = 'en', initialPages, initialS
 
   // ── Publishing actions ──────────────────────────────────────────────────────
   async function handleSaveDraft() {
-    const currentPage = selectedPage;
+    const currentPage = pagesRef.current.find((page) => page.id === selectedPageId) || selectedPage;
     await persistPage(currentPage, {
       saveRevision: true,
       revisionLabel: `Draft saved — ${new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`,
@@ -345,15 +350,19 @@ export function PageBuilder({ onBack, initialLang = 'en', initialPages, initialS
   }
 
   function handlePublish() {
+    const currentPage = pagesRef.current.find((page) => page.id === selectedPageId) || selectedPage;
+    const nextPage = { ...currentPage, status: 'published' as const };
     updatePage(selectedPageId, { status: 'published' });
     setHasUnsavedChanges(true);
-    void persistPage({ ...selectedPage, status: 'published' }, { saveRevision: true, revisionNote: 'Published page content' });
+    void persistPage(nextPage, { saveRevision: true, revisionNote: 'Published page content' });
   }
 
   function handleUnpublish() {
+    const currentPage = pagesRef.current.find((page) => page.id === selectedPageId) || selectedPage;
+    const nextPage = { ...currentPage, status: 'draft' as const };
     updatePage(selectedPageId, { status: 'draft' });
     setHasUnsavedChanges(true);
-    void persistPage({ ...selectedPage, status: 'draft' }, { saveRevision: true, revisionNote: 'Unpublished page content' });
+    void persistPage(nextPage, { saveRevision: true, revisionNote: 'Unpublished page content' });
   }
 
   function handlePreview() {
@@ -382,8 +391,9 @@ export function PageBuilder({ onBack, initialLang = 'en', initialPages, initialS
     }
 
     autosaveTimerRef.current = window.setTimeout(() => {
-      if (selectedPage) {
-        void persistPage(selectedPage, { saveRevision: true, revisionNote: 'Autosaved page content' });
+      const latestPage = pagesRef.current.find((page) => page.id === selectedPageId);
+      if (latestPage) {
+        void persistPage(latestPage, { saveRevision: true, revisionNote: 'Autosaved page content' });
       }
       autosaveTimerRef.current = null;
     }, 1200);
