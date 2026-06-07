@@ -245,6 +245,16 @@ export const seedDatabase = async () => {
 
   const teamPage = await prisma.cmsPage.findUnique({ where: { slug: '/team' } });
   if (teamPage) {
+    if (teamPage.status !== 'published' || teamPage.navVisible !== false) {
+      await prisma.cmsPage.update({
+        where: { id: teamPage.id },
+        data: {
+          status: 'published',
+          navVisible: false,
+        },
+      });
+    }
+
     const revisionCount = await prisma.cmsRevision.count({ where: { pageId: teamPage.id } });
     if (revisionCount === 0) {
       const teamBlocks = [
