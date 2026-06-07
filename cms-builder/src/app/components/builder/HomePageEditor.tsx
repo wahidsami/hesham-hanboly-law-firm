@@ -102,6 +102,7 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
   const [selectedSlideId, setSelectedSlideId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [activeSettingsSection, setActiveSettingsSection] = useState<'navbar' | 'about' | 'statistics' | 'team' | 'contact' | 'doctorShield'>('navbar');
+  const [heroEditorSection, setHeroEditorSection] = useState<'content' | 'image' | 'advanced'>('content');
   const heroSectionRef = useRef<HTMLElement | null>(null);
   const settingsRefs = {
     navbar: useRef<HTMLElement | null>(null),
@@ -319,36 +320,70 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
                   </button>
                 </div>
 
-                <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <HomeField label={lang === 'ar' ? 'الشارة بالعربية' : 'Badge (Arabic)'} value={selectedSlide.badgeAr} onChange={(value) => updateSlide(selectedSlide.id, { badgeAr: value })} dir="rtl" />
-                    <HomeField label={lang === 'ar' ? 'Badge in English' : 'Badge (English)'} value={selectedSlide.badgeEn} onChange={(value) => updateSlide(selectedSlide.id, { badgeEn: value })} />
-                    <HomeField label={lang === 'ar' ? 'العنوان السطر الأول' : 'Title line 1'} value={selectedSlide.titleEnLine1} onChange={(value) => updateSlide(selectedSlide.id, { titleEnLine1: value })} />
-                    <HomeField label={lang === 'ar' ? 'العنوان السطر الثاني' : 'Title line 2'} value={selectedSlide.titleEnLine2} onChange={(value) => updateSlide(selectedSlide.id, { titleEnLine2: value })} />
-                    <HomeField label={lang === 'ar' ? 'الوصف' : 'Description'} value={selectedSlide.descriptionEn} onChange={(value) => updateSlide(selectedSlide.id, { descriptionEn: value })} multiline />
-                    <HomeField label={lang === 'ar' ? 'وصف عربي' : 'Arabic description'} value={selectedSlide.descriptionAr} onChange={(value) => updateSlide(selectedSlide.id, { descriptionAr: value })} multiline dir="rtl" />
-                    <HomeField label={lang === 'ar' ? 'زر الإجراء' : 'CTA label'} value={selectedSlide.ctaTextEn} onChange={(value) => updateSlide(selectedSlide.id, { ctaTextEn: value })} />
-                    <HomeField label={lang === 'ar' ? 'زر الإجراء بالعربية' : 'CTA label (Arabic)'} value={selectedSlide.ctaTextAr} onChange={(value) => updateSlide(selectedSlide.id, { ctaTextAr: value })} dir="rtl" />
-                    <HomeField label={lang === 'ar' ? 'معرّف الإجراء' : 'Action param'} value={selectedSlide.actionParam || ''} onChange={(value) => updateSlide(selectedSlide.id, { actionParam: value })} />
-                    <HomeField label={lang === 'ar' ? 'نص الصورة البديل' : 'Image alt'} value={selectedSlide.imageAltEn} onChange={(value) => updateSlide(selectedSlide.id, { imageAltEn: value })} />
-                    <HomeField label={lang === 'ar' ? 'وصف الصورة البديل بالعربية' : 'Image alt (Arabic)'} value={selectedSlide.imageAltAr} onChange={(value) => updateSlide(selectedSlide.id, { imageAltAr: value })} dir="rtl" />
-                  </div>
+                <div className="mt-5 flex flex-wrap gap-2 rounded-2xl border border-[#E8E0D3] bg-[#FBF7F0] p-2">
+                  {[
+                    ['content', 'Content'],
+                    ['image', 'Image'],
+                    ['advanced', 'Advanced'],
+                  ].map(([id, label]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setHeroEditorSection(id as typeof heroEditorSection)}
+                      className="rounded-full px-4 py-2 text-xs font-semibold transition"
+                      style={{
+                        background: heroEditorSection === id ? '#121212' : 'transparent',
+                        color: heroEditorSection === id ? '#fff' : '#1E1E1E',
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
 
+                <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
                   <div className="space-y-4">
-                    <div className="rounded-3xl border border-[#D8D1C7] bg-[#FBF7F0] p-4">
-                      <div className="text-xs font-bold uppercase tracking-[0.25em] text-[#A56A1E]">Image</div>
-                      <div className="mt-3 overflow-hidden rounded-2xl border border-[#D8D1C7] bg-white">
-                        {selectedSlide.image ? (
-                          <img src={selectedSlide.image} alt={selectedSlide.imageAltEn || selectedSlide.imageAltAr} className="h-56 w-full object-contain bg-[#FAF7F1]" />
-                        ) : (
-                          <div className="flex h-56 items-center justify-center text-sm text-[#8A8A8A]">No image selected</div>
-                        )}
+                    {heroEditorSection === 'content' && (
+                      <div className="rounded-3xl border border-[#D8D1C7] bg-[#FBF7F0] p-4">
+                        <div className="mb-4 text-xs font-bold uppercase tracking-[0.25em] text-[#A56A1E]">Slide content</div>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <HomeField label={lang === 'ar' ? 'الشارة بالعربية' : 'Badge (Arabic)'} value={selectedSlide.badgeAr} onChange={(value) => updateSlide(selectedSlide.id, { badgeAr: value })} dir="rtl" />
+                          <HomeField label={lang === 'ar' ? 'Badge in English' : 'Badge (English)'} value={selectedSlide.badgeEn} onChange={(value) => updateSlide(selectedSlide.id, { badgeEn: value })} />
+                          <HomeField label={lang === 'ar' ? 'العنوان السطر الأول' : 'Title line 1'} value={selectedSlide.titleEnLine1} onChange={(value) => updateSlide(selectedSlide.id, { titleEnLine1: value })} />
+                          <HomeField label={lang === 'ar' ? 'العنوان السطر الثاني' : 'Title line 2'} value={selectedSlide.titleEnLine2} onChange={(value) => updateSlide(selectedSlide.id, { titleEnLine2: value })} />
+                          <HomeField label={lang === 'ar' ? 'الوصف' : 'Description'} value={selectedSlide.descriptionEn} onChange={(value) => updateSlide(selectedSlide.id, { descriptionEn: value })} multiline />
+                          <HomeField label={lang === 'ar' ? 'وصف عربي' : 'Arabic description'} value={selectedSlide.descriptionAr} onChange={(value) => updateSlide(selectedSlide.id, { descriptionAr: value })} multiline dir="rtl" />
+                          <HomeField label={lang === 'ar' ? 'زر الإجراء' : 'CTA label'} value={selectedSlide.ctaTextEn} onChange={(value) => updateSlide(selectedSlide.id, { ctaTextEn: value })} />
+                          <HomeField label={lang === 'ar' ? 'زر الإجراء بالعربية' : 'CTA label (Arabic)'} value={selectedSlide.ctaTextAr} onChange={(value) => updateSlide(selectedSlide.id, { ctaTextAr: value })} dir="rtl" />
+                        </div>
                       </div>
-                    </div>
-                    <div className="grid gap-4 rounded-3xl border border-[#D8D1C7] bg-[#FBF7F0] p-4">
-                      <HomeField label={lang === 'ar' ? 'رابط الصورة' : 'Image URL'} value={selectedSlide.image} onChange={(value) => updateSlide(selectedSlide.id, { image: value })} />
-                      <HomeField label={lang === 'ar' ? 'CTA الرابط' : 'CTA target'} value={selectedSlide.actionParam || ''} onChange={(value) => updateSlide(selectedSlide.id, { actionParam: value })} />
-                    </div>
+                    )}
+
+                    {heroEditorSection === 'image' && (
+                      <div className="space-y-4 rounded-3xl border border-[#D8D1C7] bg-[#FBF7F0] p-4">
+                        <div className="text-xs font-bold uppercase tracking-[0.25em] text-[#A56A1E]">Slide image</div>
+                        <div className="overflow-hidden rounded-2xl border border-[#D8D1C7] bg-white">
+                          {selectedSlide.image ? (
+                            <img src={selectedSlide.image} alt={selectedSlide.imageAltEn || selectedSlide.imageAltAr} className="h-56 w-full object-contain bg-[#FAF7F1]" />
+                          ) : (
+                            <div className="flex h-56 items-center justify-center text-sm text-[#8A8A8A]">No image selected</div>
+                          )}
+                        </div>
+                        <HomeField label={lang === 'ar' ? 'رابط الصورة' : 'Image URL'} value={selectedSlide.image} onChange={(value) => updateSlide(selectedSlide.id, { image: value })} />
+                        <button type="button" onClick={() => setPickerOpen(true)} className="rounded-xl border border-[#D8D1C7] bg-white px-4 py-3 text-sm font-semibold text-[#1E1E1E]">
+                          Choose image from media library
+                        </button>
+                      </div>
+                    )}
+
+                    {heroEditorSection === 'advanced' && (
+                      <div className="grid gap-4 rounded-3xl border border-[#D8D1C7] bg-[#FBF7F0] p-4">
+                        <div className="text-xs font-bold uppercase tracking-[0.25em] text-[#A56A1E]">Advanced</div>
+                        <HomeField label={lang === 'ar' ? 'معرّف الإجراء' : 'Action param'} value={selectedSlide.actionParam || ''} onChange={(value) => updateSlide(selectedSlide.id, { actionParam: value })} />
+                        <HomeField label={lang === 'ar' ? 'نص الصورة البديل' : 'Image alt'} value={selectedSlide.imageAltEn} onChange={(value) => updateSlide(selectedSlide.id, { imageAltEn: value })} />
+                        <HomeField label={lang === 'ar' ? 'وصف الصورة البديل بالعربية' : 'Image alt (Arabic)'} value={selectedSlide.imageAltAr} onChange={(value) => updateSlide(selectedSlide.id, { imageAltAr: value })} dir="rtl" />
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -458,6 +493,9 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
                 {activeSettingsSection === 'team' && (
                   <section ref={settingsRefs.team}>
                   <Group title="Meet our legal counsel" description="Controls the homepage team block text.">
+                  <div className="mb-4 rounded-2xl border border-[#E8E0D3] bg-[#FBF7F0] px-4 py-3 text-sm text-[#5B5B5B]">
+                    This section drives the homepage card labeled “Meet our legal counsel” and keeps the public layout unchanged.
+                  </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     <HomeField label="Badge (EN)" value={siteSettings.teamSectionBadgeEn} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionBadgeEn: value })} />
                     <HomeField label="Badge (AR)" value={siteSettings.teamSectionBadgeAr} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionBadgeAr: value })} dir="rtl" />
