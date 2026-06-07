@@ -266,7 +266,7 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
             </button>
           </div>
 
-          <div className="mt-5 grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+          <div className="mt-5 grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
             <div className="space-y-3">
               {heroSlides.map((slide, index) => {
                 const isSelected = slide.id === selectedSlideId;
@@ -320,7 +320,7 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
 
             {selectedSlide ? (
               <div className="rounded-[28px] border border-[#D8D1C7] bg-white p-6 shadow-sm">
-                <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
                     <div className="text-xs font-bold uppercase tracking-[0.25em] text-[#A56A1E]">Selected slide</div>
                     <h3 className="mt-1 text-2xl font-extrabold text-[#1E1E1E]">Edit slide content and image</h3>
@@ -355,26 +355,45 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
                   ))}
                 </div>
 
-                <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-                  <div className="space-y-4">
+                <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+                  <div className="space-y-5">
                     {heroEditorSection === 'content' && (
-                      <div className="rounded-3xl border border-[#D8D1C7] bg-[#FBF7F0] p-4">
+                      <div className="rounded-3xl border border-[#D8D1C7] bg-[#FBF7F0] p-5">
                         <div className="mb-4 text-xs font-bold uppercase tracking-[0.25em] text-[#A56A1E]">Slide content</div>
-                        <div className="grid gap-4 md:grid-cols-2">
-                          <HomeField label={lang === 'ar' ? 'الشارة بالعربية' : 'Badge (Arabic)'} value={selectedSlide.badgeAr} onChange={(value) => updateSlide(selectedSlide.id, { badgeAr: value })} dir="rtl" />
-                          <HomeField label={lang === 'ar' ? 'Badge in English' : 'Badge (English)'} value={selectedSlide.badgeEn} onChange={(value) => updateSlide(selectedSlide.id, { badgeEn: value })} />
-                          <HomeField label={lang === 'ar' ? 'العنوان السطر الأول' : 'Title line 1'} value={selectedSlide.titleEnLine1} onChange={(value) => updateSlide(selectedSlide.id, { titleEnLine1: value })} />
-                          <HomeField label={lang === 'ar' ? 'العنوان السطر الثاني' : 'Title line 2'} value={selectedSlide.titleEnLine2} onChange={(value) => updateSlide(selectedSlide.id, { titleEnLine2: value })} />
-                          <HomeField label={lang === 'ar' ? 'الوصف' : 'Description'} value={selectedSlide.descriptionEn} onChange={(value) => updateSlide(selectedSlide.id, { descriptionEn: value })} multiline />
-                          <HomeField label={lang === 'ar' ? 'وصف عربي' : 'Arabic description'} value={selectedSlide.descriptionAr} onChange={(value) => updateSlide(selectedSlide.id, { descriptionAr: value })} multiline dir="rtl" />
-                          <HomeField label={lang === 'ar' ? 'زر الإجراء' : 'CTA label'} value={selectedSlide.ctaTextEn} onChange={(value) => updateSlide(selectedSlide.id, { ctaTextEn: value })} />
-                          <HomeField label={lang === 'ar' ? 'زر الإجراء بالعربية' : 'CTA label (Arabic)'} value={selectedSlide.ctaTextAr} onChange={(value) => updateSlide(selectedSlide.id, { ctaTextAr: value })} dir="rtl" />
+                        <div className="grid gap-5 xl:grid-cols-2">
+                          <div className="grid gap-4">
+                            <div className="rounded-2xl border border-[#E8E0D3] bg-white p-4">
+                              <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#8A6B52]">Labels</div>
+                              <div className="grid gap-4 md:grid-cols-2">
+                                <HomeField label={lang === 'ar' ? 'الشارة بالعربية' : 'Badge (Arabic)'} value={selectedSlide.badgeAr} onChange={(value) => updateSlide(selectedSlide.id, { badgeAr: value })} dir="rtl" />
+                                <HomeField label={lang === 'ar' ? 'Badge in English' : 'Badge (English)'} value={selectedSlide.badgeEn} onChange={(value) => updateSlide(selectedSlide.id, { badgeEn: value })} />
+                                <HomeField label={lang === 'ar' ? 'زر الإجراء' : 'CTA label'} value={selectedSlide.ctaTextEn} onChange={(value) => updateSlide(selectedSlide.id, { ctaTextEn: value })} />
+                                <HomeField label={lang === 'ar' ? 'زر الإجراء بالعربية' : 'CTA label (Arabic)'} value={selectedSlide.ctaTextAr} onChange={(value) => updateSlide(selectedSlide.id, { ctaTextAr: value })} dir="rtl" />
+                              </div>
+                            </div>
+                            <div className="rounded-2xl border border-[#E8E0D3] bg-white p-4">
+                              <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#8A6B52]">Titles</div>
+                              <div className="grid gap-4 md:grid-cols-2">
+                                <HomeField label={lang === 'ar' ? 'العنوان السطر الأول' : 'Title line 1'} value={selectedSlide.titleEnLine1} onChange={(value) => updateSlide(selectedSlide.id, { titleEnLine1: value })} />
+                                <HomeField label={lang === 'ar' ? 'العنوان السطر الثاني' : 'Title line 2'} value={selectedSlide.titleEnLine2} onChange={(value) => updateSlide(selectedSlide.id, { titleEnLine2: value })} />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="grid gap-4">
+                            <div className="rounded-2xl border border-[#E8E0D3] bg-white p-4">
+                              <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#8A6B52]">Description</div>
+                              <div className="grid gap-4">
+                                <HomeField label={lang === 'ar' ? 'الوصف' : 'Description'} value={selectedSlide.descriptionEn} onChange={(value) => updateSlide(selectedSlide.id, { descriptionEn: value })} multiline />
+                                <HomeField label={lang === 'ar' ? 'وصف عربي' : 'Arabic description'} value={selectedSlide.descriptionAr} onChange={(value) => updateSlide(selectedSlide.id, { descriptionAr: value })} multiline dir="rtl" />
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}
 
                     {heroEditorSection === 'image' && (
-                      <div className="space-y-4 rounded-3xl border border-[#D8D1C7] bg-[#FBF7F0] p-4">
+                      <div className="space-y-4 rounded-3xl border border-[#D8D1C7] bg-[#FBF7F0] p-5">
                         <div className="text-xs font-bold uppercase tracking-[0.25em] text-[#A56A1E]">Slide image</div>
                         <div className="overflow-hidden rounded-2xl border border-[#D8D1C7] bg-white">
                           {selectedSlide.image ? (
@@ -391,7 +410,7 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
                     )}
 
                     {heroEditorSection === 'advanced' && (
-                      <div className="grid gap-4 rounded-3xl border border-[#D8D1C7] bg-[#FBF7F0] p-4">
+                      <div className="grid gap-4 rounded-3xl border border-[#D8D1C7] bg-[#FBF7F0] p-5">
                         <div className="text-xs font-bold uppercase tracking-[0.25em] text-[#A56A1E]">Advanced</div>
                         <HomeField label={lang === 'ar' ? 'معرّف الإجراء' : 'Action param'} value={selectedSlide.actionParam || ''} onChange={(value) => updateSlide(selectedSlide.id, { actionParam: value })} />
                         <HomeField label={lang === 'ar' ? 'نص الصورة البديل' : 'Image alt'} value={selectedSlide.imageAltEn} onChange={(value) => updateSlide(selectedSlide.id, { imageAltEn: value })} />
