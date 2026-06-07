@@ -121,7 +121,6 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
   const [siteSettings, setSiteSettings] = useState<SiteSettingsRecord | null>(null);
   const [selectedSlideId, setSelectedSlideId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [activeSettingsSection, setActiveSettingsSection] = useState<'navbar' | 'about' | 'statistics' | 'team' | 'contact' | 'doctorShield'>('navbar');
   const [heroEditorSection, setHeroEditorSection] = useState<'content' | 'image' | 'advanced'>('content');
   const heroSectionRef = useRef<HTMLElement | null>(null);
   const settingsRefs = {
@@ -243,12 +242,7 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
               <button
                 key={section.id}
                 type="button"
-                onClick={() => {
-                  if (section.id === 'hero') {
-                    scrollToSection(section.ref);
-                    return;
-                  }
-                  setActiveSettingsSection(section.id === 'team' ? 'team' : section.id === 'doctorShield' ? 'doctorShield' : section.id as typeof activeSettingsSection);
+              onClick={() => {
                   scrollToSection(section.ref);
                 }}
                 className="rounded-full border border-[#D8D1C7] bg-[#FBF7F0] px-4 py-2 text-xs font-semibold text-[#1E1E1E] transition hover:border-[#A56A1E] hover:text-[#A56A1E]"
@@ -427,36 +421,13 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
               <section className="space-y-6 rounded-[28px] border border-[#D8D1C7] bg-white p-6 shadow-sm">
                 <div>
                   <div className="text-xs font-bold uppercase tracking-[0.25em] text-[#A56A1E]">Homepage copy</div>
-                  <h3 className="mt-1 text-2xl font-extrabold text-[#1E1E1E]">Section text and button labels</h3>
+                  <h3 className="mt-1 text-2xl font-extrabold text-[#1E1E1E]">Homepage blocks in frontend order</h3>
+                  <p className="mt-2 text-sm leading-6 text-[#5B5B5B]">
+                    Each card below matches a block on the public homepage. Hero has image editing; the other blocks control the live text and labels shown in the frontend layout.
+                  </p>
                 </div>
 
-                <div className="flex flex-wrap gap-2 rounded-2xl border border-[#E8E0D3] bg-[#FBF7F0] p-2">
-                  {[
-                    ['navbar', 'Navbar / Footer'],
-                    ['about', 'About'],
-                    ['statistics', 'Statistics'],
-                    ['team', 'Meet our legal counsel'],
-                    ['contact', 'Contact'],
-                    ['doctorShield', 'Doctor Shield'],
-                  ].map(([id, label]) => (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => setActiveSettingsSection(id as typeof activeSettingsSection)}
-                      className="rounded-full px-4 py-2 text-xs font-semibold transition"
-                      style={{
-                        background: activeSettingsSection === id ? '#121212' : 'transparent',
-                        color: activeSettingsSection === id ? '#fff' : '#1E1E1E',
-                      }}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-
-                {activeSettingsSection === 'navbar' && (
-                  <section ref={settingsRefs.navbar}>
-                  <Group title="Navbar / Footer" description="These texts control the visible CTA and footer copy on the public site.">
+                <Group title="Navbar / Footer" description="These texts control the visible CTA and footer copy on the public site.">
                   <div className="grid gap-4 md:grid-cols-2">
                     <HomeField label="Navbar CTA (EN)" value={siteSettings.navbarCtaEn} onChange={(value) => setSiteSettings({ ...siteSettings, navbarCtaEn: value })} />
                     <HomeField label="Navbar CTA (AR)" value={siteSettings.navbarCtaAr} onChange={(value) => setSiteSettings({ ...siteSettings, navbarCtaAr: value })} dir="rtl" />
@@ -467,146 +438,134 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
                     <HomeField label="Phone" value={siteSettings.phone} onChange={(value) => setSiteSettings({ ...siteSettings, phone: value })} />
                     <HomeField label="Email" value={siteSettings.email} onChange={(value) => setSiteSettings({ ...siteSettings, email: value })} />
                   </div>
+                </Group>
+
+                <section ref={settingsRefs.about}>
+                  <Group title="About section" description="Controls the homepage About area without changing the public layout.">
+                    <div className="grid gap-4 xl:grid-cols-2">
+                      <MiniGroup title="Section identity" description="The heading and badge that introduce the About block.">
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <HomeField label="Badge (EN)" value={siteSettings.aboutSectionBadgeEn} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionBadgeEn: value })} />
+                          <HomeField label="Badge (AR)" value={siteSettings.aboutSectionBadgeAr} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionBadgeAr: value })} dir="rtl" />
+                          <HomeField label="Title (EN)" value={siteSettings.aboutSectionTitleEn} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionTitleEn: value })} />
+                          <HomeField label="Title (AR)" value={siteSettings.aboutSectionTitleAr} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionTitleAr: value })} dir="rtl" />
+                        </div>
+                      </MiniGroup>
+                      <MiniGroup title="Main copy" description="Long-form body copy shown in the About area.">
+                        <div className="grid gap-4">
+                          <HomeField label="Description (EN)" value={siteSettings.aboutSectionDescEn} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionDescEn: value })} multiline />
+                          <HomeField label="Description (AR)" value={siteSettings.aboutSectionDescAr} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionDescAr: value })} multiline dir="rtl" />
+                        </div>
+                      </MiniGroup>
+                      <MiniGroup title="Card content" description="The small card beside the About text.">
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <HomeField label="Card title (EN)" value={siteSettings.aboutSectionCardTitleEn} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionCardTitleEn: value })} />
+                          <HomeField label="Card title (AR)" value={siteSettings.aboutSectionCardTitleAr} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionCardTitleAr: value })} dir="rtl" />
+                          <HomeField label="Card desc (EN)" value={siteSettings.aboutSectionCardDescEn} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionCardDescEn: value })} multiline />
+                          <HomeField label="Card desc (AR)" value={siteSettings.aboutSectionCardDescAr} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionCardDescAr: value })} multiline dir="rtl" />
+                        </div>
+                      </MiniGroup>
+                      <MiniGroup title="Action" description="The button that closes the About section.">
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <HomeField label="Button (EN)" value={siteSettings.aboutSectionButtonEn} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionButtonEn: value })} />
+                          <HomeField label="Button (AR)" value={siteSettings.aboutSectionButtonAr} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionButtonAr: value })} dir="rtl" />
+                        </div>
+                      </MiniGroup>
+                    </div>
                   </Group>
-                  </section>
-                )}
+                </section>
 
-                {activeSettingsSection === 'about' && (
-                  <section ref={settingsRefs.about}>
-                    <Group title="About section" description="Controls the homepage About area without changing the public layout.">
-                      <div className="grid gap-4 xl:grid-cols-2">
-                        <MiniGroup title="Section identity" description="The heading and badge that introduce the About block.">
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <HomeField label="Badge (EN)" value={siteSettings.aboutSectionBadgeEn} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionBadgeEn: value })} />
-                            <HomeField label="Badge (AR)" value={siteSettings.aboutSectionBadgeAr} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionBadgeAr: value })} dir="rtl" />
-                            <HomeField label="Title (EN)" value={siteSettings.aboutSectionTitleEn} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionTitleEn: value })} />
-                            <HomeField label="Title (AR)" value={siteSettings.aboutSectionTitleAr} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionTitleAr: value })} dir="rtl" />
-                          </div>
-                        </MiniGroup>
-                        <MiniGroup title="Main copy" description="Long-form body copy shown in the About area.">
-                          <div className="grid gap-4">
-                            <HomeField label="Description (EN)" value={siteSettings.aboutSectionDescEn} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionDescEn: value })} multiline />
-                            <HomeField label="Description (AR)" value={siteSettings.aboutSectionDescAr} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionDescAr: value })} multiline dir="rtl" />
-                          </div>
-                        </MiniGroup>
-                        <MiniGroup title="Card content" description="The small card beside the About text.">
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <HomeField label="Card title (EN)" value={siteSettings.aboutSectionCardTitleEn} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionCardTitleEn: value })} />
-                            <HomeField label="Card title (AR)" value={siteSettings.aboutSectionCardTitleAr} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionCardTitleAr: value })} dir="rtl" />
-                            <HomeField label="Card desc (EN)" value={siteSettings.aboutSectionCardDescEn} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionCardDescEn: value })} multiline />
-                            <HomeField label="Card desc (AR)" value={siteSettings.aboutSectionCardDescAr} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionCardDescAr: value })} multiline dir="rtl" />
-                          </div>
-                        </MiniGroup>
-                        <MiniGroup title="Action" description="The button that closes the About section.">
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <HomeField label="Button (EN)" value={siteSettings.aboutSectionButtonEn} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionButtonEn: value })} />
-                            <HomeField label="Button (AR)" value={siteSettings.aboutSectionButtonAr} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionButtonAr: value })} dir="rtl" />
-                          </div>
-                        </MiniGroup>
-                      </div>
-                    </Group>
-                  </section>
-                )}
-
-                {activeSettingsSection === 'statistics' && (
-                  <section ref={settingsRefs.statistics}>
-                  <Group title="Statistics section" description="Controls the data callouts on the homepage.">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <HomeField label="Badge (EN)" value={siteSettings.statisticsBadgeEn} onChange={(value) => setSiteSettings({ ...siteSettings, statisticsBadgeEn: value })} />
-                    <HomeField label="Badge (AR)" value={siteSettings.statisticsBadgeAr} onChange={(value) => setSiteSettings({ ...siteSettings, statisticsBadgeAr: value })} dir="rtl" />
-                    <HomeField label="Number" value={siteSettings.statisticsNumber} onChange={(value) => setSiteSettings({ ...siteSettings, statisticsNumber: value })} />
-                    <HomeField label="Title (EN)" value={siteSettings.statisticsTitleEn} onChange={(value) => setSiteSettings({ ...siteSettings, statisticsTitleEn: value })} />
-                    <HomeField label="Title (AR)" value={siteSettings.statisticsTitleAr} onChange={(value) => setSiteSettings({ ...siteSettings, statisticsTitleAr: value })} dir="rtl" />
-                    <HomeField label="Description (EN)" value={siteSettings.statisticsDescEn} onChange={(value) => setSiteSettings({ ...siteSettings, statisticsDescEn: value })} multiline />
-                    <HomeField label="Description (AR)" value={siteSettings.statisticsDescAr} onChange={(value) => setSiteSettings({ ...siteSettings, statisticsDescAr: value })} multiline dir="rtl" />
-                    <HomeField label="Support (EN)" value={siteSettings.statisticsSupportEn} onChange={(value) => setSiteSettings({ ...siteSettings, statisticsSupportEn: value })} />
-                    <HomeField label="Support (AR)" value={siteSettings.statisticsSupportAr} onChange={(value) => setSiteSettings({ ...siteSettings, statisticsSupportAr: value })} dir="rtl" />
-                  </div>
+                <section ref={settingsRefs.statistics}>
+                  <Group title="Statistics" description="Controls the data callouts on the homepage.">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <HomeField label="Badge (EN)" value={siteSettings.statisticsBadgeEn} onChange={(value) => setSiteSettings({ ...siteSettings, statisticsBadgeEn: value })} />
+                      <HomeField label="Badge (AR)" value={siteSettings.statisticsBadgeAr} onChange={(value) => setSiteSettings({ ...siteSettings, statisticsBadgeAr: value })} dir="rtl" />
+                      <HomeField label="Number" value={siteSettings.statisticsNumber} onChange={(value) => setSiteSettings({ ...siteSettings, statisticsNumber: value })} />
+                      <HomeField label="Title (EN)" value={siteSettings.statisticsTitleEn} onChange={(value) => setSiteSettings({ ...siteSettings, statisticsTitleEn: value })} />
+                      <HomeField label="Title (AR)" value={siteSettings.statisticsTitleAr} onChange={(value) => setSiteSettings({ ...siteSettings, statisticsTitleAr: value })} dir="rtl" />
+                      <HomeField label="Description (EN)" value={siteSettings.statisticsDescEn} onChange={(value) => setSiteSettings({ ...siteSettings, statisticsDescEn: value })} multiline />
+                      <HomeField label="Description (AR)" value={siteSettings.statisticsDescAr} onChange={(value) => setSiteSettings({ ...siteSettings, statisticsDescAr: value })} multiline dir="rtl" />
+                      <HomeField label="Support (EN)" value={siteSettings.statisticsSupportEn} onChange={(value) => setSiteSettings({ ...siteSettings, statisticsSupportEn: value })} />
+                      <HomeField label="Support (AR)" value={siteSettings.statisticsSupportAr} onChange={(value) => setSiteSettings({ ...siteSettings, statisticsSupportAr: value })} dir="rtl" />
+                    </div>
                   </Group>
-                  </section>
-                )}
+                </section>
 
-                {activeSettingsSection === 'team' && (
-                  <section ref={settingsRefs.team}>
+                <section ref={settingsRefs.team}>
                   <Group title="Meet our legal counsel" description="Controls the homepage team block text.">
-                  <div className="mb-4 rounded-2xl border border-[#E8E0D3] bg-[#FBF7F0] px-4 py-3 text-sm text-[#5B5B5B]">
-                    This section drives the homepage card labeled “Meet our legal counsel” and keeps the public layout unchanged.
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <HomeField label="Badge (EN)" value={siteSettings.teamSectionBadgeEn} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionBadgeEn: value })} />
-                    <HomeField label="Badge (AR)" value={siteSettings.teamSectionBadgeAr} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionBadgeAr: value })} dir="rtl" />
-                    <HomeField label="Title (EN)" value={siteSettings.teamSectionTitleEn} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionTitleEn: value })} />
-                    <HomeField label="Title (AR)" value={siteSettings.teamSectionTitleAr} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionTitleAr: value })} dir="rtl" />
-                    <HomeField label="Description (EN)" value={siteSettings.teamSectionDescEn} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionDescEn: value })} multiline />
-                    <HomeField label="Description (AR)" value={siteSettings.teamSectionDescAr} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionDescAr: value })} multiline dir="rtl" />
-                    <HomeField label="CTA (EN)" value={siteSettings.teamSectionCtaEn} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionCtaEn: value })} />
-                    <HomeField label="CTA (AR)" value={siteSettings.teamSectionCtaAr} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionCtaAr: value })} dir="rtl" />
-                  </div>
+                    <div className="mb-4 rounded-2xl border border-[#E8E0D3] bg-[#FBF7F0] px-4 py-3 text-sm text-[#5B5B5B]">
+                      This section drives the homepage card labeled “Meet our legal counsel” and keeps the public layout unchanged.
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <HomeField label="Badge (EN)" value={siteSettings.teamSectionBadgeEn} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionBadgeEn: value })} />
+                      <HomeField label="Badge (AR)" value={siteSettings.teamSectionBadgeAr} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionBadgeAr: value })} dir="rtl" />
+                      <HomeField label="Title (EN)" value={siteSettings.teamSectionTitleEn} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionTitleEn: value })} />
+                      <HomeField label="Title (AR)" value={siteSettings.teamSectionTitleAr} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionTitleAr: value })} dir="rtl" />
+                      <HomeField label="Description (EN)" value={siteSettings.teamSectionDescEn} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionDescEn: value })} multiline />
+                      <HomeField label="Description (AR)" value={siteSettings.teamSectionDescAr} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionDescAr: value })} multiline dir="rtl" />
+                      <HomeField label="CTA (EN)" value={siteSettings.teamSectionCtaEn} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionCtaEn: value })} />
+                      <HomeField label="CTA (AR)" value={siteSettings.teamSectionCtaAr} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionCtaAr: value })} dir="rtl" />
+                    </div>
                   </Group>
-                  </section>
-                )}
+                </section>
 
-                {activeSettingsSection === 'contact' && (
-                  <section ref={settingsRefs.contact}>
-                    <Group title="Contact section" description="Controls the homepage contact block text without affecting the public form layout.">
-                      <div className="grid gap-4 xl:grid-cols-2">
-                        <MiniGroup title="Section header" description="The visible heading and badge shown above the contact block.">
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <HomeField label="Badge (EN)" value={siteSettings.contactSectionBadgeEn} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionBadgeEn: value })} />
-                            <HomeField label="Badge (AR)" value={siteSettings.contactSectionBadgeAr} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionBadgeAr: value })} dir="rtl" />
-                            <HomeField label="Title (EN)" value={siteSettings.contactSectionTitleEn} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionTitleEn: value })} />
-                            <HomeField label="Title (AR)" value={siteSettings.contactSectionTitleAr} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionTitleAr: value })} dir="rtl" />
-                            <HomeField label="Description (EN)" value={siteSettings.contactSectionDescEn} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionDescEn: value })} multiline />
-                            <HomeField label="Description (AR)" value={siteSettings.contactSectionDescAr} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionDescAr: value })} multiline dir="rtl" />
-                          </div>
-                        </MiniGroup>
-                        <MiniGroup title="Office copy" description="Text used for the office/contact card on the homepage.">
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <HomeField label="Office title (EN)" value={siteSettings.contactSectionOfficeTitleEn} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionOfficeTitleEn: value })} />
-                            <HomeField label="Office title (AR)" value={siteSettings.contactSectionOfficeTitleAr} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionOfficeTitleAr: value })} dir="rtl" />
-                            <HomeField label="Form title (EN)" value={siteSettings.contactSectionFormTitleEn} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionFormTitleEn: value })} />
-                            <HomeField label="Form title (AR)" value={siteSettings.contactSectionFormTitleAr} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionFormTitleAr: value })} dir="rtl" />
-                            <HomeField label="Form desc (EN)" value={siteSettings.contactSectionFormDescEn} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionFormDescEn: value })} multiline />
-                            <HomeField label="Form desc (AR)" value={siteSettings.contactSectionFormDescAr} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionFormDescAr: value })} multiline dir="rtl" />
-                          </div>
-                        </MiniGroup>
-                      </div>
-                    </Group>
-                  </section>
-                )}
+                <section ref={settingsRefs.contact}>
+                  <Group title="Contact section" description="Controls the homepage contact block text without affecting the public form layout.">
+                    <div className="grid gap-4 xl:grid-cols-2">
+                      <MiniGroup title="Section header" description="The visible heading and badge shown above the contact block.">
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <HomeField label="Badge (EN)" value={siteSettings.contactSectionBadgeEn} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionBadgeEn: value })} />
+                          <HomeField label="Badge (AR)" value={siteSettings.contactSectionBadgeAr} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionBadgeAr: value })} dir="rtl" />
+                          <HomeField label="Title (EN)" value={siteSettings.contactSectionTitleEn} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionTitleEn: value })} />
+                          <HomeField label="Title (AR)" value={siteSettings.contactSectionTitleAr} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionTitleAr: value })} dir="rtl" />
+                          <HomeField label="Description (EN)" value={siteSettings.contactSectionDescEn} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionDescEn: value })} multiline />
+                          <HomeField label="Description (AR)" value={siteSettings.contactSectionDescAr} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionDescAr: value })} multiline dir="rtl" />
+                        </div>
+                      </MiniGroup>
+                      <MiniGroup title="Office copy" description="Text used for the office/contact card on the homepage.">
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <HomeField label="Office title (EN)" value={siteSettings.contactSectionOfficeTitleEn} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionOfficeTitleEn: value })} />
+                          <HomeField label="Office title (AR)" value={siteSettings.contactSectionOfficeTitleAr} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionOfficeTitleAr: value })} dir="rtl" />
+                          <HomeField label="Form title (EN)" value={siteSettings.contactSectionFormTitleEn} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionFormTitleEn: value })} />
+                          <HomeField label="Form title (AR)" value={siteSettings.contactSectionFormTitleAr} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionFormTitleAr: value })} dir="rtl" />
+                          <HomeField label="Form desc (EN)" value={siteSettings.contactSectionFormDescEn} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionFormDescEn: value })} multiline />
+                          <HomeField label="Form desc (AR)" value={siteSettings.contactSectionFormDescAr} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionFormDescAr: value })} multiline dir="rtl" />
+                        </div>
+                      </MiniGroup>
+                    </div>
+                  </Group>
+                </section>
 
-                {activeSettingsSection === 'doctorShield' && (
-                  <section ref={settingsRefs.doctorShield}>
-                    <Group title="Doctor Shield promo" description="Controls the special Doctor Shield promo block on the homepage.">
-                      <div className="grid gap-4 xl:grid-cols-2">
-                        <MiniGroup title="Promo intro" description="Badge, heading, subtitle, and supporting description.">
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <HomeField label="Badge (EN)" value={siteSettings.doctorShieldBadgeEn} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldBadgeEn: value })} />
-                            <HomeField label="Badge (AR)" value={siteSettings.doctorShieldBadgeAr} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldBadgeAr: value })} dir="rtl" />
-                            <HomeField label="Title (EN)" value={siteSettings.doctorShieldTitleEn} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldTitleEn: value })} />
-                            <HomeField label="Title (AR)" value={siteSettings.doctorShieldTitleAr} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldTitleAr: value })} dir="rtl" />
-                            <HomeField label="Subtitle (EN)" value={siteSettings.doctorShieldSubtitleEn} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldSubtitleEn: value })} multiline />
-                            <HomeField label="Subtitle (AR)" value={siteSettings.doctorShieldSubtitleAr} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldSubtitleAr: value })} multiline dir="rtl" />
-                            <HomeField label="Description (EN)" value={siteSettings.doctorShieldDescEn} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldDescEn: value })} multiline />
-                            <HomeField label="Description (AR)" value={siteSettings.doctorShieldDescAr} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldDescAr: value })} multiline dir="rtl" />
-                          </div>
-                        </MiniGroup>
-                        <MiniGroup title="CTA and pricing" description="The button label and the circular price callout.">
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <HomeField label="Button (EN)" value={siteSettings.doctorShieldButtonEn} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldButtonEn: value })} />
-                            <HomeField label="Button (AR)" value={siteSettings.doctorShieldButtonAr} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldButtonAr: value })} dir="rtl" />
-                            <HomeField label="Circle title (EN)" value={siteSettings.doctorShieldCircleTitleEn} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldCircleTitleEn: value })} />
-                            <HomeField label="Circle title (AR)" value={siteSettings.doctorShieldCircleTitleAr} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldCircleTitleAr: value })} dir="rtl" />
-                            <HomeField label="Circle price (EN)" value={siteSettings.doctorShieldCirclePriceEn} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldCirclePriceEn: value })} />
-                            <HomeField label="Circle price (AR)" value={siteSettings.doctorShieldCirclePriceAr} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldCirclePriceAr: value })} dir="rtl" />
-                            <HomeField label="Circle note (EN)" value={siteSettings.doctorShieldCircleNoteEn} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldCircleNoteEn: value })} />
-                            <HomeField label="Circle note (AR)" value={siteSettings.doctorShieldCircleNoteAr} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldCircleNoteAr: value })} dir="rtl" />
-                          </div>
-                        </MiniGroup>
-                      </div>
-                    </Group>
-                  </section>
-                )}
+                <section ref={settingsRefs.doctorShield}>
+                  <Group title="Doctor Shield promo" description="Controls the special Doctor Shield promo block on the homepage.">
+                    <div className="grid gap-4 xl:grid-cols-2">
+                      <MiniGroup title="Promo intro" description="Badge, heading, subtitle, and supporting description.">
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <HomeField label="Badge (EN)" value={siteSettings.doctorShieldBadgeEn} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldBadgeEn: value })} />
+                          <HomeField label="Badge (AR)" value={siteSettings.doctorShieldBadgeAr} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldBadgeAr: value })} dir="rtl" />
+                          <HomeField label="Title (EN)" value={siteSettings.doctorShieldTitleEn} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldTitleEn: value })} />
+                          <HomeField label="Title (AR)" value={siteSettings.doctorShieldTitleAr} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldTitleAr: value })} dir="rtl" />
+                          <HomeField label="Subtitle (EN)" value={siteSettings.doctorShieldSubtitleEn} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldSubtitleEn: value })} multiline />
+                          <HomeField label="Subtitle (AR)" value={siteSettings.doctorShieldSubtitleAr} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldSubtitleAr: value })} multiline dir="rtl" />
+                          <HomeField label="Description (EN)" value={siteSettings.doctorShieldDescEn} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldDescEn: value })} multiline />
+                          <HomeField label="Description (AR)" value={siteSettings.doctorShieldDescAr} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldDescAr: value })} multiline dir="rtl" />
+                        </div>
+                      </MiniGroup>
+                      <MiniGroup title="CTA and pricing" description="The button label and the circular price callout.">
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <HomeField label="Button (EN)" value={siteSettings.doctorShieldButtonEn} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldButtonEn: value })} />
+                          <HomeField label="Button (AR)" value={siteSettings.doctorShieldButtonAr} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldButtonAr: value })} dir="rtl" />
+                          <HomeField label="Circle title (EN)" value={siteSettings.doctorShieldCircleTitleEn} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldCircleTitleEn: value })} />
+                          <HomeField label="Circle title (AR)" value={siteSettings.doctorShieldCircleTitleAr} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldCircleTitleAr: value })} dir="rtl" />
+                          <HomeField label="Circle price (EN)" value={siteSettings.doctorShieldCirclePriceEn} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldCirclePriceEn: value })} />
+                          <HomeField label="Circle price (AR)" value={siteSettings.doctorShieldCirclePriceAr} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldCirclePriceAr: value })} dir="rtl" />
+                          <HomeField label="Circle note (EN)" value={siteSettings.doctorShieldCircleNoteEn} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldCircleNoteEn: value })} />
+                          <HomeField label="Circle note (AR)" value={siteSettings.doctorShieldCircleNoteAr} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldCircleNoteAr: value })} dir="rtl" />
+                        </div>
+                      </MiniGroup>
+                    </div>
+                  </Group>
+                </section>
 
                 <div className="flex flex-wrap items-center gap-3">
                   <button
