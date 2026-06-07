@@ -77,10 +77,23 @@ const loadPracticeAreaBySlug = async (slug: string) =>
     where: { slug },
   });
 
-const loadCmsPageBySlug = async (slug: string) =>
-  prisma.cmsPage.findUnique({
-    where: { slug },
-  });
+const loadCmsPageBySlug = async (slug: string) => {
+  const trimmedSlug = slug.trim();
+  const slugCandidates = trimmedSlug.startsWith('/')
+    ? [trimmedSlug, trimmedSlug.slice(1)]
+    : [trimmedSlug, `/${trimmedSlug}`];
+
+  for (const candidate of slugCandidates) {
+    const page = await prisma.cmsPage.findUnique({
+      where: { slug: candidate },
+    });
+    if (page) {
+      return page;
+    }
+  }
+
+  return null;
+};
 
 const assertUniqueArticleSlug = async (slug: string, currentId?: string) => {
   const conflict = await prisma.article.findUnique({ where: { slug } });
@@ -453,8 +466,8 @@ app.get(
 app.get(
   '/api/pages/:slug',
   asyncHandler(async (request, response) => {
-  const page = await loadCmsPageBySlug(request.params.slug);
-    if (!page || page.status !== 'published') {
+    const page = await loadCmsPageBySlug(request.params.slug);
+    if (!page || page.status === 'hidden') {
       response.status(404).json({ error: 'Page not found' });
       return;
     }
