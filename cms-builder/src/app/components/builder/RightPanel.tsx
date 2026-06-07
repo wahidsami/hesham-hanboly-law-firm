@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { Plus, Trash2, GripVertical, ChevronDown, Globe, Eye, EyeOff, Search, AlertTriangle } from 'lucide-react';
 import { PublishingPanel } from './PublishingPanel';
 import { RevisionPanel } from './RevisionPanel';
@@ -510,6 +510,18 @@ function TestimonialsForm({ d, update, formLang, setFormLang }: { d: Record<stri
 
 function TeamForm({ d, update, formLang, setFormLang, onCommit }: { d: Record<string, unknown>; update: (k: string, v: unknown) => void; formLang: Lang; setFormLang: (l: Lang) => void; onCommit?: () => void }) {
   const items = (d.items as TeamMember[]) || [];
+  const [draftItems, setDraftItems] = useState<TeamMember[]>(items);
+
+  useEffect(() => {
+    setDraftItems(items);
+  }, [items]);
+
+  function commitItems(nextItems: TeamMember[]) {
+    setDraftItems(nextItems);
+    update('items', nextItems);
+    if (onCommit) window.setTimeout(onCommit, 0);
+  }
+
   return (
     <>
       <LangTabs lang={formLang} onSet={setFormLang} />
@@ -525,36 +537,36 @@ function TeamForm({ d, update, formLang, setFormLang, onCommit }: { d: Record<st
           <Field label="Subheading (AR)" value={String(d.subheadingAr || '')} onChange={(v) => update('subheadingAr', v)} rtl />
         </>
       )}
-      <SectionLabel label={`Members (${items.length})`} />
-      {items.map((member, i) => (
+      <SectionLabel label={`Members (${draftItems.length})`} />
+      {draftItems.map((member, i) => (
         <div key={member.id} style={{ background: 'var(--input-background)', border: '1px solid var(--border)', borderRadius: 6, padding: '10px', marginBottom: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', fontFamily: 'DM Mono, monospace' }}>Member {i + 1}</span>
-            <button type="button" onClick={() => update('items', items.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0, display: 'flex' }}><Trash2 size={11} /></button>
+            <button type="button" onClick={() => commitItems(draftItems.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0, display: 'flex' }}><Trash2 size={11} /></button>
           </div>
           <ImageField
             label="Photo"
             value={member.imageUrl}
-            onChange={(v) => { const next = [...items]; next[i] = { ...member, imageUrl: v }; update('items', next); }}
+            onChange={(v) => { const next = [...draftItems]; next[i] = { ...member, imageUrl: v }; commitItems(next); }}
             placeholder="Paste or choose a photo…"
             onCommit={onCommit}
           />
           {formLang === 'en' ? (
             <>
-              <Field label="Name (EN)" value={member.nameEn} onChange={(v) => { const next = [...items]; next[i] = { ...member, nameEn: v }; update('items', next); }} />
-              <Field label="Role (EN)" value={member.roleEn} onChange={(v) => { const next = [...items]; next[i] = { ...member, roleEn: v }; update('items', next); }} />
-              <Field label="Bio (EN)" value={member.bioEn} onChange={(v) => { const next = [...items]; next[i] = { ...member, bioEn: v }; update('items', next); }} multiline />
+              <Field label="Name (EN)" value={member.nameEn} onChange={(v) => { const next = [...draftItems]; next[i] = { ...member, nameEn: v }; commitItems(next); }} />
+              <Field label="Role (EN)" value={member.roleEn} onChange={(v) => { const next = [...draftItems]; next[i] = { ...member, roleEn: v }; commitItems(next); }} />
+              <Field label="Bio (EN)" value={member.bioEn} onChange={(v) => { const next = [...draftItems]; next[i] = { ...member, bioEn: v }; commitItems(next); }} multiline />
             </>
           ) : (
             <>
-              <Field label="Name (AR)" value={member.nameAr} onChange={(v) => { const next = [...items]; next[i] = { ...member, nameAr: v }; update('items', next); }} rtl />
-              <Field label="Role (AR)" value={member.roleAr} onChange={(v) => { const next = [...items]; next[i] = { ...member, roleAr: v }; update('items', next); }} rtl />
-              <Field label="Bio (AR)" value={member.bioAr} onChange={(v) => { const next = [...items]; next[i] = { ...member, bioAr: v }; update('items', next); }} multiline rtl />
+              <Field label="Name (AR)" value={member.nameAr} onChange={(v) => { const next = [...draftItems]; next[i] = { ...member, nameAr: v }; commitItems(next); }} rtl />
+              <Field label="Role (AR)" value={member.roleAr} onChange={(v) => { const next = [...draftItems]; next[i] = { ...member, roleAr: v }; commitItems(next); }} rtl />
+              <Field label="Bio (AR)" value={member.bioAr} onChange={(v) => { const next = [...draftItems]; next[i] = { ...member, bioAr: v }; commitItems(next); }} multiline rtl />
             </>
           )}
         </div>
       ))}
-      <button type="button" onClick={() => update('items', [...items, { id: uid(), nameEn: 'Team Member', nameAr: 'عضو الفريق', roleEn: 'Partner', roleAr: 'شريك', bioEn: '', bioAr: '', imageUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&auto=format' }])} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '8px', borderRadius: 5, background: 'transparent', border: '1px dashed var(--border)', cursor: 'pointer', fontSize: 12, color: 'var(--muted-foreground)', fontFamily: 'Inter, sans-serif' }}>
+      <button type="button" onClick={() => commitItems([...draftItems, { id: uid(), nameEn: 'Team Member', nameAr: 'عضو الفريق', roleEn: 'Partner', roleAr: 'شريك', bioEn: '', bioAr: '', imageUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&auto=format' }])} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '8px', borderRadius: 5, background: 'transparent', border: '1px dashed var(--border)', cursor: 'pointer', fontSize: 12, color: 'var(--muted-foreground)', fontFamily: 'Inter, sans-serif' }}>
         <Plus size={12} /> Add Member
       </button>
     </>
