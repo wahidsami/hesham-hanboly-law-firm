@@ -256,6 +256,9 @@ export const siteSettingsToRecord = (siteSettings: {
   teamFounderRoleEn: string;
   teamFounderIntroAr: string;
   teamFounderIntroEn: string;
+  teamFounderImageUrl: string;
+  teamFounderImageAltAr: string;
+  teamFounderImageAltEn: string;
   teamSectionCtaAr: string;
   teamSectionCtaEn: string;
   contactSectionBadgeAr: string;
@@ -369,6 +372,9 @@ export const siteSettingsToRecord = (siteSettings: {
   teamFounderRoleEn: siteSettings.teamFounderRoleEn,
   teamFounderIntroAr: siteSettings.teamFounderIntroAr,
   teamFounderIntroEn: siteSettings.teamFounderIntroEn,
+  teamFounderImageUrl: siteSettings.teamFounderImageUrl,
+  teamFounderImageAltAr: siteSettings.teamFounderImageAltAr,
+  teamFounderImageAltEn: siteSettings.teamFounderImageAltEn,
   teamSectionCtaAr: siteSettings.teamSectionCtaAr,
   teamSectionCtaEn: siteSettings.teamSectionCtaEn,
   contactSectionBadgeAr: siteSettings.contactSectionBadgeAr,
@@ -578,8 +584,11 @@ export const toSiteContent = async (): Promise<SiteContent> => {
       ? siteSettingsToRecord(siteSettings)
       : siteSettingsToRecord({
         id: 'main',
-          navbarCtaAr: 'طلب استشارة',
-          navbarCtaEn: 'Book Counsel',
+        navbarCtaAr: 'طلب استشارة',
+        navbarCtaEn: 'Book Counsel',
+        teamFounderImageUrl: '/src/assets/images/founder_hesham_hanboly_1780491593879.png',
+        teamFounderImageAltAr: 'المحامي / هشام بن حسن حنبولي',
+        teamFounderImageAltEn: 'Advocate / Hesham H. Hanboly',
           aboutHeroBadgeAr: '',
           aboutHeroBadgeEn: '',
           aboutHeroTitleAr: '',

@@ -258,6 +258,9 @@ export interface SiteSettingsRecord {
   teamFounderRoleEn: string;
   teamFounderIntroAr: string;
   teamFounderIntroEn: string;
+  teamFounderImageUrl: string;
+  teamFounderImageAltAr: string;
+  teamFounderImageAltEn: string;
   teamSectionCtaAr: string;
   teamSectionCtaEn: string;
   contactSectionBadgeAr: string;

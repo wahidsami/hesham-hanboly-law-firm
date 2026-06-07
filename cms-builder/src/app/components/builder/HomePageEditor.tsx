@@ -121,6 +121,7 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
   const [siteSettings, setSiteSettings] = useState<SiteSettingsRecord | null>(null);
   const [selectedSlideId, setSelectedSlideId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [teamPickerOpen, setTeamPickerOpen] = useState(false);
   const [heroEditorSection, setHeroEditorSection] = useState<'content' | 'image' | 'advanced'>('content');
   const heroSectionRef = useRef<HTMLElement | null>(null);
   const settingsRefs = {
@@ -496,15 +497,55 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
                     <div className="mb-4 rounded-2xl border border-[#E8E0D3] bg-[#FBF7F0] px-4 py-3 text-sm text-[#5B5B5B]">
                       This section drives the homepage card labeled “Meet our legal counsel” and keeps the public layout unchanged.
                     </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <HomeField label="Badge (EN)" value={siteSettings.teamSectionBadgeEn} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionBadgeEn: value })} />
-                      <HomeField label="Badge (AR)" value={siteSettings.teamSectionBadgeAr} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionBadgeAr: value })} dir="rtl" />
-                      <HomeField label="Title (EN)" value={siteSettings.teamSectionTitleEn} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionTitleEn: value })} />
-                      <HomeField label="Title (AR)" value={siteSettings.teamSectionTitleAr} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionTitleAr: value })} dir="rtl" />
-                      <HomeField label="Description (EN)" value={siteSettings.teamSectionDescEn} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionDescEn: value })} multiline />
-                      <HomeField label="Description (AR)" value={siteSettings.teamSectionDescAr} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionDescAr: value })} multiline dir="rtl" />
-                      <HomeField label="CTA (EN)" value={siteSettings.teamSectionCtaEn} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionCtaEn: value })} />
-                      <HomeField label="CTA (AR)" value={siteSettings.teamSectionCtaAr} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionCtaAr: value })} dir="rtl" />
+                    <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <HomeField label="Badge (EN)" value={siteSettings.teamSectionBadgeEn} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionBadgeEn: value })} />
+                        <HomeField label="Badge (AR)" value={siteSettings.teamSectionBadgeAr} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionBadgeAr: value })} dir="rtl" />
+                        <HomeField label="Title (EN)" value={siteSettings.teamSectionTitleEn} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionTitleEn: value })} />
+                        <HomeField label="Title (AR)" value={siteSettings.teamSectionTitleAr} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionTitleAr: value })} dir="rtl" />
+                        <HomeField label="Description (EN)" value={siteSettings.teamSectionDescEn} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionDescEn: value })} multiline />
+                        <HomeField label="Description (AR)" value={siteSettings.teamSectionDescAr} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionDescAr: value })} multiline dir="rtl" />
+                        <HomeField label="CTA (EN)" value={siteSettings.teamSectionCtaEn} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionCtaEn: value })} />
+                        <HomeField label="CTA (AR)" value={siteSettings.teamSectionCtaAr} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionCtaAr: value })} dir="rtl" />
+                      </div>
+                      <MiniGroup title="Portrait image" description="This image appears in the team section card on the homepage.">
+                        <div className="space-y-4">
+                          <div className="overflow-hidden rounded-2xl border border-[#D8D1C7] bg-white">
+                            {siteSettings.teamFounderImageUrl ? (
+                              <img
+                                src={siteSettings.teamFounderImageUrl}
+                                alt={lang === 'ar' ? siteSettings.teamFounderImageAltAr || siteSettings.teamFounderNameAr : siteSettings.teamFounderImageAltEn || siteSettings.teamFounderNameEn}
+                                className="h-56 w-full object-contain bg-[#FAF7F1]"
+                              />
+                            ) : (
+                              <div className="flex h-56 items-center justify-center text-sm text-[#8A8A8A]">No team image selected</div>
+                            )}
+                          </div>
+                          <HomeField
+                            label={lang === 'ar' ? 'Image URL' : 'Image URL'}
+                            value={siteSettings.teamFounderImageUrl || ''}
+                            onChange={(value) => setSiteSettings({ ...siteSettings, teamFounderImageUrl: value })}
+                          />
+                          <HomeField
+                            label="Image alt (EN)"
+                            value={siteSettings.teamFounderImageAltEn || ''}
+                            onChange={(value) => setSiteSettings({ ...siteSettings, teamFounderImageAltEn: value })}
+                          />
+                          <HomeField
+                            label="Image alt (AR)"
+                            value={siteSettings.teamFounderImageAltAr || ''}
+                            onChange={(value) => setSiteSettings({ ...siteSettings, teamFounderImageAltAr: value })}
+                            dir="rtl"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setTeamPickerOpen(true)}
+                            className="w-full rounded-xl border border-[#D8D1C7] bg-[#FBF7F0] px-4 py-3 text-sm font-semibold text-[#1E1E1E]"
+                          >
+                            Choose image from media library
+                          </button>
+                        </div>
+                      </MiniGroup>
                     </div>
                   </Group>
                 </section>
@@ -596,6 +637,24 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
               image: asset.url,
               imageAltEn: nextAltEn,
               imageAltAr: asset.altAr || selectedSlide.imageAltAr,
+            });
+          }}
+        />
+      )}
+
+      {teamPickerOpen && siteSettings && (
+        <ImageAssetPicker
+          open={teamPickerOpen}
+          title="Choose team portrait image"
+          initialUrl={siteSettings.teamFounderImageUrl}
+          initialAltEn={siteSettings.teamFounderImageAltEn}
+          onClose={() => setTeamPickerOpen(false)}
+          onSelect={(asset, nextAltEn) => {
+            setSiteSettings({
+              ...siteSettings,
+              teamFounderImageUrl: asset.url,
+              teamFounderImageAltEn: nextAltEn,
+              teamFounderImageAltAr: asset.altAr || siteSettings.teamFounderImageAltAr,
             });
           }}
         />

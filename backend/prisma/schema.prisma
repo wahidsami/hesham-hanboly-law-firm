@@ -126,6 +126,9 @@ model SiteSettings {
   teamFounderRoleEn   String
   teamFounderIntroAr  String
   teamFounderIntroEn  String
+  teamFounderImageUrl String
+  teamFounderImageAltAr String
+  teamFounderImageAltEn String
   teamSectionCtaAr    String
   teamSectionCtaEn    String
   contactSectionBadgeAr String

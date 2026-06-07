@@ -74,6 +74,9 @@ CREATE TABLE "SiteSettings" (
     "copyrightEn" TEXT NOT NULL,
     "footerBadgeAr" TEXT NOT NULL,
     "footerBadgeEn" TEXT NOT NULL,
+    "teamFounderImageUrl" TEXT NOT NULL,
+    "teamFounderImageAltAr" TEXT NOT NULL,
+    "teamFounderImageAltEn" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

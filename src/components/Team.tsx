@@ -74,11 +74,14 @@ export default function Team({ onExploreTeam }: TeamProps) {
             <div className={`absolute -top-4 ${language === 'ar' ? '-right-4' : '-left-4'} w-24 h-24 border-t-2 ${language === 'ar' ? 'border-r-2' : 'border-l-2'} border-[#A56A1E]/45 rounded-tr-lg pointer-events-none`} />
             <div className={`absolute -bottom-4 ${language === 'ar' ? '-left-4' : '-right-4'} w-24 h-24 border-b-2 ${language === 'ar' ? 'border-l-2' : 'border-r-2'} border-[#A56A1E]/45 rounded-bl-lg pointer-events-none`} />
             
-            <div className="rounded-xl overflow-hidden aspect-[4/5] w-full max-w-[400px] shadow-xl border border-[#D8D1C7] relative group bg-[#F8F5EF]">
-              <div className="absolute inset-0 bg-gradient-to-t from-[#121212]/80 via-transparent to-transparent z-10" />
-              <img
-                src="/src/assets/images/founder_hesham_hanboly_1780491593879.png"
-                alt={t('المحامي / هشام بن حسن حنبولي', 'Advocate / Hesham bin Hasan Hanboly')}
+              <div className="rounded-xl overflow-hidden aspect-[4/5] w-full max-w-[400px] shadow-xl border border-[#D8D1C7] relative group bg-[#F8F5EF]">
+                <div className="absolute inset-0 bg-gradient-to-t from-[#121212]/80 via-transparent to-transparent z-10" />
+                <img
+                src={siteSettings?.teamFounderImageUrl || '/src/assets/images/founder_hesham_hanboly_1780491593879.png'}
+                alt={t(
+                  siteSettings?.teamFounderImageAltAr || siteSettings?.teamFounderNameAr || 'المحامي / هشام بن حسن حنبولي',
+                  siteSettings?.teamFounderImageAltEn || siteSettings?.teamFounderNameEn || 'Advocate / Hesham bin Hasan Hanboly'
+                )}
                 referrerPolicy="no-referrer"
                 className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-103"
               />
