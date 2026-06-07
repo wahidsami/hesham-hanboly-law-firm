@@ -81,6 +81,42 @@ function SectionLabel({ label }: { label: string }) {
   );
 }
 
+function EditorCard({ title, subtitle, children, rtl = false }: {
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
+  rtl?: boolean;
+}) {
+  return (
+    <section style={{
+      border: '1px solid var(--border)',
+      borderRadius: 10,
+      background: 'var(--card)',
+      padding: 18,
+      direction: rtl ? 'rtl' : 'ltr',
+    }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginBottom: 14 }}>
+        <div style={{ fontSize: 11, fontFamily: 'DM Mono, monospace', color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          {title}
+        </div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)' }}>
+          {subtitle}
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function TwoColumnFields({ left, right }: { left: React.ReactNode; right: React.ReactNode }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 14 }}>
+      {left}
+      {right}
+    </div>
+  );
+}
+
 // ─── Markdown editor ──────────────────────────────────────────────────────────
 
 function MarkdownEditor({ value, onChange, rtl, placeholder }: {
@@ -518,10 +554,13 @@ export function ArticleEditor({ article: initialArticle, onBack, onSave, onPubli
   }
 
   function handleTitleEnChange(v: string) {
-    patch({ titleEn: v });
-    if (!slugEdited) {
-      patch({ titleEn: v, slug: slugify(v) });
-    }
+    setArticle(prev => ({
+      ...prev,
+      titleEn: v,
+      slug: slugEdited ? prev.slug : slugify(v),
+      updatedAt: new Date().toISOString(),
+    }));
+    setSaved(false);
   }
 
   function handleSaveDraft() {
@@ -603,65 +642,65 @@ export function ArticleEditor({ article: initialArticle, onBack, onSave, onPubli
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* Main content */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px', maxWidth: 860, margin: '0 auto', width: '100%' }}>
-          {/* Language indicator */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
             <div style={{ display: 'inline-flex', background: 'var(--muted)', borderRadius: 6, padding: 2 }}>
               {(['en', 'ar'] as Lang[]).map(l => (
                 <button key={l} onClick={() => setLang(l)}
                   style={{ padding: '5px 16px', borderRadius: 4, border: 'none', cursor: 'pointer', fontSize: 12, fontFamily: 'DM Mono, monospace', fontWeight: 600, background: lang === l ? 'var(--card)' : 'transparent', color: lang === l ? 'var(--foreground)' : 'var(--muted-foreground)', boxShadow: lang === l ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.15s' }}>
-                  {l === 'en' ? '🇬🇧 English' : '🇸🇦 Arabic'}
+                  {l === 'en' ? '🇬🇧 English focus' : '🇸🇦 Arabic focus'}
                 </button>
               ))}
             </div>
             <span style={{ fontSize: 10, color: 'var(--muted-foreground)', fontFamily: 'DM Mono, monospace' }}>
-              {lang === 'en' ? 'Left-to-right' : 'Right-to-left (RTL)'}
+              Both languages are edited together below.
             </span>
           </div>
 
-          {lang === 'en' ? (
-            <>
-              {/* EN Title */}
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', fontSize: 10, fontFamily: 'DM Mono, monospace', color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
-                  Title (English) *
-                </label>
-                <input
-                  value={article.titleEn}
-                  onChange={e => handleTitleEnChange(e.target.value)}
-                  placeholder="Article title in English…"
-                  style={{ width: '100%', border: 'none', borderBottom: `2px solid ${article.titleEn ? 'var(--border)' : '#D97706'}`, background: 'transparent', outline: 'none', padding: '8px 0', boxSizing: 'border-box', fontSize: 22, fontWeight: 700, color: 'var(--foreground)', fontFamily: 'Inter, sans-serif' }}
+          <EditorCard title="Shared settings" subtitle="These fields apply to the article once." rtl={lang === 'ar'}>
+            <TwoColumnFields
+              left={
+                <Field
+                  label="URL Slug *"
+                  value={article.slug}
+                  onChange={v => { patch({ slug: v }); setSlugEdited(true); }}
+                  placeholder="/article-slug"
+                  mono
                 />
-              </div>
-
-              {/* EN Slug */}
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', fontSize: 10, fontFamily: 'DM Mono, monospace', color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>URL Slug *</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--muted)', borderRadius: 5, padding: '6px 10px' }}>
-                  <span style={{ fontSize: 11, color: 'var(--muted-foreground)', fontFamily: 'DM Mono, monospace', flexShrink: 0 }}>alrashid-law.com/news</span>
-                  <input value={article.slug} onChange={e => { patch({ slug: e.target.value }); setSlugEdited(true); }}
-                    style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', fontSize: 11, fontFamily: 'DM Mono, monospace', color: 'var(--foreground)' }} />
+              }
+              right={
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: 'block', fontSize: 10, fontFamily: 'DM Mono, monospace', color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Cover Image</label>
+                  <CoverImageUploader
+                    url={article.coverImageUrl}
+                    onUrlChange={v => patch({ coverImageUrl: v })}
+                    altEn={article.coverAltEn}
+                    onAltEnChange={v => patch({ coverAltEn: v })}
+                    altAr={article.coverAltAr}
+                    onAltArChange={v => patch({ coverAltAr: v })}
+                  />
                 </div>
-              </div>
+              }
+            />
+          </EditorCard>
 
-              {/* EN Excerpt */}
-              <Field label="Excerpt (English) *" value={article.excerptEn} onChange={v => patch({ excerptEn: v })} multiline required
-                placeholder="A 1–2 sentence summary that appears in article listings and social sharing…" />
-
-              {/* Cover image */}
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', fontSize: 10, fontFamily: 'DM Mono, monospace', color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Cover Image</label>
-                <CoverImageUploader
-                  url={article.coverImageUrl}
-                  onUrlChange={v => patch({ coverImageUrl: v })}
-                  altEn={article.coverAltEn}
-                  onAltEnChange={v => patch({ coverAltEn: v })}
-                  altAr={article.coverAltAr}
-                  onAltArChange={v => patch({ coverAltAr: v })}
-                />
-              </div>
-
-              {/* EN Body */}
-              <div style={{ marginBottom: 20 }}>
+          <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
+            <EditorCard title="English content" subtitle="Write the English version." rtl={false}>
+              <Field
+                label="Title (English) *"
+                value={article.titleEn}
+                onChange={v => handleTitleEnChange(v)}
+                placeholder="Article title in English…"
+                required
+              />
+              <Field
+                label="Excerpt (English) *"
+                value={article.excerptEn}
+                onChange={v => patch({ excerptEn: v })}
+                multiline
+                required
+                placeholder="A 1–2 sentence summary that appears in article listings and social sharing…"
+              />
+              <div style={{ marginBottom: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                   <label style={{ fontSize: 10, fontFamily: 'DM Mono, monospace', color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Body (English) * — Markdown</label>
                   {article.bodyEn && (
@@ -672,35 +711,29 @@ export function ArticleEditor({ article: initialArticle, onBack, onSave, onPubli
                 </div>
                 <MarkdownEditor value={article.bodyEn} onChange={v => patch({ bodyEn: v })} placeholder="Write the article body in Markdown. Use ## for headings, **bold**, *italic*, - for lists…" />
               </div>
-            </>
-          ) : (
-            <>
-              {/* AR Title */}
-              <div style={{ marginBottom: 20, direction: 'rtl' }}>
-                <label style={{ display: 'block', fontSize: 10, fontFamily: 'DM Mono, monospace', color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6, direction: 'ltr' }}>
-                  Title (Arabic) *
-                </label>
-                <input
-                  value={article.titleAr}
-                  onChange={e => patch({ titleAr: e.target.value })}
-                  placeholder="عنوان المقال بالعربية…"
-                  dir="rtl"
-                  style={{ width: '100%', border: 'none', borderBottom: `2px solid ${article.titleAr ? 'var(--border)' : '#D97706'}`, background: 'transparent', outline: 'none', padding: '8px 0', boxSizing: 'border-box', fontSize: 22, fontWeight: 700, color: 'var(--foreground)', fontFamily: 'serif', direction: 'rtl' }}
-                />
-              </div>
+              <Field label="SEO Title (EN)" value={article.seoTitleEn} onChange={v => patch({ seoTitleEn: v })} placeholder="Auto-generated from title" />
+              <Field label="Meta Desc (EN)" value={article.seoDescEn} onChange={v => patch({ seoDescEn: v })} multiline placeholder="150–160 character summary" />
+            </EditorCard>
 
-              {/* AR Excerpt */}
-              <div style={{ marginBottom: 16, direction: 'rtl' }}>
-                <label style={{ display: 'block', fontSize: 10, fontFamily: 'DM Mono, monospace', color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, direction: 'ltr' }}>Excerpt (Arabic) *</label>
-                <textarea value={article.excerptAr} onChange={e => patch({ excerptAr: e.target.value })}
-                  placeholder="ملخص المقال بجملة أو جملتين…"
-                  dir="rtl"
-                  style={{ width: '100%', minHeight: 80, background: 'var(--input-background)', border: `1px solid ${article.excerptAr ? 'transparent' : '#D97706'}`, borderRadius: 5, padding: '8px 10px', fontSize: 12, color: 'var(--foreground)', fontFamily: 'serif', direction: 'rtl', resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
-                />
-              </div>
-
-              {/* AR Body */}
-              <div style={{ marginBottom: 20 }}>
+            <EditorCard title="Arabic content" subtitle="Write the Arabic version." rtl>
+              <Field
+                label="Title (Arabic) *"
+                value={article.titleAr}
+                onChange={v => patch({ titleAr: v })}
+                placeholder="عنوان المقال بالعربية…"
+                rtl
+                required
+              />
+              <Field
+                label="Excerpt (Arabic) *"
+                value={article.excerptAr}
+                onChange={v => patch({ excerptAr: v })}
+                multiline
+                rtl
+                required
+                placeholder="ملخص المقال بجملة أو جملتين…"
+              />
+              <div style={{ marginBottom: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                   <label style={{ fontSize: 10, fontFamily: 'DM Mono, monospace', color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Body (Arabic) * — Markdown</label>
                   {article.bodyAr && (
@@ -711,13 +744,14 @@ export function ArticleEditor({ article: initialArticle, onBack, onSave, onPubli
                 </div>
                 <MarkdownEditor value={article.bodyAr} onChange={v => patch({ bodyAr: v })} rtl placeholder="اكتب محتوى المقال بالعربية…" />
               </div>
+              <Field label="SEO Title (AR)" value={article.seoTitleAr} onChange={v => patch({ seoTitleAr: v })} rtl placeholder="عنوان SEO بالعربية" />
+              <Field label="Meta Desc (AR)" value={article.seoDescAr} onChange={v => patch({ seoDescAr: v })} multiline rtl placeholder="ملخص 150–160 حرف" />
+            </EditorCard>
+          </div>
 
-              {/* Note about cover */}
-              <div style={{ padding: '10px 14px', background: 'var(--muted)', borderRadius: 6, fontSize: 11, color: 'var(--muted-foreground)', marginBottom: 20 }}>
-                Cover image and URL slug are shared across both languages. Edit them in the English tab.
-              </div>
-            </>
-          )}
+          <div style={{ marginTop: 16, padding: '10px 14px', background: 'var(--muted)', borderRadius: 6, fontSize: 11, color: 'var(--muted-foreground)' }}>
+            Shared fields are edited once. Titles, excerpts, body text, and SEO fields are shown side by side so you can work in both languages together.
+          </div>
         </div>
 
         {/* Sidebar */}
