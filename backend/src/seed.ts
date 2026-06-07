@@ -239,4 +239,221 @@ export const seedDatabase = async () => {
         })),
     });
   }
+
+  const teamPage = await prisma.cmsPage.findUnique({ where: { slug: '/team' } });
+  if (teamPage) {
+    const revisionCount = await prisma.cmsRevision.count({ where: { pageId: teamPage.id } });
+    if (revisionCount === 0) {
+      const teamBlocks = [
+        {
+          id: 'team-intro',
+          type: 'image-text',
+          order: 1,
+          data: {
+            headingAr: 'تعرف على فريقنا القانوني',
+            headingEn: 'Meet Our Legal Team',
+            subheadingAr: 'أعضاء الشركة',
+            subheadingEn: 'Members of the Firm',
+            bodyAr: 'تضم شركة هشام حسن حنبولي الدولية للاستشارات القانونية والمحاماة نخبة من المحامين والمستشارين القانونيين ذوي الكفاءة والخبرة في الناحيتين العلمية والعملية.\n\nهدفنا تقديم خدمة متميزة لعملائنا في كافة المجالات والنواحي القانونية المرتبطة بالشركات والأفراد.',
+            bodyEn: 'Hesham H. Hanboly International for Advocacy & Legal Consultations integrates an elite assembly of advocates and advisors of outstanding scientific background and active judicial practice.\n\nOur team delivers tailored counsel across corporate litigation, private matters, and strategic compliance.',
+            ctaPrimaryLabelAr: 'تصفّح فريق العمل بالكامل',
+            ctaPrimaryLabelEn: 'Explore Full Team Members',
+            imageUrl: seed.siteSettings.teamFounderImageUrl,
+            imageAltAr: seed.siteSettings.teamFounderImageAltAr,
+            imageAltEn: seed.siteSettings.teamFounderImageAltEn,
+          },
+        },
+        {
+          id: 'team-leadership',
+          type: 'team',
+          order: 2,
+          data: {
+            headingAr: 'الإدارة التنفيذية والقيادة',
+            headingEn: 'Executive Leadership & Partners',
+            subheadingAr: 'صناع القرار والسياسة الاستراتيجية',
+            subheadingEn: 'Decision Makers & Strategic Advisors',
+            items: [
+              {
+                id: 'leader-1',
+                nameAr: 'المحامي / هشام بن حسن حنبولي',
+                nameEn: 'Advocate / Hesham H. Hanboly',
+                roleAr: 'مدير عام الشركة',
+                roleEn: 'Managing Director of the Firm',
+                bioAr: 'محامي ومستشار قانوني وعضو الهيئة السعودية للمحامين ومحكم معتمد. يمتلك خبرة قضائية عريقة في تحصين وصياغة الاستراتيجيات الوقائية للشركات والمجموعات الاستثمارية الكبرى.',
+                bioEn: 'Attorney-at-Law, Legal Practitioner, member of the Saudi Bar Association, certified Arbitrator, and active advocate with long-standing experience in preventative corporate strategy.',
+                imageUrl: seed.siteSettings.teamFounderImageUrl,
+                credentials: [
+                  'عضو الهيئة السعودية للمحامين',
+                  'محكم قضائي معتمد لدى وزارة العدل',
+                  'عضو لجنة المحامين بالغرفة التجارية بجدة',
+                ],
+              },
+              {
+                id: 'leader-2',
+                nameAr: 'المحامي / عبد الله هشام حنبولي',
+                nameEn: 'Advocate / Abdullah Hesham Hanboly',
+                roleAr: 'نائب المدير العام',
+                roleEn: 'Deputy Managing Director',
+                bioAr: 'محامي ومستشار قانوني متخصّص في الاستشارات الوقائية وصياغة العقود المتطابقة مع الأنظمة المحلية والاتفاقيات الدولية.',
+                bioEn: 'Legal consultant focused on preventative advisory and drafting agreements aligned with local regulations and international standards.',
+                imageUrl: '/src/assets/images/deputy_abdullah_1780495865817.png',
+                credentials: [
+                  'عضو الهيئة السعودية للمحامين',
+                  'متخصص في صياغة العقود الاستثمارية العابرة للحدود',
+                ],
+              },
+              {
+                id: 'leader-3',
+                nameAr: 'المحامي / سامي هشام حنبولي',
+                nameEn: 'Advocate / Sami Hesham Hanboly',
+                roleAr: 'مدير فرع الشركة بالرياض',
+                roleEn: 'Riyadh Branch Director',
+                bioAr: 'محامي ومستشار قانوني يشرف على المرافعة والتمثيل وتوفير الدعم الوقائي والامتثال لشركاء النجاح في العاصمة الرياض.',
+                bioEn: 'Legal practitioner overseeing advocacy, representation, and preventive compliance for clients in Riyadh.',
+                imageUrl: '/src/assets/images/manager_sami_1780495881512.png',
+                credentials: [
+                  'بكالوريوس أنظمة - جامعة الملك عبدالعزيز',
+                  'عضو الهيئة السعودية للمحامين',
+                ],
+              },
+            ],
+          },
+        },
+        {
+          id: 'team-consultants',
+          type: 'team',
+          order: 3,
+          data: {
+            headingAr: 'المستشارون القانونيون',
+            headingEn: 'Legal Consultants & Advisors',
+            subheadingAr: 'نخبة مستشاري الأنظمة والتمثيل القضائي',
+            subheadingEn: 'Embodiment of systemic counsel & litigation',
+            items: [
+              {
+                id: 'consultant-1',
+                nameAr: 'المحامي / عبدالرحمن سعد المرزوقي',
+                nameEn: 'Advocate / Abdulrahman S. Al-Marzouqi',
+                roleAr: 'محامٍ ومستشار قانوني',
+                roleEn: 'Advocate & Legal Consultant',
+                bioAr: 'مختص بتقديم الحلول القضائية الفعالة والامتثال النظامي.',
+                bioEn: 'Specialist in effective judicial solutions and regulatory compliance.',
+              },
+              {
+                id: 'consultant-2',
+                nameAr: 'المحامية / شروق ياسر فيومي',
+                nameEn: 'Advocate / Shouroq Yasser Fayoumi',
+                roleAr: 'محامية ومستشارة قانونية',
+                roleEn: 'Advocate & Legal Consultant',
+                bioAr: 'تتمتع بخبرة رفيعة في المسارات العمالية للمنشآت.',
+                bioEn: 'Experienced in employment and corporate workflows.',
+              },
+              {
+                id: 'consultant-3',
+                nameAr: 'المحامية / أميرة إبراهيم الغامدي',
+                nameEn: 'Advocate / Amira Ibrahim Al-Ghamdi',
+                roleAr: 'محامية ومستشارة قانونية',
+                roleEn: 'Advocate & Legal Consultant',
+                bioAr: 'متخصصة بالصياغة التعاقدية والاستشارة التجارية.',
+                bioEn: 'Specializes in contractual drafting and commercial advisory.',
+              },
+              {
+                id: 'consultant-4',
+                nameAr: 'الدكتور / محمود صالح',
+                nameEn: 'Dr. Mahmoud Saleh',
+                roleAr: 'مستشار قانوني',
+                roleEn: 'Senior Legal Advisor',
+                bioAr: 'خبير قانوني متخصص في المنازعات الاستثمارية الدولية.',
+                bioEn: 'Legal expert specializing in international investment disputes.',
+              },
+              {
+                id: 'consultant-5',
+                nameAr: 'المستشار / محمد كمال كامل',
+                nameEn: 'Counsel / Mohamed Kamal Kamel',
+                roleAr: 'أخصائي قانوني',
+                roleEn: 'Senior Legal Specialist',
+                bioAr: 'متخصص بنظم الشركات الاستثمارية وصياغة الهياكل القانونية.',
+                bioEn: 'Specialist in investment company regulations and legal structuring.',
+              },
+            ],
+          },
+        },
+        {
+          id: 'team-staff',
+          type: 'team',
+          order: 4,
+          data: {
+            headingAr: 'فريق الدعم والإدارة',
+            headingEn: 'Operations & Support Team',
+            subheadingAr: 'كوادر التنظيم والمتابعة',
+            subheadingEn: 'Operations and coordination specialists',
+            items: [
+              {
+                id: 'staff-1',
+                nameAr: 'المحامية / العنود خالد سعيد',
+                nameEn: 'Advocate / Alanoud Khaled Saeed',
+                roleAr: 'محامية متدربة',
+                roleEn: 'Trainee Advocate',
+                bioAr: 'حاصلة على بكالوريوس أنظمة وتتابع ملفات الموكلين والدراسات الأولية.',
+                bioEn: 'Law graduate supporting client files and preliminary legal research.',
+              },
+              {
+                id: 'staff-2',
+                nameAr: 'الأستاذة / روابي العتيبي',
+                nameEn: 'Ms. Rawabi Al-Otaibi',
+                roleAr: 'إدارية',
+                roleEn: 'Corporate Administrator',
+                bioAr: 'تتولى تنسيق الملفات ومتابعة المواعيد والامتثال.',
+                bioEn: 'Coordinates client records, schedules, and compliance tracking.',
+              },
+              {
+                id: 'staff-3',
+                nameAr: 'الأستاذة / شهد الجريد',
+                nameEn: 'Ms. Shahad Al-Juraid',
+                roleAr: 'إدارية',
+                roleEn: 'Relations Administrator',
+                bioAr: 'تدير العلاقات المهنية والبيانات السحابية والتقارير الدورية.',
+                bioEn: 'Manages partner relations, cloud records, and periodic reports.',
+              },
+            ],
+          },
+        },
+        {
+          id: 'team-cta',
+          type: 'cta',
+          order: 5,
+          data: {
+            headingAr: 'ابدأ استشارتك القانونية معنا كشريك للنجاح',
+            headingEn: 'Initiate Your Consultation with Your Lifetime Legal Partner',
+            subheadingAr: 'خطوة آمنة نحو التميز الاستثماري والقضائي',
+            subheadingEn: 'A strategic move toward corporate compliance & excellence',
+            bodyAr: 'فريق قانوني بخبرة احترافية ورؤية استراتيجية لحماية مصالحك وتحقيق أهدافك التجارية وإزالة التبعات والتربص قبل قيام الخلاف المالي أو التعاقدي.',
+            bodyEn: 'A legal team with strategic vision, safeguarding your interests and preempting transactional risk before disputes arise.',
+            ctaPrimaryLabelAr: 'احجز استشارة وقائية فورية',
+            ctaPrimaryLabelEn: 'Book Preventative Assessment',
+            ctaPrimaryUrl: '/contact',
+            ctaSecondaryLabelAr: 'تواصل معنا اليوم',
+            ctaSecondaryLabelEn: 'Connect with Us Today',
+            ctaSecondaryUrl: '/contact',
+          },
+        },
+      ];
+
+      await prisma.cmsRevision.create({
+        data: {
+          id: `rev-team-seed-${Date.now()}`,
+          pageId: teamPage.id,
+          label: 'Starter Team page content',
+          status: 'draft',
+          blocks: teamBlocks,
+          author: 'CMS Seed',
+          note: 'Seeded starter blocks for the Team page.',
+        },
+      });
+
+      await prisma.cmsPage.update({
+        where: { id: teamPage.id },
+        data: { blocksCount: teamBlocks.length },
+      });
+    }
+  }
 };

@@ -45,6 +45,7 @@ export function PageBuilder({ onBack, initialLang = 'en', initialPages, initialS
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const autosaveTimerRef = useRef<number | null>(null);
+  const hydratedPageIdsRef = useRef<Set<string>>(new Set());
 
   // Save confirmation flash
   const [saved, setSaved] = useState(false);
@@ -83,6 +84,59 @@ export function PageBuilder({ onBack, initialLang = 'en', initialPages, initialS
     }
     return [];
   })();
+
+  useEffect(() => {
+    if (!selectedPage) {
+      return;
+    }
+
+    if (selectedPage.blocks.length > 0) {
+      hydratedPageIdsRef.current.add(selectedPage.id);
+      return;
+    }
+
+    if (hydratedPageIdsRef.current.has(selectedPage.id)) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function hydratePageBlocks() {
+      try {
+        const revisions = await backendApi.listRevisions(selectedPage.slug);
+        const latestRevision = revisions[0];
+        if (!latestRevision || !Array.isArray(latestRevision.blocks) || latestRevision.blocks.length === 0 || cancelled) {
+          return;
+        }
+
+        const hydratedBlocks = latestRevision.blocks
+          .slice()
+          .sort((left, right) => (left.order || 0) - (right.order || 0))
+          .map((block) => ({
+            id: block.id,
+            type: block.type,
+            collapsed: false,
+            data: { ...block.data },
+          }));
+
+        hydratedPageIdsRef.current.add(selectedPage.id);
+        setPages((prev) => prev.map((page) => (
+          page.id === selectedPage.id
+            ? { ...page, blocks: hydratedBlocks }
+            : page
+        )));
+        setSelectedBlockId((current) => current || hydratedBlocks[0]?.id || null);
+      } catch {
+        // Keep the current in-memory editor state if the revision fetch fails.
+      }
+    }
+
+    void hydratePageBlocks();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPage?.id, selectedPage?.slug, selectedPage?.blocks.length]);
 
   // ── Page mutations ──────────────────────────────────────────────────────────
   function updatePage(id: string, patch: Partial<BuilderPage>) {
