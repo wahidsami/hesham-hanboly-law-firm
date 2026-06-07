@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Search, Plus, Filter, ChevronDown, ChevronUp,
   Eye, Edit3, Copy, Trash2, MoreHorizontal, Send,
@@ -53,6 +54,8 @@ function RowMenu({ article, onEdit, onPreview, onPublish, onUnpublish, onArchive
   onDelete: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   const menuItem = (icon: React.ReactNode, label: string, action: () => void, danger = false) => (
     <button
@@ -74,7 +77,13 @@ function RowMenu({ article, onEdit, onPreview, onPublish, onUnpublish, onArchive
   return (
     <div style={{ position: 'relative' }}>
       <button
-        onClick={e => { e.stopPropagation(); setOpen(v => !v); }}
+        ref={buttonRef}
+        onClick={e => {
+          e.stopPropagation();
+          const rect = e.currentTarget.getBoundingClientRect();
+          setMenuPosition({ top: rect.top, left: rect.right - 4 });
+          setOpen(v => !v);
+        }}
         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', borderRadius: 4, color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center' }}
         onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--muted)'; }}
         onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; }}
@@ -82,24 +91,40 @@ function RowMenu({ article, onEdit, onPreview, onPublish, onUnpublish, onArchive
         <MoreHorizontal size={15} />
       </button>
       {open && (
-        <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 10 }} onClick={() => setOpen(false)} />
-          <div style={{
-            position: 'absolute', right: 0, top: '100%', zIndex: 20, marginTop: 4,
-            background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 7,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)', minWidth: 170, overflow: 'hidden',
-          }}>
-            {menuItem(<Edit3 size={12} />, 'Edit', onEdit)}
-            {menuItem(<Eye size={12} />, 'Preview', onPreview)}
-            {menuItem(<Copy size={12} />, 'Duplicate', onDuplicate)}
-            <div style={{ height: 1, background: 'var(--border)', margin: '2px 0' }} />
-            {article.status !== 'published' && menuItem(<Send size={12} />, 'Publish', onPublish)}
-            {article.status === 'published' && menuItem(<EyeOff size={12} />, 'Unpublish', onUnpublish)}
-            {article.status !== 'archived' && menuItem(<Archive size={12} />, 'Archive', onArchive)}
-            <div style={{ height: 1, background: 'var(--border)', margin: '2px 0' }} />
-            {menuItem(<Trash2 size={12} />, 'Delete', onDelete, true)}
-          </div>
-        </>
+        createPortal(
+          <>
+            <div
+              style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+              onClick={() => setOpen(false)}
+            />
+            <div
+              style={{
+                position: 'fixed',
+                zIndex: 1000,
+                top: menuPosition?.top ?? 0,
+                left: menuPosition?.left ?? 0,
+                transform: 'translate(-100%, 0)',
+                background: 'var(--card)',
+                border: '1px solid var(--border)',
+                borderRadius: 7,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                minWidth: 170,
+                overflow: 'hidden',
+              }}
+            >
+              {menuItem(<Edit3 size={12} />, 'Edit', onEdit)}
+              {menuItem(<Eye size={12} />, 'Preview', onPreview)}
+              {menuItem(<Copy size={12} />, 'Duplicate', onDuplicate)}
+              <div style={{ height: 1, background: 'var(--border)', margin: '2px 0' }} />
+              {article.status !== 'published' && menuItem(<Send size={12} />, 'Publish', onPublish)}
+              {article.status === 'published' && menuItem(<EyeOff size={12} />, 'Unpublish', onUnpublish)}
+              {article.status !== 'archived' && menuItem(<Archive size={12} />, 'Archive', onArchive)}
+              <div style={{ height: 1, background: 'var(--border)', margin: '2px 0' }} />
+              {menuItem(<Trash2 size={12} />, 'Delete', onDelete, true)}
+            </div>
+          </>,
+          document.body,
+        )
       )}
     </div>
   );

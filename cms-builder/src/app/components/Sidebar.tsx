@@ -40,7 +40,7 @@ export function Sidebar({ active, onSelect, pageCount, articleCount, practiceAre
   return (
     <aside
       className="flex flex-col h-full"
-      style={{ background: "var(--sidebar)", width: 224, minWidth: 224, borderRight: "1px solid var(--sidebar-border)" }}
+      style={{ background: "var(--sidebar)", width: 224, minWidth: 224, height: "calc(100vh - 56px)", minHeight: "calc(100vh - 56px)", borderRight: "1px solid var(--sidebar-border)", position: "sticky", top: 56 }}
     >
       {/* Logo */}
       <div
