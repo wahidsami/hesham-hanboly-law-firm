@@ -154,7 +154,7 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
       .replace(/\n/g, '<br/>');
   }
 
-  const toolbarBtns = rtl ? [] : [
+  const toolbarBtns = [
     { icon: <Hash size={12} />, title: 'Heading', action: () => insertMarkdown('## ') },
     { icon: <Bold size={12} />, title: 'Bold', action: () => insertMarkdown('**', '**') },
     { icon: <Italic size={12} />, title: 'Italic', action: () => insertMarkdown('*', '*') },
@@ -168,7 +168,7 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
   return (
     <div style={{ border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
       {/* Toolbar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '5px 8px', background: 'var(--muted)', borderBottom: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '5px 8px', background: 'var(--muted)', borderBottom: '1px solid var(--border)', direction: rtl ? 'rtl' : 'ltr', flexDirection: rtl ? 'row-reverse' : 'row' }}>
         {toolbarBtns.map((btn, i) => (
           <button key={i} onClick={btn.action} title={btn.title}
             style={{ display: 'flex', alignItems: 'center', padding: '4px 7px', borderRadius: 4, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--muted-foreground)' }}
