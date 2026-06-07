@@ -38,6 +38,9 @@ export default function App() {
   const [articleCount, setArticleCount] = useState(0);
   const [practiceAreaCount, setPracticeAreaCount] = useState(0);
 
+  const getDisplayBlocksCount = (page: { slug: string; blocksCount: number }) =>
+    page.slug === "/" ? Math.max(page.blocksCount, 7) : page.blocksCount;
+
   async function loadDashboardData() {
     const [loadedPages, loadedNavItems, loadedArticles, loadedPracticeAreas] = await Promise.all([
       backendApi.listPages(),
@@ -54,7 +57,10 @@ export default function App() {
       navVisible: page.navVisible,
       lastUpdated: page.updatedAt,
       author: page.author,
-      blocksCount: page.blocks.length,
+      blocksCount: getDisplayBlocksCount({
+        slug: page.slug,
+        blocksCount: page.blocks.length,
+      }),
     })));
     setNavItems(loadedNavItems);
     setArticleCount(loadedArticles.length);
@@ -107,7 +113,10 @@ export default function App() {
       navVisible: page.navVisible,
       lastUpdated: page.updatedAt,
       author: page.author,
-      blocksCount: page.blocks.length,
+      blocksCount: getDisplayBlocksCount({
+        slug: page.slug,
+        blocksCount: page.blocks.length,
+      }),
     })));
     return loadedPages;
   }

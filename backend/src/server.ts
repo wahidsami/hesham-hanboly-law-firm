@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import express from 'express';
 import multer from 'multer';
+import { Prisma } from '@prisma/client';
 import { createServer as createViteServer, ViteDevServer } from 'vite';
 import { config } from './config';
 import {
@@ -27,7 +28,6 @@ import {
   listPracticeAreas,
   listPublishedArticles,
   listPublishedPracticeAreas,
-  loadSiteSettingsRow,
   normalizeArticleInput,
   normalizePracticeAreaInput,
   saveCmsPage,
@@ -364,15 +364,20 @@ const saveSiteSettings = async (body: unknown) => {
     footerBadgeEn: String(input.footerBadgeEn || ''),
   };
 
-  const existing = await loadSiteSettingsRow();
-  if (existing) {
-    await prisma.siteSettings.update({
-      where: { id: existing.id },
-      data: payload,
-    });
-  } else {
-    await prisma.siteSettings.create({ data: payload });
-  }
+  const columns = Object.keys(payload);
+  const columnFragments = columns.map((column) => Prisma.raw(`"${column}"`));
+  const valueFragments = columns.map((column) => Prisma.sql`${payload[column as keyof typeof payload]}`);
+  const updateFragments = columns
+    .filter((column) => column !== 'id')
+    .map((column) => Prisma.sql`${Prisma.raw(`"${column}"`)} = EXCLUDED.${Prisma.raw(`"${column}"`)}`);
+
+  await prisma.$executeRaw(
+    Prisma.sql`
+      INSERT INTO "SiteSettings" (${Prisma.join(columnFragments)})
+      VALUES (${Prisma.join(valueFragments)})
+      ON CONFLICT ("id") DO UPDATE SET ${Prisma.join(updateFragments)}
+    `,
+  );
 };
 
 const reseedDatabase = async () => {
