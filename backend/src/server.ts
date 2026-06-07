@@ -27,6 +27,7 @@ import {
   listPracticeAreas,
   listPublishedArticles,
   listPublishedPracticeAreas,
+  loadSiteSettingsRow,
   normalizeArticleInput,
   normalizePracticeAreaInput,
   saveCmsPage,
@@ -325,7 +326,7 @@ const saveSiteSettings = async (body: unknown) => {
     footerBadgeEn: String(input.footerBadgeEn || ''),
   };
 
-  const existing = await prisma.siteSettings.findFirst();
+  const existing = await loadSiteSettingsRow();
   if (existing) {
     await prisma.siteSettings.update({
       where: { id: existing.id },

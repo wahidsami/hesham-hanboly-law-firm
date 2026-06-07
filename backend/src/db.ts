@@ -364,6 +364,14 @@ export const ensureDatabaseSchema = async () => {
       ADD COLUMN IF NOT EXISTS "doctorShieldCircleNoteEn" TEXT;
   `);
 
+  statements.push(`
+    UPDATE "SiteSettings"
+    SET
+      "teamFounderImageUrl" = COALESCE("teamFounderImageUrl", '/src/assets/images/founder_hesham_hanboly_1780491593879.png'),
+      "teamFounderImageAltAr" = COALESCE("teamFounderImageAltAr", 'المحامي / هشام بن حسن حنبولي'),
+      "teamFounderImageAltEn" = COALESCE("teamFounderImageAltEn", 'Advocate / Hesham H. Hanboly');
+  `);
+
   for (const statement of statements) {
     await prisma.$executeRawUnsafe(statement);
   }

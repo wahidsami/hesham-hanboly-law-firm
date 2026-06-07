@@ -24,6 +24,123 @@ type CmsPageInput = Partial<CMSPageRecord>;
 type NavItemInput = Partial<NavItemRecord>;
 type HeroSlideInput = Partial<HeroSlideRecord>;
 type CmsRevisionInput = Partial<CMSRevisionRecord> & { blocks?: unknown[] };
+type SiteSettingsRow = {
+  id: string;
+  navbarCtaAr: string | null;
+  navbarCtaEn: string | null;
+  doctorShieldBadgeAr: string | null;
+  doctorShieldBadgeEn: string | null;
+  doctorShieldTitleAr: string | null;
+  doctorShieldTitleEn: string | null;
+  doctorShieldSubtitleAr: string | null;
+  doctorShieldSubtitleEn: string | null;
+  doctorShieldDescAr: string | null;
+  doctorShieldDescEn: string | null;
+  doctorShieldBullet1Ar: string | null;
+  doctorShieldBullet1En: string | null;
+  doctorShieldBullet2Ar: string | null;
+  doctorShieldBullet2En: string | null;
+  doctorShieldBullet3Ar: string | null;
+  doctorShieldBullet3En: string | null;
+  doctorShieldBullet4Ar: string | null;
+  doctorShieldBullet4En: string | null;
+  doctorShieldButtonAr: string | null;
+  doctorShieldButtonEn: string | null;
+  doctorShieldCircleTitleAr: string | null;
+  doctorShieldCircleTitleEn: string | null;
+  doctorShieldCirclePriceAr: string | null;
+  doctorShieldCirclePriceEn: string | null;
+  doctorShieldCircleNoteAr: string | null;
+  doctorShieldCircleNoteEn: string | null;
+  aboutSectionBadgeAr: string | null;
+  aboutSectionBadgeEn: string | null;
+  aboutSectionTitleAr: string | null;
+  aboutSectionTitleEn: string | null;
+  aboutSectionDescAr: string | null;
+  aboutSectionDescEn: string | null;
+  aboutSectionCardTitleAr: string | null;
+  aboutSectionCardTitleEn: string | null;
+  aboutSectionCardDescAr: string | null;
+  aboutSectionCardDescEn: string | null;
+  aboutSectionButtonAr: string | null;
+  aboutSectionButtonEn: string | null;
+  statisticsBadgeAr: string | null;
+  statisticsBadgeEn: string | null;
+  statisticsNumber: string | null;
+  statisticsTitleAr: string | null;
+  statisticsTitleEn: string | null;
+  statisticsDescAr: string | null;
+  statisticsDescEn: string | null;
+  statisticsSupportAr: string | null;
+  statisticsSupportEn: string | null;
+  teamSectionBadgeAr: string | null;
+  teamSectionBadgeEn: string | null;
+  teamSectionTitleAr: string | null;
+  teamSectionTitleEn: string | null;
+  teamSectionDescAr: string | null;
+  teamSectionDescEn: string | null;
+  teamFounderBadgeAr: string | null;
+  teamFounderBadgeEn: string | null;
+  teamFounderNameAr: string | null;
+  teamFounderNameEn: string | null;
+  teamFounderRoleAr: string | null;
+  teamFounderRoleEn: string | null;
+  teamFounderIntroAr: string | null;
+  teamFounderIntroEn: string | null;
+  teamFounderImageUrl: string | null;
+  teamFounderImageAltAr: string | null;
+  teamFounderImageAltEn: string | null;
+  teamSectionCtaAr: string | null;
+  teamSectionCtaEn: string | null;
+  contactSectionBadgeAr: string | null;
+  contactSectionBadgeEn: string | null;
+  contactSectionTitleAr: string | null;
+  contactSectionTitleEn: string | null;
+  contactSectionDescAr: string | null;
+  contactSectionDescEn: string | null;
+  contactSectionOfficeTitleAr: string | null;
+  contactSectionOfficeTitleEn: string | null;
+  contactSectionAddressHeadAr: string | null;
+  contactSectionAddressHeadEn: string | null;
+  contactSectionPhoneLabelAr: string | null;
+  contactSectionPhoneLabelEn: string | null;
+  contactSectionEmailLabelAr: string | null;
+  contactSectionEmailLabelEn: string | null;
+  contactSectionSecurityAr: string | null;
+  contactSectionSecurityEn: string | null;
+  contactSectionFormTitleAr: string | null;
+  contactSectionFormTitleEn: string | null;
+  contactSectionFormDescAr: string | null;
+  contactSectionFormDescEn: string | null;
+  aboutHeroBadgeAr: string | null;
+  aboutHeroBadgeEn: string | null;
+  aboutHeroTitleAr: string | null;
+  aboutHeroTitleEn: string | null;
+  aboutHeroDescAr: string | null;
+  aboutHeroDescEn: string | null;
+  teamHeroBadgeAr: string | null;
+  teamHeroBadgeEn: string | null;
+  teamHeroTitleAr: string | null;
+  teamHeroTitleEn: string | null;
+  teamHeroDescAr: string | null;
+  teamHeroDescEn: string | null;
+  contactHeroBadgeAr: string | null;
+  contactHeroBadgeEn: string | null;
+  contactHeroTitleAr: string | null;
+  contactHeroTitleEn: string | null;
+  contactHeroDescAr: string | null;
+  contactHeroDescEn: string | null;
+  footerDescriptionAr: string | null;
+  footerDescriptionEn: string | null;
+  addressAr: string | null;
+  addressEn: string | null;
+  email: string | null;
+  phone: string | null;
+  copyrightAr: string | null;
+  copyrightEn: string | null;
+  footerBadgeAr: string | null;
+  footerBadgeEn: string | null;
+};
 type MediaAssetRecord = {
   id: string;
   filename: string;
@@ -372,9 +489,9 @@ export const siteSettingsToRecord = (siteSettings: {
   teamFounderRoleEn: siteSettings.teamFounderRoleEn,
   teamFounderIntroAr: siteSettings.teamFounderIntroAr,
   teamFounderIntroEn: siteSettings.teamFounderIntroEn,
-  teamFounderImageUrl: siteSettings.teamFounderImageUrl,
-  teamFounderImageAltAr: siteSettings.teamFounderImageAltAr,
-  teamFounderImageAltEn: siteSettings.teamFounderImageAltEn,
+  teamFounderImageUrl: siteSettings.teamFounderImageUrl || '/src/assets/images/founder_hesham_hanboly_1780491593879.png',
+  teamFounderImageAltAr: siteSettings.teamFounderImageAltAr || 'المحامي / هشام بن حسن حنبولي',
+  teamFounderImageAltEn: siteSettings.teamFounderImageAltEn || 'Advocate / Hesham H. Hanboly',
   teamSectionCtaAr: siteSettings.teamSectionCtaAr,
   teamSectionCtaEn: siteSettings.teamSectionCtaEn,
   contactSectionBadgeAr: siteSettings.contactSectionBadgeAr,
@@ -426,6 +543,13 @@ export const siteSettingsToRecord = (siteSettings: {
   footerBadgeAr: siteSettings.footerBadgeAr,
   footerBadgeEn: siteSettings.footerBadgeEn,
 });
+
+export const loadSiteSettingsRow = async () => {
+  const rows = await prisma.$queryRawUnsafe<SiteSettingsRow[]>(
+    'SELECT * FROM "SiteSettings" ORDER BY "updatedAt" DESC LIMIT 1',
+  );
+  return rows[0] ?? null;
+};
 
 export const normalizeArticleInput = (input: ArticleInput): ArticleInput => {
   const titleAr = requireText(input.titleAr, 'titleAr');
@@ -558,7 +682,7 @@ export const toSiteContent = async (): Promise<SiteContent> => {
     prisma.practiceArea.findMany({
       orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
     }),
-    prisma.siteSettings.findFirst(),
+    loadSiteSettingsRow(),
     prisma.cmsPage.findMany({
       select: {
         id: true,
@@ -581,7 +705,7 @@ export const toSiteContent = async (): Promise<SiteContent> => {
     practiceAreas: practiceAreas.map(practiceAreaToRecord),
     navigation: navigationItems.filter((navItem) => publicPageIds.has(navItem.pageId)).map(navItemToRecord),
     siteSettings: siteSettings
-      ? siteSettingsToRecord(siteSettings)
+      ? siteSettingsToRecord(siteSettings as unknown as Parameters<typeof siteSettingsToRecord>[0])
       : siteSettingsToRecord({
         id: 'main',
         navbarCtaAr: 'طلب استشارة',
