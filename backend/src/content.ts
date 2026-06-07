@@ -26,6 +26,9 @@ type HeroSlideInput = Partial<HeroSlideRecord>;
 type CmsRevisionInput = Partial<CMSRevisionRecord> & { blocks?: unknown[] };
 type SiteSettingsRow = {
   id: string;
+  logoImageUrl: string | null;
+  logoImageAltAr: string | null;
+  logoImageAltEn: string | null;
   navbarCtaAr: string | null;
   navbarCtaEn: string | null;
   doctorShieldBadgeAr: string | null;
@@ -180,7 +183,7 @@ const collectReferencedUrls = (value: unknown, urls: Set<string>) => {
     Object.entries(value as Record<string, unknown>).forEach(([key, entry]) => {
       if (typeof entry === 'string') {
         const trimmed = entry.trim();
-        if (trimmed && ['imageUrl', 'image', 'url', 'thumbnailUrl'].includes(key)) {
+        if (trimmed && (key === 'imageUrl' || key === 'image' || key === 'url' || key === 'thumbnailUrl' || key.endsWith('ImageUrl'))) {
           urls.add(trimmed);
         }
         return;
@@ -345,6 +348,9 @@ export const heroSlideToRecord = (heroSlide: HeroSlide): HeroSlideRecord => ({
 
 export const siteSettingsToRecord = (siteSettings: {
   id: string;
+  logoImageUrl?: string | null;
+  logoImageAltAr?: string | null;
+  logoImageAltEn?: string | null;
   navbarCtaAr: string;
   navbarCtaEn: string;
   doctorShieldBadgeAr: string;
@@ -461,6 +467,9 @@ export const siteSettingsToRecord = (siteSettings: {
   footerBadgeEn: string;
 }): SiteSettingsRecord => ({
   id: siteSettings.id,
+  logoImageUrl: siteSettings.logoImageUrl || '',
+  logoImageAltAr: siteSettings.logoImageAltAr || 'شعار شركة هشام حسن حنبولي الدولية',
+  logoImageAltEn: siteSettings.logoImageAltEn || 'Hesham H. Hanboly International logo',
   navbarCtaAr: siteSettings.navbarCtaAr,
   navbarCtaEn: siteSettings.navbarCtaEn,
   doctorShieldBadgeAr: siteSettings.doctorShieldBadgeAr,
@@ -741,6 +750,9 @@ export const toSiteContent = async (): Promise<SiteContent> => {
       ? siteSettingsToRecord(siteSettings as unknown as Parameters<typeof siteSettingsToRecord>[0])
       : siteSettingsToRecord({
         id: 'main',
+        logoImageUrl: '',
+        logoImageAltAr: 'شعار شركة هشام حسن حنبولي الدولية',
+        logoImageAltEn: 'Hesham H. Hanboly International logo',
         navbarCtaAr: 'طلب استشارة',
         navbarCtaEn: 'Book Counsel',
         teamFounderImageUrl: '/src/assets/images/founder_hesham_hanboly_1780491593879.png',

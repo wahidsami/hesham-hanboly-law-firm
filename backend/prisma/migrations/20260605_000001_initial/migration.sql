@@ -62,6 +62,9 @@ CREATE TABLE "HeroSlide" (
 
 CREATE TABLE "SiteSettings" (
     "id" TEXT NOT NULL,
+    "logoImageUrl" TEXT NOT NULL DEFAULT '',
+    "logoImageAltAr" TEXT NOT NULL DEFAULT 'شعار شركة هشام حسن حنبولي الدولية',
+    "logoImageAltEn" TEXT NOT NULL DEFAULT 'Hesham H. Hanboly International logo',
     "navbarCtaAr" TEXT NOT NULL,
     "navbarCtaEn" TEXT NOT NULL,
     "footerDescriptionAr" TEXT NOT NULL,

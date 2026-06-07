@@ -58,6 +58,9 @@ const seedHeroSlides = (): HeroSlideRecord[] => heroSlidesData.map((slide) => ({
 
 const seedSiteSettings = (): SiteSettingsRecord => ({
   id: 'main',
+  logoImageUrl: '',
+  logoImageAltAr: 'شعار شركة هشام حسن حنبولي الدولية',
+  logoImageAltEn: 'Hesham H. Hanboly International logo',
   navbarCtaAr: 'طلب استشارة',
   navbarCtaEn: 'Book Counsel',
   doctorShieldBadgeAr: 'جديد وحصري',

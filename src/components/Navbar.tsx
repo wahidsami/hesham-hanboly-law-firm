@@ -106,6 +106,10 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
   };
 
   const practiceAreas = (content?.practiceAreas || []).filter((item) => item.published);
+  const logoUrl = content?.siteSettings.logoImageUrl || '';
+  const logoAlt = language === 'ar'
+    ? content?.siteSettings.logoImageAltAr || 'شعار شركة هشام حسن حنبولي الدولية'
+    : content?.siteSettings.logoImageAltEn || 'Hesham H. Hanboly International logo';
   const navbarCta = language === 'ar' ? content?.siteSettings.navbarCtaAr : content?.siteSettings.navbarCtaEn;
   const mobileSectionTitle = (categorySlug: 'advisory' | 'litigation' | 'transactional') => {
     const firstItem = practiceAreas.find((item) => item.categorySlug === categorySlug);
@@ -184,6 +188,8 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
               variant="dark" 
               showText={true} 
               emblemSize={isScrolled ? 'h-11 w-11 sm:h-12 sm:w-12' : 'h-13 w-13 sm:h-14 sm:w-14'}
+              logoUrl={logoUrl}
+              logoAlt={logoAlt}
               className="transition-all duration-300 hover:opacity-90"
             />
           </div>

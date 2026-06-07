@@ -197,6 +197,9 @@ export interface SiteContent {
 
 export interface SiteSettingsRecord {
   id: string;
+  logoImageUrl: string;
+  logoImageAltAr: string;
+  logoImageAltEn: string;
   navbarCtaAr: string;
   navbarCtaEn: string;
   doctorShieldBadgeAr: string;

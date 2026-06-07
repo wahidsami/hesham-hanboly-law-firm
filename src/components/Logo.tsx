@@ -7,6 +7,8 @@ interface LogoProps {
   showText?: boolean;
   className?: string;
   emblemSize?: string; // e.g. 'h-12 w-12'
+  logoUrl?: string;
+  logoAlt?: string;
 }
 
 export default function Logo({ 
@@ -14,7 +16,9 @@ export default function Logo({
   variant = 'light', 
   showText = true, 
   className = '', 
-  emblemSize = 'h-12 w-12' 
+  emblemSize = 'h-12 w-12',
+  logoUrl,
+  logoAlt,
 }: LogoProps) {
   
   // Color configuration based on dark vs light texts
@@ -26,7 +30,7 @@ export default function Logo({
     <div className={`flex items-center gap-3 select-none ${className}`}>
       
       {/* 1. TEXT SECTION (If RTL, we can render it before or let flex-row-reverse handle it) */}
-      {showText && lang === 'ar' && (
+      {showText && !logoUrl && lang === 'ar' && (
         <div className="flex flex-col text-right">
           <span className={`font-bold transition-all duration-300 tracking-wide text-base sm:text-lg leading-tight ${textTitleColor}`}>
             شركة هشام حسن حنبلي الدولية
@@ -37,7 +41,7 @@ export default function Logo({
         </div>
       )}
 
-      {showText && lang === 'en' && (
+      {showText && !logoUrl && lang === 'en' && (
         <div className="flex flex-col text-left">
           <span className={`font-serif font-bold transition-all duration-300 tracking-wide text-base sm:text-lg ${textTitleColor}`}>
             Hesham H Hanboly int'l Co.
@@ -49,12 +53,19 @@ export default function Logo({
       )}
 
       {/* 2. THE EMBLEM STAMP */}
-      <div className={`relative shrink-0 ${emblemSize}`}>
-        <svg 
-          viewBox="0 0 200 200" 
-          className="w-full h-full drop-shadow-md"
-          xmlns="http://www.w3.org/2000/svg"
-        >
+      <div className={`relative shrink-0 overflow-hidden ${emblemSize}`}>
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt={logoAlt || 'Logo'}
+            className="w-full h-full object-contain drop-shadow-md"
+          />
+        ) : (
+          <svg 
+            viewBox="0 0 200 200" 
+            className="w-full h-full drop-shadow-md"
+            xmlns="http://www.w3.org/2000/svg"
+          >
           {/* Definitions for Text Paths */}
           <defs>
             {/* Left Arc Path (for "Hesham") - counter clockwise or clockwise */}
@@ -157,7 +168,8 @@ export default function Logo({
             <line x1="24" y1="-18" x2="35" y2="8" strokeWidth="1.2" stroke="#ED8A19" />
             <path d="M 11 8 C 11 18 37 18 37 8 Z" fill="#ED8A19" fillOpacity="0.2" strokeWidth="2.5" />
           </g>
-        </svg>
+          </svg>
+        )}
       </div>
       
     </div>

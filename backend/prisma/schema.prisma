@@ -65,6 +65,9 @@ model HeroSlide {
 
 model SiteSettings {
   id                  String   @id
+  logoImageUrl        String   @default("")
+  logoImageAltAr      String   @default("شعار شركة هشام حسن حنبولي الدولية")
+  logoImageAltEn      String   @default("Hesham H. Hanboly International logo")
   navbarCtaAr         String
   navbarCtaEn         String
   doctorShieldBadgeAr String

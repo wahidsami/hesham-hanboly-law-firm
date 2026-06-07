@@ -34,6 +34,9 @@ export const seedDatabase = async () => {
     await prisma.siteSettings.create({
       data: {
         id: seed.siteSettings.id,
+        logoImageUrl: seed.siteSettings.logoImageUrl,
+        logoImageAltAr: seed.siteSettings.logoImageAltAr,
+        logoImageAltEn: seed.siteSettings.logoImageAltEn,
         navbarCtaAr: seed.siteSettings.navbarCtaAr,
         navbarCtaEn: seed.siteSettings.navbarCtaEn,
         doctorShieldBadgeAr: seed.siteSettings.doctorShieldBadgeAr,

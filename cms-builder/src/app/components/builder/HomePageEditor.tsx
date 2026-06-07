@@ -121,6 +121,7 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
   const [siteSettings, setSiteSettings] = useState<SiteSettingsRecord | null>(null);
   const [selectedSlideId, setSelectedSlideId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [logoPickerOpen, setLogoPickerOpen] = useState(false);
   const [teamPickerOpen, setTeamPickerOpen] = useState(false);
   const [heroEditorSection, setHeroEditorSection] = useState<'content' | 'image' | 'advanced'>('content');
   const heroSectionRef = useRef<HTMLElement | null>(null);
@@ -449,15 +450,55 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
             </div>
 
             <Group title="Navbar / Footer" description="These texts control the visible CTA and footer copy on the public site.">
-              <div className="grid gap-4 md:grid-cols-2">
-                <HomeField label="Navbar CTA (EN)" value={siteSettings.navbarCtaEn} onChange={(value) => setSiteSettings({ ...siteSettings, navbarCtaEn: value })} />
-                <HomeField label="Navbar CTA (AR)" value={siteSettings.navbarCtaAr} onChange={(value) => setSiteSettings({ ...siteSettings, navbarCtaAr: value })} dir="rtl" />
-                <HomeField label="Footer description (EN)" value={siteSettings.footerDescriptionEn} onChange={(value) => setSiteSettings({ ...siteSettings, footerDescriptionEn: value })} multiline />
-                <HomeField label="Footer description (AR)" value={siteSettings.footerDescriptionAr} onChange={(value) => setSiteSettings({ ...siteSettings, footerDescriptionAr: value })} multiline dir="rtl" />
-                <HomeField label="Address (EN)" value={siteSettings.addressEn} onChange={(value) => setSiteSettings({ ...siteSettings, addressEn: value })} />
-                <HomeField label="Address (AR)" value={siteSettings.addressAr} onChange={(value) => setSiteSettings({ ...siteSettings, addressAr: value })} dir="rtl" />
-                <HomeField label="Phone" value={siteSettings.phone} onChange={(value) => setSiteSettings({ ...siteSettings, phone: value })} />
-                <HomeField label="Email" value={siteSettings.email} onChange={(value) => setSiteSettings({ ...siteSettings, email: value })} />
+              <div className="grid gap-4 xl:grid-cols-[320px_1fr]">
+                <MiniGroup title="Brand logo" description="Used in both the header and the footer. Upload once here and it will appear everywhere.">
+                  <div className="space-y-4">
+                    <div className="overflow-hidden rounded-2xl border border-[#D8D1C7] bg-[#FBF7F0]">
+                      {siteSettings.logoImageUrl ? (
+                        <img
+                          src={siteSettings.logoImageUrl}
+                          alt={lang === 'ar' ? siteSettings.logoImageAltAr : siteSettings.logoImageAltEn}
+                          className="h-40 w-full object-contain bg-white p-4"
+                        />
+                      ) : (
+                        <div className="flex h-40 items-center justify-center text-sm text-[#8A8A8A]">No logo selected</div>
+                      )}
+                    </div>
+                    <HomeField
+                      label="Logo image URL"
+                      value={siteSettings.logoImageUrl || ''}
+                      onChange={(value) => setSiteSettings({ ...siteSettings, logoImageUrl: value })}
+                    />
+                    <HomeField
+                      label="Logo alt (EN)"
+                      value={siteSettings.logoImageAltEn || ''}
+                      onChange={(value) => setSiteSettings({ ...siteSettings, logoImageAltEn: value })}
+                    />
+                    <HomeField
+                      label="Logo alt (AR)"
+                      value={siteSettings.logoImageAltAr || ''}
+                      onChange={(value) => setSiteSettings({ ...siteSettings, logoImageAltAr: value })}
+                      dir="rtl"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setLogoPickerOpen(true)}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#D8D1C7] bg-white px-4 py-3 text-sm font-semibold text-[#1E1E1E]"
+                    >
+                      Choose logo from media library
+                    </button>
+                  </div>
+                </MiniGroup>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <HomeField label="Navbar CTA (EN)" value={siteSettings.navbarCtaEn} onChange={(value) => setSiteSettings({ ...siteSettings, navbarCtaEn: value })} />
+                  <HomeField label="Navbar CTA (AR)" value={siteSettings.navbarCtaAr} onChange={(value) => setSiteSettings({ ...siteSettings, navbarCtaAr: value })} dir="rtl" />
+                  <HomeField label="Footer description (EN)" value={siteSettings.footerDescriptionEn} onChange={(value) => setSiteSettings({ ...siteSettings, footerDescriptionEn: value })} multiline />
+                  <HomeField label="Footer description (AR)" value={siteSettings.footerDescriptionAr} onChange={(value) => setSiteSettings({ ...siteSettings, footerDescriptionAr: value })} multiline dir="rtl" />
+                  <HomeField label="Address (EN)" value={siteSettings.addressEn} onChange={(value) => setSiteSettings({ ...siteSettings, addressEn: value })} />
+                  <HomeField label="Address (AR)" value={siteSettings.addressAr} onChange={(value) => setSiteSettings({ ...siteSettings, addressAr: value })} dir="rtl" />
+                  <HomeField label="Phone" value={siteSettings.phone} onChange={(value) => setSiteSettings({ ...siteSettings, phone: value })} />
+                  <HomeField label="Email" value={siteSettings.email} onChange={(value) => setSiteSettings({ ...siteSettings, email: value })} />
+                </div>
               </div>
             </Group>
 
@@ -673,6 +714,25 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
               teamFounderImageUrl: asset.url,
               teamFounderImageAltEn: nextAltEn,
               teamFounderImageAltAr: asset.altAr || siteSettings.teamFounderImageAltAr,
+            });
+          }}
+          />
+      )}
+
+      {logoPickerOpen && siteSettings && (
+        <ImageAssetPicker
+          open={logoPickerOpen}
+          title="Choose logo image"
+          initialUrl={siteSettings.logoImageUrl}
+          initialAltEn={siteSettings.logoImageAltEn}
+          initialAltAr={siteSettings.logoImageAltAr}
+          onClose={() => setLogoPickerOpen(false)}
+          onSelect={(asset, nextAltEn, nextAltAr) => {
+            setSiteSettings({
+              ...siteSettings,
+              logoImageUrl: asset.url,
+              logoImageAltEn: nextAltEn,
+              logoImageAltAr: nextAltAr,
             });
           }}
         />

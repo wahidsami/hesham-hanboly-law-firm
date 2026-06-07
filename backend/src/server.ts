@@ -210,6 +210,9 @@ const saveSiteSettings = async (body: unknown) => {
   const input = body as Record<string, unknown>;
   const payload = {
     id: 'main',
+    logoImageUrl: String(input.logoImageUrl || ''),
+    logoImageAltAr: String(input.logoImageAltAr || ''),
+    logoImageAltEn: String(input.logoImageAltEn || ''),
     navbarCtaAr: String(input.navbarCtaAr || ''),
     navbarCtaEn: String(input.navbarCtaEn || ''),
     doctorShieldBadgeAr: String(input.doctorShieldBadgeAr || ''),

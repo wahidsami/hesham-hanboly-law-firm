@@ -62,6 +62,9 @@ export const ensureDatabaseSchema = async () => {
     )`,
     `CREATE TABLE IF NOT EXISTS "SiteSettings" (
       "id" TEXT NOT NULL,
+      "logoImageUrl" TEXT NOT NULL DEFAULT '',
+      "logoImageAltAr" TEXT NOT NULL DEFAULT 'شعار شركة هشام حسن حنبولي الدولية',
+      "logoImageAltEn" TEXT NOT NULL DEFAULT 'Hesham H. Hanboly International logo',
       "navbarCtaAr" TEXT NOT NULL,
       "navbarCtaEn" TEXT NOT NULL,
       "doctorShieldBadgeAr" TEXT NOT NULL,
@@ -180,6 +183,9 @@ export const ensureDatabaseSchema = async () => {
       "updatedAt" TIMESTAMP(3) NOT NULL,
       CONSTRAINT "SiteSettings_pkey" PRIMARY KEY ("id")
     )`,
+    `ALTER TABLE "SiteSettings" ADD COLUMN IF NOT EXISTS "logoImageUrl" TEXT NOT NULL DEFAULT ''`,
+    `ALTER TABLE "SiteSettings" ADD COLUMN IF NOT EXISTS "logoImageAltAr" TEXT NOT NULL DEFAULT 'شعار شركة هشام حسن حنبولي الدولية'`,
+    `ALTER TABLE "SiteSettings" ADD COLUMN IF NOT EXISTS "logoImageAltEn" TEXT NOT NULL DEFAULT 'Hesham H. Hanboly International logo'`,
     `CREATE TABLE IF NOT EXISTS "Article" (
       "id" TEXT NOT NULL,
       "slug" TEXT NOT NULL,
