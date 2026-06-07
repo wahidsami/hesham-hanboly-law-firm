@@ -35,7 +35,23 @@ const requestFormData = async <T>(url: string, formData: FormData): Promise<T> =
 
 export const contentClient = {
   getContent: () => requestJson<SiteContent>('/api/content'),
-  getCmsPage: (slug: string) => requestJson<CMSPublishedPageRecord>(`/api/pages/${encodeURIComponent(slug)}`),
+  getCmsPage: async (slug: string) => {
+    const trimmed = slug.trim();
+    const attempts = trimmed.startsWith('/')
+      ? [trimmed, trimmed.slice(1)]
+      : [trimmed, `/${trimmed}`];
+
+    let lastError: unknown = null;
+    for (const attempt of attempts) {
+      try {
+        return await requestJson<CMSPublishedPageRecord>(`/api/pages/${encodeURIComponent(attempt)}`);
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    throw lastError instanceof Error ? lastError : new Error('Page not found');
+  },
   login: (username: string, password: string) =>
     requestJson<{ ok: true }>('/api/auth/login', {
       method: 'POST',
