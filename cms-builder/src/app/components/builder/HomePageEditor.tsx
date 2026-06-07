@@ -123,6 +123,7 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
   const [pickerOpen, setPickerOpen] = useState(false);
   const [logoPickerOpen, setLogoPickerOpen] = useState(false);
   const [footerLogoPickerOpen, setFooterLogoPickerOpen] = useState(false);
+  const [footerPreviewTheme, setFooterPreviewTheme] = useState<'dark' | 'light'>('dark');
   const [teamPickerOpen, setTeamPickerOpen] = useState(false);
   const [heroEditorSection, setHeroEditorSection] = useState<'content' | 'image' | 'advanced'>('content');
   const heroSectionRef = useRef<HTMLElement | null>(null);
@@ -492,20 +493,53 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
                 </MiniGroup>
                 <MiniGroup title="Footer logo" description="Use a different version for the footer if the footer is on a dark background. If empty, the header logo is used as a fallback.">
                   <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#D8D1C7] bg-[#FBF7F0] px-3 py-2">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#A56A1E]">
+                        {lang === 'ar' ? 'تبديل المعاينة' : 'Preview theme'}
+                      </div>
+                      <div className="inline-flex rounded-xl border border-[#D8D1C7] bg-white p-1">
+                        {(['dark', 'light'] as const).map((theme) => (
+                          <button
+                            key={theme}
+                            type="button"
+                            onClick={() => setFooterPreviewTheme(theme)}
+                            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                              footerPreviewTheme === theme
+                                ? 'bg-[#121212] text-white'
+                                : 'bg-transparent text-[#1E1E1E]'
+                            }`}
+                          >
+                            {theme === 'dark'
+                              ? (lang === 'ar' ? 'داكن' : 'Dark')
+                              : (lang === 'ar' ? 'فاتح' : 'Light')}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                     <div className="overflow-hidden rounded-2xl border border-[#D8D1C7] bg-[#FBF7F0] p-3">
-                      <div className="rounded-xl bg-[#121212] px-4 py-5">
+                      <div className={`rounded-xl px-4 py-5 ${footerPreviewTheme === 'dark' ? 'bg-[#121212]' : 'bg-[#F1ECE3]'}`}>
                         <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.24em] text-[#A56A1E]">Footer preview</div>
-                        <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
+                        <div className={`flex items-center justify-between gap-4 pb-4 ${footerPreviewTheme === 'dark' ? 'border-b border-white/10' : 'border-b border-[#D8D1C7]'}`}>
                           <div className="flex items-center gap-3">
-                            <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/70">Logo</div>
-                            <div className="text-[11px] text-white/55">
+                            <div className={`rounded-full px-3 py-1 text-[11px] font-semibold ${footerPreviewTheme === 'dark' ? 'border border-white/10 bg-white/5 text-white/70' : 'border border-[#D8D1C7] bg-white text-[#1E1E1E]/70'}`}>Logo</div>
+                            <div className={`text-[11px] ${footerPreviewTheme === 'dark' ? 'text-white/55' : 'text-[#5B5B5B]'}`}>
                               {lang === 'ar'
-                                ? 'معاينة داكنة للتذييل'
-                                : 'Dark footer preview'}
+                                ? footerPreviewTheme === 'dark'
+                                  ? 'معاينة داكنة للتذييل'
+                                  : 'معاينة فاتحة للتذييل'
+                                : footerPreviewTheme === 'dark'
+                                  ? 'Dark footer preview'
+                                  : 'Light footer preview'}
                             </div>
                           </div>
-                          <div className="text-[11px] font-semibold text-white/45">
-                            {lang === 'ar' ? 'الشريط السفلي' : 'Footer bar'}
+                          <div className={`text-[11px] font-semibold ${footerPreviewTheme === 'dark' ? 'text-white/45' : 'text-[#8A8A8A]'}`}>
+                            {lang === 'ar'
+                              ? footerPreviewTheme === 'dark'
+                                ? 'الشريط السفلي'
+                                : 'الشريط السفلي الفاتح'
+                              : footerPreviewTheme === 'dark'
+                                ? 'Footer bar'
+                                : 'Light footer bar'}
                           </div>
                         </div>
                         <div className="flex items-center gap-4 py-4">
@@ -518,7 +552,7 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
                               className="h-16 max-w-[220px] object-contain"
                             />
                           ) : (
-                            <div className="flex h-16 w-full items-center justify-center rounded-xl border border-dashed border-white/10 text-sm text-white/40">
+                            <div className={`flex h-16 w-full items-center justify-center rounded-xl border border-dashed text-sm ${footerPreviewTheme === 'dark' ? 'border-white/10 text-white/40' : 'border-[#D8D1C7] text-[#8A8A8A]'}`}>
                               {lang === 'ar' ? 'لا يوجد شعار للتذييل بعد' : 'No footer logo yet'}
                             </div>
                           )}
