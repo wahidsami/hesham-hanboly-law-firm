@@ -101,6 +101,7 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
   const [siteSettings, setSiteSettings] = useState<SiteSettingsRecord | null>(null);
   const [selectedSlideId, setSelectedSlideId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [activeSettingsSection, setActiveSettingsSection] = useState<'navbar' | 'about' | 'statistics' | 'team' | 'contact' | 'doctorShield'>('navbar');
   const heroSectionRef = useRef<HTMLElement | null>(null);
   const settingsRefs = {
     navbar: useRef<HTMLElement | null>(null),
@@ -142,7 +143,7 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
     { id: 'navbar', label: 'Navbar / Footer', ref: settingsRefs.navbar },
     { id: 'about', label: 'About section', ref: settingsRefs.about },
     { id: 'statistics', label: 'Statistics', ref: settingsRefs.statistics },
-    { id: 'team', label: 'Team section', ref: settingsRefs.team },
+    { id: 'team', label: 'Meet our legal counsel', ref: settingsRefs.team },
     { id: 'contact', label: 'Contact section', ref: settingsRefs.contact },
     { id: 'doctorShield', label: 'Doctor Shield', ref: settingsRefs.doctorShield },
   ] as const;
@@ -221,7 +222,14 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
               <button
                 key={section.id}
                 type="button"
-                onClick={() => scrollToSection(section.ref)}
+                onClick={() => {
+                  if (section.id === 'hero') {
+                    scrollToSection(section.ref);
+                    return;
+                  }
+                  setActiveSettingsSection(section.id === 'team' ? 'team' : section.id === 'doctorShield' ? 'doctorShield' : section.id as typeof activeSettingsSection);
+                  scrollToSection(section.ref);
+                }}
                 className="rounded-full border border-[#D8D1C7] bg-[#FBF7F0] px-4 py-2 text-xs font-semibold text-[#1E1E1E] transition hover:border-[#A56A1E] hover:text-[#A56A1E]"
               >
                 {section.label}
@@ -367,7 +375,32 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
                   <h3 className="mt-1 text-2xl font-extrabold text-[#1E1E1E]">Section text and button labels</h3>
                 </div>
 
-                <section ref={settingsRefs.navbar}>
+                <div className="flex flex-wrap gap-2 rounded-2xl border border-[#E8E0D3] bg-[#FBF7F0] p-2">
+                  {[
+                    ['navbar', 'Navbar / Footer'],
+                    ['about', 'About'],
+                    ['statistics', 'Statistics'],
+                    ['team', 'Meet our legal counsel'],
+                    ['contact', 'Contact'],
+                    ['doctorShield', 'Doctor Shield'],
+                  ].map(([id, label]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setActiveSettingsSection(id as typeof activeSettingsSection)}
+                      className="rounded-full px-4 py-2 text-xs font-semibold transition"
+                      style={{
+                        background: activeSettingsSection === id ? '#121212' : 'transparent',
+                        color: activeSettingsSection === id ? '#fff' : '#1E1E1E',
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {activeSettingsSection === 'navbar' && (
+                  <section ref={settingsRefs.navbar}>
                   <Group title="Navbar / Footer" description="These texts control the visible CTA and footer copy on the public site.">
                   <div className="grid gap-4 md:grid-cols-2">
                     <HomeField label="Navbar CTA (EN)" value={siteSettings.navbarCtaEn} onChange={(value) => setSiteSettings({ ...siteSettings, navbarCtaEn: value })} />
@@ -380,9 +413,11 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
                     <HomeField label="Email" value={siteSettings.email} onChange={(value) => setSiteSettings({ ...siteSettings, email: value })} />
                   </div>
                   </Group>
-                </section>
+                  </section>
+                )}
 
-                <section ref={settingsRefs.about}>
+                {activeSettingsSection === 'about' && (
+                  <section ref={settingsRefs.about}>
                   <Group title="About section" description="Controls the homepage About area.">
                   <div className="grid gap-4 md:grid-cols-2">
                     <HomeField label="Badge (EN)" value={siteSettings.aboutSectionBadgeEn} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionBadgeEn: value })} />
@@ -399,9 +434,11 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
                     <HomeField label="Button (AR)" value={siteSettings.aboutSectionButtonAr} onChange={(value) => setSiteSettings({ ...siteSettings, aboutSectionButtonAr: value })} dir="rtl" />
                   </div>
                   </Group>
-                </section>
+                  </section>
+                )}
 
-                <section ref={settingsRefs.statistics}>
+                {activeSettingsSection === 'statistics' && (
+                  <section ref={settingsRefs.statistics}>
                   <Group title="Statistics section" description="Controls the data callouts on the homepage.">
                   <div className="grid gap-4 md:grid-cols-2">
                     <HomeField label="Badge (EN)" value={siteSettings.statisticsBadgeEn} onChange={(value) => setSiteSettings({ ...siteSettings, statisticsBadgeEn: value })} />
@@ -415,10 +452,12 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
                     <HomeField label="Support (AR)" value={siteSettings.statisticsSupportAr} onChange={(value) => setSiteSettings({ ...siteSettings, statisticsSupportAr: value })} dir="rtl" />
                   </div>
                   </Group>
-                </section>
+                  </section>
+                )}
 
-                <section ref={settingsRefs.team}>
-                  <Group title="Team section" description="Controls the homepage team block text.">
+                {activeSettingsSection === 'team' && (
+                  <section ref={settingsRefs.team}>
+                  <Group title="Meet our legal counsel" description="Controls the homepage team block text.">
                   <div className="grid gap-4 md:grid-cols-2">
                     <HomeField label="Badge (EN)" value={siteSettings.teamSectionBadgeEn} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionBadgeEn: value })} />
                     <HomeField label="Badge (AR)" value={siteSettings.teamSectionBadgeAr} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionBadgeAr: value })} dir="rtl" />
@@ -430,9 +469,11 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
                     <HomeField label="CTA (AR)" value={siteSettings.teamSectionCtaAr} onChange={(value) => setSiteSettings({ ...siteSettings, teamSectionCtaAr: value })} dir="rtl" />
                   </div>
                   </Group>
-                </section>
+                  </section>
+                )}
 
-                <section ref={settingsRefs.contact}>
+                {activeSettingsSection === 'contact' && (
+                  <section ref={settingsRefs.contact}>
                   <Group title="Contact section" description="Controls the homepage contact block text.">
                   <div className="grid gap-4 md:grid-cols-2">
                     <HomeField label="Badge (EN)" value={siteSettings.contactSectionBadgeEn} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionBadgeEn: value })} />
@@ -449,9 +490,11 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
                     <HomeField label="Form desc (AR)" value={siteSettings.contactSectionFormDescAr} onChange={(value) => setSiteSettings({ ...siteSettings, contactSectionFormDescAr: value })} multiline dir="rtl" />
                   </div>
                   </Group>
-                </section>
+                  </section>
+                )}
 
-                <section ref={settingsRefs.doctorShield}>
+                {activeSettingsSection === 'doctorShield' && (
+                  <section ref={settingsRefs.doctorShield}>
                   <Group title="Doctor Shield promo" description="Controls the special Doctor Shield promo block on the homepage.">
                   <div className="grid gap-4 md:grid-cols-2">
                     <HomeField label="Badge (EN)" value={siteSettings.doctorShieldBadgeEn} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldBadgeEn: value })} />
@@ -472,7 +515,8 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
                     <HomeField label="Circle note (AR)" value={siteSettings.doctorShieldCircleNoteAr} onChange={(value) => setSiteSettings({ ...siteSettings, doctorShieldCircleNoteAr: value })} dir="rtl" />
                   </div>
                   </Group>
-                </section>
+                  </section>
+                )}
 
                 <div className="flex flex-wrap items-center gap-3">
                   <button
