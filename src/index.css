@@ -1,0 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Cairo", sans-serif;
+  --font-sans: "Cairo", system-ui, -apple-system, sans-serif;
+  --font-mono: "Cairo", sans-serif;
+  
+  --color-bg-primary: #F1ECE3;
+  --color-bg-secondary: #F8F5EF;
+  --color-text-primary: #1E1E1E;
+  --color-text-secondary: #4B4B4B;
+  --color-accent-gold: #A56A1E;
+  --color-accent-brown: #7B5A42;
+  --color-accent-hover: #946B4B;
+  --color-border-soft: #D8D1C7;
+  --color-footer-bg: #121212;
+}
+
+@layer base {
+  body {
+    background-color: #F1ECE3;
+    color: #1E1E1E;
+    font-family: "Cairo", system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+  }
+}
+
+/* Custom premium scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F8F7F4;
+}
+::-webkit-scrollbar-thumb {
+  background: #C8A96B;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #0F172A;
+}
+
+/* Animation utilities */
+.glow-effect {
+  box-shadow: 0 0 15px rgba(200, 169, 107, 0.15);
+  transition: all 0.3s ease;
+}
+.glow-effect:hover {
+  box-shadow: 0 0 25px rgba(200, 169, 107, 0.35);
+}
+

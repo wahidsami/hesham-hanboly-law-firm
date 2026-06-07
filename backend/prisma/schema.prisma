@@ -1,0 +1,265 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id           String         @id @default(cuid())
+  username     String         @unique
+  passwordHash String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  sessions     AdminSession[]
+}
+
+model AdminSession {
+  id          String     @id @default(cuid())
+  token       String     @unique
+  expiresAt   DateTime
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  adminUserId String
+  adminUser   AdminUser  @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+}
+
+model Asset {
+  id           String    @id @default(cuid())
+  key          String    @unique
+  url          String
+  mimeType     String
+  size         Int
+  originalName  String
+  altAr        String?
+  altEn        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model HeroSlide {
+  id            String   @id
+  badgeAr       String
+  badgeEn       String
+  badgeIcon     String
+  titleArLine1  String
+  titleEnLine1  String
+  titleArLine2  String
+  titleEnLine2  String
+  descriptionAr String
+  descriptionEn String
+  ctaTextAr     String
+  ctaTextEn     String
+  actionType    String
+  actionParam   String?
+  image         String
+  imageAltAr    String
+  imageAltEn    String
+  highlightBox  Json?
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model SiteSettings {
+  id                  String   @id
+  navbarCtaAr         String
+  navbarCtaEn         String
+  doctorShieldBadgeAr String
+  doctorShieldBadgeEn String
+  doctorShieldTitleAr String
+  doctorShieldTitleEn String
+  doctorShieldSubtitleAr String
+  doctorShieldSubtitleEn String
+  doctorShieldDescAr  String
+  doctorShieldDescEn  String
+  doctorShieldBullet1Ar String
+  doctorShieldBullet1En String
+  doctorShieldBullet2Ar String
+  doctorShieldBullet2En String
+  doctorShieldBullet3Ar String
+  doctorShieldBullet3En String
+  doctorShieldBullet4Ar String
+  doctorShieldBullet4En String
+  doctorShieldButtonAr String
+  doctorShieldButtonEn String
+  doctorShieldCircleTitleAr String
+  doctorShieldCircleTitleEn String
+  doctorShieldCirclePriceAr String
+  doctorShieldCirclePriceEn String
+  doctorShieldCircleNoteAr String
+  doctorShieldCircleNoteEn String
+  aboutSectionBadgeAr String
+  aboutSectionBadgeEn String
+  aboutSectionTitleAr String
+  aboutSectionTitleEn String
+  aboutSectionDescAr  String
+  aboutSectionDescEn  String
+  aboutSectionCardTitleAr String
+  aboutSectionCardTitleEn String
+  aboutSectionCardDescAr String
+  aboutSectionCardDescEn String
+  aboutSectionButtonAr String
+  aboutSectionButtonEn String
+  statisticsBadgeAr   String
+  statisticsBadgeEn   String
+  statisticsNumber    String
+  statisticsTitleAr   String
+  statisticsTitleEn   String
+  statisticsDescAr    String
+  statisticsDescEn    String
+  statisticsSupportAr String
+  statisticsSupportEn String
+  teamSectionBadgeAr  String
+  teamSectionBadgeEn  String
+  teamSectionTitleAr  String
+  teamSectionTitleEn  String
+  teamSectionDescAr   String
+  teamSectionDescEn   String
+  teamFounderBadgeAr  String
+  teamFounderBadgeEn  String
+  teamFounderNameAr   String
+  teamFounderNameEn   String
+  teamFounderRoleAr   String
+  teamFounderRoleEn   String
+  teamFounderIntroAr  String
+  teamFounderIntroEn  String
+  teamSectionCtaAr    String
+  teamSectionCtaEn    String
+  contactSectionBadgeAr String
+  contactSectionBadgeEn String
+  contactSectionTitleAr String
+  contactSectionTitleEn String
+  contactSectionDescAr String
+  contactSectionDescEn String
+  contactSectionOfficeTitleAr String
+  contactSectionOfficeTitleEn String
+  contactSectionAddressHeadAr String
+  contactSectionAddressHeadEn String
+  contactSectionPhoneLabelAr String
+  contactSectionPhoneLabelEn String
+  contactSectionEmailLabelAr String
+  contactSectionEmailLabelEn String
+  contactSectionSecurityAr String
+  contactSectionSecurityEn String
+  contactSectionFormTitleAr String
+  contactSectionFormTitleEn String
+  contactSectionFormDescAr String
+  contactSectionFormDescEn String
+  aboutHeroBadgeAr    String
+  aboutHeroBadgeEn    String
+  aboutHeroTitleAr    String
+  aboutHeroTitleEn    String
+  aboutHeroDescAr     String
+  aboutHeroDescEn     String
+  teamHeroBadgeAr     String
+  teamHeroBadgeEn     String
+  teamHeroTitleAr     String
+  teamHeroTitleEn     String
+  teamHeroDescAr      String
+  teamHeroDescEn      String
+  contactHeroBadgeAr String
+  contactHeroBadgeEn String
+  contactHeroTitleAr String
+  contactHeroTitleEn String
+  contactHeroDescAr  String
+  contactHeroDescEn  String
+  footerDescriptionAr String
+  footerDescriptionEn String
+  addressAr         String
+  addressEn         String
+  email             String
+  phone             String
+  copyrightAr       String
+  copyrightEn       String
+  footerBadgeAr     String
+  footerBadgeEn     String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model CmsPage {
+  id          String   @id
+  titleAr     String
+  titleEn     String
+  slug        String   @unique
+  status      String
+  navVisible  Boolean  @default(false)
+  blocksCount Int      @default(0)
+  author      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model NavItem {
+  id             String   @id
+  pageId         String   @unique
+  labelAr        String
+  labelEn        String
+  url            String
+  desktopVisible Boolean  @default(true)
+  mobileVisible  Boolean  @default(true)
+  order          Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model CmsRevision {
+  id        String   @id
+  pageId    String
+  label     String
+  status    String
+  blocks    Json
+  author    String
+  note      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Article {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  titleAr      String
+  titleEn      String
+  excerptAr    String
+  excerptEn    String
+  categoryAr   String
+  categoryEn   String
+  authorAr     String
+  authorEn     String
+  date         String
+  readTimeAr   String
+  readTimeEn   String
+  bodyAr       String
+  bodyEn       String
+  imageUrl     String
+  published    Boolean  @default(true)
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model PracticeArea {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  categorySlug   String
+  titleAr        String
+  titleEn        String
+  categoryAr     String
+  categoryEn     String
+  shortDescAr    String
+  shortDescEn    String
+  aboutAr        Json
+  aboutEn        Json
+  features       Json
+  processSteps   Json
+  useCases       Json
+  faq            Json
+  imageUrl       String?
+  published      Boolean  @default(true)
+  order          Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
