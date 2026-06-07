@@ -28,6 +28,7 @@ interface LeftPanelProps {
   onDeleteBlock: (id: string) => void;
   onAddBlock: () => void;
   lang: Lang;
+  allowBlockEditing?: boolean;
 }
 
 interface DragItem { id: string; index: number; }
@@ -131,6 +132,7 @@ export function LeftPanel({
   pages, selectedPageId, onSelectPage, onNewPage,
   blocks, selectedBlockId, onSelectBlock, onMoveBlock, onToggleCollapse,
   onDuplicateBlock, onDeleteBlock, onAddBlock, lang,
+  allowBlockEditing = true,
 }: LeftPanelProps) {
   const selectedPage = pages.find((p) => p.id === selectedPageId);
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
@@ -237,21 +239,27 @@ export function LeftPanel({
         </div>
         {/* Add block button */}
         <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
-          <button
-            onClick={onAddBlock}
-            style={{
-              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              padding: '8px', borderRadius: 6,
-              background: 'var(--accent)', border: '1px dashed rgba(196,127,23,0.4)',
-              cursor: 'pointer', fontSize: 12, fontWeight: 500,
-              color: 'var(--accent-foreground)', fontFamily: 'Inter, sans-serif',
-            }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#FDF3DC'; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--accent)'; }}
-          >
-            <Plus size={13} />
-            Add Block
-          </button>
+          {allowBlockEditing ? (
+            <button
+              onClick={onAddBlock}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                padding: '8px', borderRadius: 6,
+                background: 'var(--accent)', border: '1px dashed rgba(196,127,23,0.4)',
+                cursor: 'pointer', fontSize: 12, fontWeight: 500,
+                color: 'var(--accent-foreground)', fontFamily: 'Inter, sans-serif',
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#FDF3DC'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--accent)'; }}
+            >
+              <Plus size={13} />
+              Add Block
+            </button>
+          ) : (
+            <div style={{ border: '1px dashed var(--border)', borderRadius: 8, padding: '10px 12px', background: 'var(--muted)', color: 'var(--muted-foreground)', fontSize: 12, lineHeight: 1.5 }}>
+              Homepage content is edited in the center panel. Use the Hero slides and section copy editor there.
+            </div>
+          )}
         </div>
       </div>
     </aside>

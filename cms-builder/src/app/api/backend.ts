@@ -11,6 +11,7 @@ import type {
   ArticleStatus,
   PracticeAreaStatus,
 } from './types';
+import type { HeroSlideRecord, SiteContent, SiteSettingsRecord } from '../../../../../src/types';
 
 type BackendArticle = {
   id: string;
@@ -433,6 +434,8 @@ export const backendApi = {
     }),
   authMe: () =>
     requestJson<{ authenticated: boolean; username?: string }>('/api/auth/me'),
+  getContent: () =>
+    requestJson<SiteContent>('/api/content'),
 
   listArticles: async (): Promise<Article[]> => {
     const response = await requestJson<BackendArticle[]>('/api/admin/articles');
@@ -535,6 +538,16 @@ export const backendApi = {
     const duplicate = { ...practiceArea, id: duplicateSlug.replace(/^\//, ''), slug: duplicateSlug, status: 'draft' as PracticeAreaStatus };
     return backendApi.createPracticeArea(duplicate);
   },
+  saveHeroSlides: (heroSlides: HeroSlideRecord[]) =>
+    requestJson<SiteContent>('/api/admin/hero-slides', {
+      method: 'PUT',
+      body: JSON.stringify({ heroSlides }),
+    }),
+  saveSiteSettings: (siteSettings: SiteSettingsRecord) =>
+    requestJson<SiteContent>('/api/admin/site-settings', {
+      method: 'PUT',
+      body: JSON.stringify(siteSettings),
+    }),
 
   listPages: async (): Promise<ApiPage[]> => {
     const response = await requestJson<BackendPage[]>('/api/admin/pages');

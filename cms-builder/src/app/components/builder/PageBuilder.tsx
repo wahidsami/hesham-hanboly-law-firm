@@ -7,6 +7,7 @@ import { LeftPanel } from './LeftPanel';
 import { CenterCanvas, type Viewport } from './CenterCanvas';
 import { RightPanel } from './RightPanel';
 import { BlockLibraryModal } from './BlockLibraryModal';
+import { HomePageEditor } from './HomePageEditor';
 
 interface PageBuilderProps {
   onBack: () => void;
@@ -52,6 +53,36 @@ export function PageBuilder({ onBack, initialLang = 'en', initialPages, initialS
   const blocks = selectedPage.blocks;
   const selectedBlock = blocks.find(b => b.id === selectedBlockId) ?? null;
   const isPersistedPage = persistedPageIds.has(selectedPage.id);
+  const isHomepage = ['/', 'home'].includes(selectedPage.slug) || selectedPage.titleEn.toLowerCase() === 'home';
+  const normalizedPageSlug = selectedPage.slug.replace(/^\/+/, '').toLowerCase();
+
+  const pageShortcuts = (() => {
+    if (normalizedPageSlug === 'about') {
+      return [
+        { label: 'Hero copy', note: 'Use Home → Homepage settings', action: () => setSelectedPageId(pages.find((page) => page.slug === '/' || page.slug === 'home')?.id || selectedPageId) },
+        { label: 'Company section', type: 'image-text' as BlockType },
+        { label: 'Goals section', type: 'cards' as BlockType },
+        { label: 'CTA section', type: 'cta' as BlockType },
+      ];
+    }
+    if (normalizedPageSlug === 'team') {
+      return [
+        { label: 'Hero copy', note: 'Use Home → Homepage settings', action: () => setSelectedPageId(pages.find((page) => page.slug === '/' || page.slug === 'home')?.id || selectedPageId) },
+        { label: 'Leadership section', type: 'team' as BlockType },
+        { label: 'Intro section', type: 'rich-text' as BlockType },
+        { label: 'CTA section', type: 'cta' as BlockType },
+      ];
+    }
+    if (normalizedPageSlug === 'contact') {
+      return [
+        { label: 'Hero copy', note: 'Use Home → Homepage settings', action: () => setSelectedPageId(pages.find((page) => page.slug === '/' || page.slug === 'home')?.id || selectedPageId) },
+        { label: 'Offices section', type: 'contact' as BlockType },
+        { label: 'FAQ section', type: 'faq' as BlockType },
+        { label: 'CTA section', type: 'cta' as BlockType },
+      ];
+    }
+    return [];
+  })();
 
   // ── Page mutations ──────────────────────────────────────────────────────────
   function updatePage(id: string, patch: Partial<BuilderPage>) {
@@ -178,6 +209,15 @@ export function PageBuilder({ onBack, initialLang = 'en', initialPages, initialS
     updatePage(selectedPageId, { blocks: [...blocks, block] });
     setHasUnsavedChanges(true);
     setSelectedBlockId(block.id);
+  }
+
+  function focusOrAddBlock(type: BlockType) {
+    const existing = blocks.find((block) => block.type === type);
+    if (existing) {
+      setSelectedBlockId(existing.id);
+      return;
+    }
+    addBlock(type);
   }
 
   function deleteBlock(id: string) {
@@ -466,25 +506,63 @@ export function PageBuilder({ onBack, initialLang = 'en', initialPages, initialS
             onSelectBlock={setSelectedBlockId}
             onMoveBlock={moveBlock}
             onToggleCollapse={toggleCollapse}
-            onDuplicateBlock={duplicateBlock}
-            onDeleteBlock={deleteBlock}
-            onAddBlock={() => setShowBlockLibrary(true)}
-            lang={lang}
+          onDuplicateBlock={duplicateBlock}
+          onDeleteBlock={deleteBlock}
+          onAddBlock={() => setShowBlockLibrary(true)}
+          lang={lang}
+          allowBlockEditing={!isHomepage}
           />
         )}
 
-        <CenterCanvas
-          blocks={blocks}
-          lang={lang}
-          selectedBlockId={selectedBlockId}
-          onSelectBlock={setSelectedBlockId}
-          pageTitle={lang === 'ar' ? selectedPage.titleAr : selectedPage.titleEn}
-          pageSlug={selectedPage.slug}
-          previewMode={previewMode}
-          viewport={viewport}
-          onViewportChange={setViewport}
-          onExitPreview={handleExitPreview}
-        />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          {pageShortcuts.length > 0 && !previewMode && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '10px 12px', borderBottom: '1px solid var(--border)', background: 'var(--card)', alignItems: 'center' }}>
+              <span style={{ fontSize: 10, fontFamily: 'DM Mono, monospace', color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                Quick sections
+              </span>
+              {pageShortcuts.map((shortcut) => (
+                <button
+                  key={shortcut.label}
+                  type="button"
+                  onClick={() => {
+                    if ('action' in shortcut && shortcut.action) {
+                      shortcut.action();
+                      return;
+                    }
+                    if ('type' in shortcut && shortcut.type) {
+                      focusOrAddBlock(shortcut.type);
+                    }
+                  }}
+                  className="rounded-full border border-[#D8D1C7] bg-[#FBF7F0] px-3 py-2 text-xs font-semibold text-[#1E1E1E]"
+                  title={shortcut.note}
+                >
+                  {shortcut.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {isHomepage ? (
+            <HomePageEditor
+              pageTitle={lang === 'ar' ? selectedPage.titleAr : selectedPage.titleEn}
+              pageSlug={selectedPage.slug}
+              lang={lang}
+            />
+          ) : (
+            <CenterCanvas
+              blocks={blocks}
+              lang={lang}
+              selectedBlockId={selectedBlockId}
+              onSelectBlock={setSelectedBlockId}
+              pageTitle={lang === 'ar' ? selectedPage.titleAr : selectedPage.titleEn}
+              pageSlug={selectedPage.slug}
+              previewMode={previewMode}
+              viewport={viewport}
+              onViewportChange={setViewport}
+              onExitPreview={handleExitPreview}
+            />
+          )}
+        </div>
 
         {/* Right panel — hidden in preview mode */}
         {!previewMode && (
