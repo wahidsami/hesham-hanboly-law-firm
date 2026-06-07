@@ -158,6 +158,39 @@ type MediaAssetRecord = {
   usedInPages: string[];
 };
 
+const collectReferencedUrls = (value: unknown, urls: Set<string>) => {
+  if (!value) {
+    return;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed && /^(\/uploads\/|https?:\/\/|\/src\/assets\/)/.test(trimmed)) {
+      urls.add(trimmed);
+    }
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectReferencedUrls(item, urls));
+    return;
+  }
+
+  if (typeof value === 'object') {
+    Object.entries(value as Record<string, unknown>).forEach(([key, entry]) => {
+      if (typeof entry === 'string') {
+        const trimmed = entry.trim();
+        if (trimmed && ['imageUrl', 'image', 'url', 'thumbnailUrl'].includes(key)) {
+          urls.add(trimmed);
+        }
+        return;
+      }
+
+      collectReferencedUrls(entry, urls);
+    });
+  }
+};
+
 const requireText = (value: unknown, fieldName: string) => {
   if (typeof value !== 'string' || value.trim().length === 0) {
     throw new Error(`${fieldName} is required in both languages.`);
@@ -268,7 +301,7 @@ export const cmsRevisionToRecord = (revision: {
   note: revision.note,
 });
 
-export const mediaAssetToRecord = (asset: Asset): MediaAssetRecord => ({
+export const mediaAssetToRecord = (asset: Asset, usedInPages: string[] = []): MediaAssetRecord => ({
   id: asset.id,
   filename: asset.originalName,
   url: asset.url,
@@ -286,7 +319,7 @@ export const mediaAssetToRecord = (asset: Asset): MediaAssetRecord => ({
   altAr: asset.altAr || '',
   uploadedAt: asset.createdAt.toISOString(),
   uploadedBy: 'CMS Editor',
-  usedInPages: [],
+  usedInPages,
 });
 
 export const heroSlideToRecord = (heroSlide: HeroSlide): HeroSlideRecord => ({
@@ -789,9 +822,76 @@ export const listCmsRevisions = async (pageId: string) =>
   })).map(cmsRevisionToRecord);
 
 export const listMediaAssets = async () =>
-  (await prisma.asset.findMany({
-    orderBy: [{ createdAt: 'desc' }, { updatedAt: 'desc' }],
-  })).map(mediaAssetToRecord);
+  {
+    const [assets, cmsPages, revisions, heroSlides, siteSettings] = await Promise.all([
+      prisma.asset.findMany({
+        orderBy: [{ createdAt: 'desc' }, { updatedAt: 'desc' }],
+      }),
+      prisma.cmsPage.findMany({
+        select: {
+          id: true,
+          slug: true,
+          titleAr: true,
+          titleEn: true,
+        },
+      }),
+      prisma.cmsRevision.findMany({
+        orderBy: [{ createdAt: 'desc' }],
+        select: {
+          pageId: true,
+          blocks: true,
+        },
+      }),
+      prisma.heroSlide.findMany({
+        select: {
+          image: true,
+        },
+      }),
+      prisma.siteSettings.findFirst({
+        select: {
+          teamFounderImageUrl: true,
+        },
+      }),
+    ]);
+
+    const usageByUrl = new Map<string, Set<string>>();
+    const rememberUsage = (url: unknown, pageId: string) => {
+      if (typeof url !== 'string') {
+        return;
+      }
+      const trimmed = url.trim();
+      if (!trimmed) {
+        return;
+      }
+      const existing = usageByUrl.get(trimmed) || new Set<string>();
+      existing.add(pageId);
+      usageByUrl.set(trimmed, existing);
+    };
+
+    const latestBlocksByPage = new Map<string, unknown[]>();
+    for (const revision of revisions) {
+      if (!latestBlocksByPage.has(revision.pageId)) {
+        latestBlocksByPage.set(revision.pageId, Array.isArray(revision.blocks) ? revision.blocks : []);
+      }
+    }
+
+    for (const page of cmsPages) {
+      const blocks = latestBlocksByPage.get(page.id) || [];
+      const blockUrls = new Set<string>();
+      blocks.forEach((block) => collectReferencedUrls(block, blockUrls));
+      blockUrls.forEach((url) => rememberUsage(url, page.id));
+    }
+
+    heroSlides.forEach((slide, index) => {
+      rememberUsage(slide.image, `hero-slide-${index + 1}`);
+    });
+
+    if (siteSettings?.teamFounderImageUrl) {
+      rememberUsage(siteSettings.teamFounderImageUrl, 'site-settings-team');
+    }
+
+    return assets.map((asset) => mediaAssetToRecord(asset, Array.from(usageByUrl.get(asset.url) || [])));
+  };
 
 export const saveCmsPage = async (originalSlug: string | undefined, body: unknown) => {
   const existing = originalSlug ? await prisma.cmsPage.findUnique({ where: { slug: originalSlug } }) : null;
