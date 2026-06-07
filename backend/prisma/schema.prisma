@@ -68,6 +68,9 @@ model SiteSettings {
   logoImageUrl        String   @default("")
   logoImageAltAr      String   @default("شعار شركة هشام حسن حنبولي الدولية")
   logoImageAltEn      String   @default("Hesham H. Hanboly International logo")
+  footerLogoImageUrl  String   @default("")
+  footerLogoImageAltAr String  @default("شعار التذييل لشركة هشام حسن حنبولي الدولية")
+  footerLogoImageAltEn String  @default("Hesham H. Hanboly International footer logo")
   navbarCtaAr         String
   navbarCtaEn         String
   doctorShieldBadgeAr String

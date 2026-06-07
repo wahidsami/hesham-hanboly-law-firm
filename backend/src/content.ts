@@ -29,6 +29,9 @@ type SiteSettingsRow = {
   logoImageUrl: string | null;
   logoImageAltAr: string | null;
   logoImageAltEn: string | null;
+  footerLogoImageUrl: string | null;
+  footerLogoImageAltAr: string | null;
+  footerLogoImageAltEn: string | null;
   navbarCtaAr: string | null;
   navbarCtaEn: string | null;
   doctorShieldBadgeAr: string | null;
@@ -351,6 +354,9 @@ export const siteSettingsToRecord = (siteSettings: {
   logoImageUrl?: string | null;
   logoImageAltAr?: string | null;
   logoImageAltEn?: string | null;
+  footerLogoImageUrl?: string | null;
+  footerLogoImageAltAr?: string | null;
+  footerLogoImageAltEn?: string | null;
   navbarCtaAr: string;
   navbarCtaEn: string;
   doctorShieldBadgeAr: string;
@@ -470,6 +476,9 @@ export const siteSettingsToRecord = (siteSettings: {
   logoImageUrl: siteSettings.logoImageUrl || '',
   logoImageAltAr: siteSettings.logoImageAltAr || 'شعار شركة هشام حسن حنبولي الدولية',
   logoImageAltEn: siteSettings.logoImageAltEn || 'Hesham H. Hanboly International logo',
+  footerLogoImageUrl: siteSettings.footerLogoImageUrl || '',
+  footerLogoImageAltAr: siteSettings.footerLogoImageAltAr || 'شعار التذييل لشركة هشام حسن حنبولي الدولية',
+  footerLogoImageAltEn: siteSettings.footerLogoImageAltEn || 'Hesham H. Hanboly International footer logo',
   navbarCtaAr: siteSettings.navbarCtaAr,
   navbarCtaEn: siteSettings.navbarCtaEn,
   doctorShieldBadgeAr: siteSettings.doctorShieldBadgeAr,
@@ -753,6 +762,9 @@ export const toSiteContent = async (): Promise<SiteContent> => {
         logoImageUrl: '',
         logoImageAltAr: 'شعار شركة هشام حسن حنبولي الدولية',
         logoImageAltEn: 'Hesham H. Hanboly International logo',
+        footerLogoImageUrl: '',
+        footerLogoImageAltAr: 'شعار التذييل لشركة هشام حسن حنبولي الدولية',
+        footerLogoImageAltEn: 'Hesham H. Hanboly International footer logo',
         navbarCtaAr: 'طلب استشارة',
         navbarCtaEn: 'Book Counsel',
         teamFounderImageUrl: '/src/assets/images/founder_hesham_hanboly_1780491593879.png',
@@ -898,6 +910,12 @@ export const listMediaAssets = async () =>
       rememberUsage(slide.image, `hero-slide-${index + 1}`);
     });
 
+    if (siteSettings?.logoImageUrl) {
+      rememberUsage(siteSettings.logoImageUrl, 'site-settings-logo');
+    }
+    if (siteSettings?.footerLogoImageUrl) {
+      rememberUsage(siteSettings.footerLogoImageUrl, 'site-settings-footer-logo');
+    }
     if (siteSettings?.teamFounderImageUrl) {
       rememberUsage(siteSettings.teamFounderImageUrl, 'site-settings-team');
     }

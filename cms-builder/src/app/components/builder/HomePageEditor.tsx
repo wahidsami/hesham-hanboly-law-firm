@@ -122,6 +122,7 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
   const [selectedSlideId, setSelectedSlideId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [logoPickerOpen, setLogoPickerOpen] = useState(false);
+  const [footerLogoPickerOpen, setFooterLogoPickerOpen] = useState(false);
   const [teamPickerOpen, setTeamPickerOpen] = useState(false);
   const [heroEditorSection, setHeroEditorSection] = useState<'content' | 'image' | 'advanced'>('content');
   const heroSectionRef = useRef<HTMLElement | null>(null);
@@ -451,7 +452,7 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
 
             <Group title="Navbar / Footer" description="These texts control the visible CTA and footer copy on the public site.">
               <div className="grid gap-4 xl:grid-cols-[320px_1fr]">
-                <MiniGroup title="Brand logo" description="Used in both the header and the footer. Upload once here and it will appear everywhere.">
+                <MiniGroup title="Header logo" description="Used in the top navbar. The footer can use a separate version if needed.">
                   <div className="space-y-4">
                     <div className="overflow-hidden rounded-2xl border border-[#D8D1C7] bg-[#FBF7F0]">
                       {siteSettings.logoImageUrl ? (
@@ -486,6 +487,46 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
                       className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#D8D1C7] bg-white px-4 py-3 text-sm font-semibold text-[#1E1E1E]"
                     >
                       Choose logo from media library
+                    </button>
+                  </div>
+                </MiniGroup>
+                <MiniGroup title="Footer logo" description="Use a different version for the footer if the footer is on a dark background. If empty, the header logo is used as a fallback.">
+                  <div className="space-y-4">
+                    <div className="overflow-hidden rounded-2xl border border-[#D8D1C7] bg-[#FBF7F0]">
+                      {(siteSettings.footerLogoImageUrl || siteSettings.logoImageUrl) ? (
+                        <img
+                          src={siteSettings.footerLogoImageUrl || siteSettings.logoImageUrl}
+                          alt={lang === 'ar'
+                            ? siteSettings.footerLogoImageAltAr || siteSettings.logoImageAltAr
+                            : siteSettings.footerLogoImageAltEn || siteSettings.logoImageAltEn}
+                          className="h-40 w-full object-contain bg-white p-4"
+                        />
+                      ) : (
+                        <div className="flex h-40 items-center justify-center text-sm text-[#8A8A8A]">No footer logo selected</div>
+                      )}
+                    </div>
+                    <HomeField
+                      label="Footer logo image URL"
+                      value={siteSettings.footerLogoImageUrl || ''}
+                      onChange={(value) => setSiteSettings({ ...siteSettings, footerLogoImageUrl: value })}
+                    />
+                    <HomeField
+                      label="Footer logo alt (EN)"
+                      value={siteSettings.footerLogoImageAltEn || ''}
+                      onChange={(value) => setSiteSettings({ ...siteSettings, footerLogoImageAltEn: value })}
+                    />
+                    <HomeField
+                      label="Footer logo alt (AR)"
+                      value={siteSettings.footerLogoImageAltAr || ''}
+                      onChange={(value) => setSiteSettings({ ...siteSettings, footerLogoImageAltAr: value })}
+                      dir="rtl"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setFooterLogoPickerOpen(true)}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#D8D1C7] bg-white px-4 py-3 text-sm font-semibold text-[#1E1E1E]"
+                    >
+                      Choose footer logo from media library
                     </button>
                   </div>
                 </MiniGroup>
@@ -733,6 +774,25 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
               logoImageUrl: asset.url,
               logoImageAltEn: nextAltEn,
               logoImageAltAr: nextAltAr,
+            });
+          }}
+          />
+      )}
+
+      {footerLogoPickerOpen && siteSettings && (
+        <ImageAssetPicker
+          open={footerLogoPickerOpen}
+          title="Choose footer logo image"
+          initialUrl={siteSettings.footerLogoImageUrl || siteSettings.logoImageUrl}
+          initialAltEn={siteSettings.footerLogoImageAltEn || siteSettings.logoImageAltEn}
+          initialAltAr={siteSettings.footerLogoImageAltAr || siteSettings.logoImageAltAr}
+          onClose={() => setFooterLogoPickerOpen(false)}
+          onSelect={(asset, nextAltEn, nextAltAr) => {
+            setSiteSettings({
+              ...siteSettings,
+              footerLogoImageUrl: asset.url,
+              footerLogoImageAltEn: nextAltEn,
+              footerLogoImageAltAr: nextAltAr,
             });
           }}
         />

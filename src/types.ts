@@ -200,6 +200,9 @@ export interface SiteSettingsRecord {
   logoImageUrl: string;
   logoImageAltAr: string;
   logoImageAltEn: string;
+  footerLogoImageUrl: string;
+  footerLogoImageAltAr: string;
+  footerLogoImageAltEn: string;
   navbarCtaAr: string;
   navbarCtaEn: string;
   doctorShieldBadgeAr: string;

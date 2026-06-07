@@ -19,6 +19,10 @@ export default function Footer({ currentView = 'home', onNavigate }: FooterProps
   const logoAlt = language === 'ar'
     ? footerSettings?.logoImageAltAr || 'شعار شركة هشام حسن حنبولي الدولية'
     : footerSettings?.logoImageAltEn || 'Hesham H. Hanboly International logo';
+  const footerLogoUrl = footerSettings?.footerLogoImageUrl || footerSettings?.logoImageUrl || '';
+  const footerLogoAlt = language === 'ar'
+    ? footerSettings?.footerLogoImageAltAr || footerSettings?.logoImageAltAr || 'شعار شركة هشام حسن حنبولي الدولية'
+    : footerSettings?.footerLogoImageAltEn || footerSettings?.logoImageAltEn || 'Hesham H. Hanboly International logo';
   const navigationItems = content?.navigation ?? [];
   const coreNavTargets = new Set(['home', 'hero', '/', 'about', 'services', 'practice-areas', 'team', 'articles', 'contact']);
   const extraNavigationItems = navigationItems.filter((item) => !coreNavTargets.has(item.url.replace(/^#/, '').replace(/^\/+|\/+$/g, '').toLowerCase()));
@@ -154,8 +158,8 @@ export default function Footer({ currentView = 'home', onNavigate }: FooterProps
                 variant="light" 
                 showText={true} 
                 emblemSize="h-12 w-12 sm:h-14 sm:w-14" 
-                logoUrl={logoUrl}
-                logoAlt={logoAlt}
+                logoUrl={footerLogoUrl}
+                logoAlt={footerLogoAlt}
                 className="transition-all duration-300 hover:opacity-90"
               />
             </div>
