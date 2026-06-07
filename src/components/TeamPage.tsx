@@ -35,6 +35,17 @@ function toStringList(value: unknown): string[] {
     .filter(Boolean);
 }
 
+function splitParagraphs(value: unknown): string[] {
+  if (typeof value === 'string') {
+    return value
+      .split(/\n\s*\n/)
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean);
+  }
+
+  return toStringList(value);
+}
+
 export default function TeamPage({ onScrollToContact, onBackToHome }: TeamPageProps) {
   const { direction, language, t } = useLanguage();
   const { content } = useSiteContent();
