@@ -124,6 +124,7 @@ function ImageField({
           }}
         />
         <button
+          type="button"
           onClick={() => setPickerOpen(true)}
           style={{
             padding: '7px 10px',
@@ -142,6 +143,7 @@ function ImageField({
       </div>
       <div style={{ display: 'flex', gap: 6 }}>
         <button
+          type="button"
           onClick={() => document.getElementById(fileInputId)?.click()}
           style={{
             padding: '7px 10px',
@@ -227,9 +229,10 @@ function LangTabs({ lang, onSet }: { lang: Lang; onSet: (l: Lang) => void }) {
   return (
     <div style={{ display: 'flex', background: 'var(--input-background)', borderRadius: 5, padding: 2, marginBottom: 16 }}>
       {(['en', 'ar'] as Lang[]).map((l) => (
-        <button
-          key={l}
-          onClick={() => onSet(l)}
+              <button
+                type="button"
+                key={l}
+                onClick={() => onSet(l)}
           style={{
             flex: 1, padding: '5px 0', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontFamily: 'DM Mono, monospace', fontWeight: 600,
             background: lang === l ? '#fff' : 'transparent',
@@ -334,9 +337,10 @@ function ImageTextForm({ d, update, formLang, setFormLang }: { d: Record<string,
         <label style={{ display: 'block', fontSize: 10, color: 'var(--muted-foreground)', fontFamily: 'DM Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Image Position</label>
         <div style={{ display: 'flex', gap: 6 }}>
           {(['image-left', 'image-right'] as const).map((opt) => (
-            <button
-              key={opt}
-              onClick={() => update('layout', opt)}
+              <button
+                type="button"
+                key={opt}
+                onClick={() => update('layout', opt)}
               style={{
                 flex: 1, padding: '6px 0', border: `1px solid ${d.layout === opt ? '#C47F17' : 'var(--border)'}`,
                 borderRadius: 4, background: d.layout === opt ? 'var(--accent)' : 'var(--input-background)',
@@ -374,7 +378,7 @@ function CardsForm({ d, update, formLang, setFormLang }: { d: Record<string, unk
         <label style={{ display: 'block', fontSize: 10, color: 'var(--muted-foreground)', fontFamily: 'DM Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Columns</label>
         <div style={{ display: 'flex', gap: 4 }}>
           {[2, 3, 4].map((n) => (
-            <button key={n} onClick={() => update('columns', n)} style={{ flex: 1, padding: '6px 0', border: `1px solid ${d.columns === n ? '#C47F17' : 'var(--border)'}`, borderRadius: 4, background: d.columns === n ? 'var(--accent)' : 'var(--input-background)', cursor: 'pointer', fontSize: 12, fontFamily: 'DM Mono, monospace', color: d.columns === n ? 'var(--accent-foreground)' : 'var(--muted-foreground)' }}>{n}</button>
+            <button type="button" key={n} onClick={() => update('columns', n)} style={{ flex: 1, padding: '6px 0', border: `1px solid ${d.columns === n ? '#C47F17' : 'var(--border)'}`, borderRadius: 4, background: d.columns === n ? 'var(--accent)' : 'var(--input-background)', cursor: 'pointer', fontSize: 12, fontFamily: 'DM Mono, monospace', color: d.columns === n ? 'var(--accent-foreground)' : 'var(--muted-foreground)' }}>{n}</button>
           ))}
         </div>
       </div>
@@ -384,7 +388,7 @@ function CardsForm({ d, update, formLang, setFormLang }: { d: Record<string, unk
           <div key={item.id} style={{ background: 'var(--input-background)', border: '1px solid var(--border)', borderRadius: 6, padding: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', fontFamily: 'DM Mono, monospace' }}>Card {i + 1}</span>
-              <button onClick={() => update('items', items.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0, display: 'flex' }}><Trash2 size={11} /></button>
+              <button type="button" onClick={() => update('items', items.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0, display: 'flex' }}><Trash2 size={11} /></button>
             </div>
             {formLang === 'en' ? (
               <>
@@ -399,7 +403,7 @@ function CardsForm({ d, update, formLang, setFormLang }: { d: Record<string, unk
             )}
           </div>
         ))}
-        <button onClick={() => update('items', [...items, { id: uid(), titleEn: 'New Card', titleAr: 'بطاقة جديدة', descEn: 'Description', descAr: 'الوصف', icon: 'briefcase' }])} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px', borderRadius: 5, background: 'transparent', border: '1px dashed var(--border)', cursor: 'pointer', fontSize: 12, color: 'var(--muted-foreground)', fontFamily: 'Inter, sans-serif' }}>
+        <button type="button" onClick={() => update('items', [...items, { id: uid(), titleEn: 'New Card', titleAr: 'بطاقة جديدة', descEn: 'Description', descAr: 'الوصف', icon: 'briefcase' }])} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px', borderRadius: 5, background: 'transparent', border: '1px dashed var(--border)', cursor: 'pointer', fontSize: 12, color: 'var(--muted-foreground)', fontFamily: 'Inter, sans-serif' }}>
           <Plus size={12} /> Add Card
         </button>
       </div>
@@ -416,14 +420,14 @@ function StatsForm({ d, update }: { d: Record<string, unknown>; update: (k: stri
         <div key={item.id} style={{ background: 'var(--input-background)', border: '1px solid var(--border)', borderRadius: 6, padding: '10px', marginBottom: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', fontFamily: 'DM Mono, monospace' }}>Stat {i + 1}</span>
-            <button onClick={() => update('items', items.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0, display: 'flex' }}><Trash2 size={11} /></button>
+            <button type="button" onClick={() => update('items', items.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0, display: 'flex' }}><Trash2 size={11} /></button>
           </div>
           <Field label="Value" value={item.value} onChange={(v) => { const next = [...items]; next[i] = { ...item, value: v }; update('items', next); }} mono />
           <Field label="Label (EN)" value={item.labelEn} onChange={(v) => { const next = [...items]; next[i] = { ...item, labelEn: v }; update('items', next); }} />
           <Field label="Label (AR)" value={item.labelAr} onChange={(v) => { const next = [...items]; next[i] = { ...item, labelAr: v }; update('items', next); }} rtl />
         </div>
       ))}
-      <button onClick={() => update('items', [...items, { id: uid(), value: '0', labelEn: 'New Stat', labelAr: 'إحصائية جديدة' }])} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '8px', borderRadius: 5, background: 'transparent', border: '1px dashed var(--border)', cursor: 'pointer', fontSize: 12, color: 'var(--muted-foreground)', fontFamily: 'Inter, sans-serif' }}>
+      <button type="button" onClick={() => update('items', [...items, { id: uid(), value: '0', labelEn: 'New Stat', labelAr: 'إحصائية جديدة' }])} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '8px', borderRadius: 5, background: 'transparent', border: '1px dashed var(--border)', cursor: 'pointer', fontSize: 12, color: 'var(--muted-foreground)', fontFamily: 'Inter, sans-serif' }}>
         <Plus size={12} /> Add Stat
       </button>
     </>
@@ -476,7 +480,7 @@ function TestimonialsForm({ d, update, formLang, setFormLang }: { d: Record<stri
         <div key={item.id} style={{ background: 'var(--input-background)', border: '1px solid var(--border)', borderRadius: 6, padding: '10px', marginBottom: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', fontFamily: 'DM Mono, monospace' }}>Quote {i + 1}</span>
-            <button onClick={() => update('items', items.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0, display: 'flex' }}><Trash2 size={11} /></button>
+            <button type="button" onClick={() => update('items', items.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0, display: 'flex' }}><Trash2 size={11} /></button>
           </div>
           <Field label="Author" value={item.author} onChange={(v) => { const next = [...items]; next[i] = { ...item, author: v }; update('items', next); }} />
           {formLang === 'en' ? (
@@ -492,7 +496,7 @@ function TestimonialsForm({ d, update, formLang, setFormLang }: { d: Record<stri
           )}
         </div>
       ))}
-      <button onClick={() => update('items', [...items, { id: uid(), quoteEn: 'Quote here', quoteAr: 'الاقتباس هنا', author: 'Client Name', roleEn: 'Role', roleAr: 'الدور' }])} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '8px', borderRadius: 5, background: 'transparent', border: '1px dashed var(--border)', cursor: 'pointer', fontSize: 12, color: 'var(--muted-foreground)', fontFamily: 'Inter, sans-serif' }}>
+      <button type="button" onClick={() => update('items', [...items, { id: uid(), quoteEn: 'Quote here', quoteAr: 'الاقتباس هنا', author: 'Client Name', roleEn: 'Role', roleAr: 'الدور' }])} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '8px', borderRadius: 5, background: 'transparent', border: '1px dashed var(--border)', cursor: 'pointer', fontSize: 12, color: 'var(--muted-foreground)', fontFamily: 'Inter, sans-serif' }}>
         <Plus size={12} /> Add Testimonial
       </button>
     </>
@@ -521,7 +525,7 @@ function TeamForm({ d, update, formLang, setFormLang }: { d: Record<string, unkn
         <div key={member.id} style={{ background: 'var(--input-background)', border: '1px solid var(--border)', borderRadius: 6, padding: '10px', marginBottom: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', fontFamily: 'DM Mono, monospace' }}>Member {i + 1}</span>
-            <button onClick={() => update('items', items.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0, display: 'flex' }}><Trash2 size={11} /></button>
+            <button type="button" onClick={() => update('items', items.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0, display: 'flex' }}><Trash2 size={11} /></button>
           </div>
           <ImageField
             label="Photo"
@@ -544,7 +548,7 @@ function TeamForm({ d, update, formLang, setFormLang }: { d: Record<string, unkn
           )}
         </div>
       ))}
-      <button onClick={() => update('items', [...items, { id: uid(), nameEn: 'Team Member', nameAr: 'عضو الفريق', roleEn: 'Partner', roleAr: 'شريك', bioEn: '', bioAr: '', imageUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&auto=format' }])} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '8px', borderRadius: 5, background: 'transparent', border: '1px dashed var(--border)', cursor: 'pointer', fontSize: 12, color: 'var(--muted-foreground)', fontFamily: 'Inter, sans-serif' }}>
+      <button type="button" onClick={() => update('items', [...items, { id: uid(), nameEn: 'Team Member', nameAr: 'عضو الفريق', roleEn: 'Partner', roleAr: 'شريك', bioEn: '', bioAr: '', imageUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&auto=format' }])} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '8px', borderRadius: 5, background: 'transparent', border: '1px dashed var(--border)', cursor: 'pointer', fontSize: 12, color: 'var(--muted-foreground)', fontFamily: 'Inter, sans-serif' }}>
         <Plus size={12} /> Add Member
       </button>
     </>
@@ -697,7 +701,7 @@ function GalleryForm({ d, update, formLang, setFormLang }: { d: Record<string, u
         <div key={img.id} style={{ background: 'var(--input-background)', border: '1px solid var(--border)', borderRadius: 6, padding: '10px', marginBottom: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', fontFamily: 'DM Mono, monospace' }}>Image {i + 1}</span>
-            <button onClick={() => update('items', items.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0, display: 'flex' }}><Trash2 size={11} /></button>
+            <button type="button" onClick={() => update('items', items.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0, display: 'flex' }}><Trash2 size={11} /></button>
           </div>
           <ImageField
             label="Image"
@@ -711,7 +715,7 @@ function GalleryForm({ d, update, formLang, setFormLang }: { d: Record<string, u
           }
         </div>
       ))}
-      <button onClick={() => update('items', [...items, { id: uid(), imageUrl: '', captionEn: 'Image', captionAr: 'صورة' }])} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '8px', borderRadius: 5, background: 'transparent', border: '1px dashed var(--border)', cursor: 'pointer', fontSize: 12, color: 'var(--muted-foreground)', fontFamily: 'Inter, sans-serif' }}>
+        <button type="button" onClick={() => update('items', [...items, { id: uid(), imageUrl: '', captionEn: 'Image', captionAr: 'صورة' }])} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '8px', borderRadius: 5, background: 'transparent', border: '1px dashed var(--border)', cursor: 'pointer', fontSize: 12, color: 'var(--muted-foreground)', fontFamily: 'Inter, sans-serif' }}>
         <Plus size={12} /> Add Image
       </button>
     </>

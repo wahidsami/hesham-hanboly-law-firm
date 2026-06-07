@@ -162,6 +162,7 @@ export function ImageAssetPicker({
             <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>Pick an existing image from the library or upload a new one.</div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             style={{
               width: 32,
@@ -184,6 +185,7 @@ export function ImageAssetPicker({
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'flex', gap: 8 }}>
               <button
+                type="button"
                 onClick={() => setTab('library')}
                 style={{
                   padding: '8px 12px',
@@ -198,6 +200,7 @@ export function ImageAssetPicker({
                 Choose from library
               </button>
               <button
+                type="button"
                 onClick={() => setTab('upload')}
                 style={{
                   padding: '8px 12px',
@@ -244,6 +247,7 @@ export function ImageAssetPicker({
                     const active = usageFilter === option.key;
                     return (
                       <button
+                        type="button"
                         key={option.key}
                         onClick={() => setUsageFilter(option.key as typeof usageFilter)}
                         style={{
@@ -278,6 +282,7 @@ export function ImageAssetPicker({
                         const selected = asset.id === selectedId;
                         return (
                           <button
+                            type="button"
                             key={asset.id}
                             onClick={() => {
                               setSelectedId(asset.id);

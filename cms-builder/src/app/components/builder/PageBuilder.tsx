@@ -144,9 +144,18 @@ export function PageBuilder({ onBack, initialLang = 'en', initialPages, initialS
     setPages(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p));
   }
 
-  async function persistPage(page: BuilderPage) {
+  async function persistPage(
+    page: BuilderPage,
+    options: { saveRevision?: boolean; revisionLabel?: string; revisionNote?: string } = {},
+  ) {
     setIsAutoSaving(true);
     try {
+      const nextBlocks = page.blocks.map((block, index) => ({
+        id: block.id,
+        type: block.type,
+        order: index + 1,
+        data: block.data,
+      }));
       const saved = persistedPageIds.has(page.id)
         ? await backendApi.savePage({
             id: page.id,
@@ -159,12 +168,7 @@ export function PageBuilder({ onBack, initialLang = 'en', initialPages, initialS
             seoTitleAr: page.seoTitleAr,
             seoDescEn: page.seoDescEn,
             seoDescAr: page.seoDescAr,
-            blocks: page.blocks.map((block, index) => ({
-              id: block.id,
-              type: block.type,
-              order: index + 1,
-              data: block.data,
-            })),
+            blocks: nextBlocks,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             publishedAt: page.status === 'published' ? new Date().toISOString() : null,
@@ -180,12 +184,7 @@ export function PageBuilder({ onBack, initialLang = 'en', initialPages, initialS
             seoTitleAr: page.seoTitleAr,
             seoDescEn: page.seoDescEn,
             seoDescAr: page.seoDescAr,
-            blocks: page.blocks.map((block, index) => ({
-              id: block.id,
-              type: block.type,
-              order: index + 1,
-              data: block.data,
-            })),
+            blocks: nextBlocks,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             publishedAt: page.status === 'published' ? new Date().toISOString() : null,
@@ -209,9 +208,20 @@ export function PageBuilder({ onBack, initialLang = 'en', initialPages, initialS
                 seoDescAr: saved.seoDescAr,
                 blocks: page.blocks,
               }
-            : item
+          : item
         )
       );
+
+      if (options.saveRevision && page.blocks.length > 0) {
+        await backendApi.saveRevision(saved.slug, {
+          label: options.revisionLabel || `Autosaved — ${new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`,
+          status: saved.status,
+          blocks: JSON.parse(JSON.stringify(page.blocks)),
+          author: 'CMS Editor',
+          note: options.revisionNote || 'Autosaved page content',
+        });
+      }
+
       setHasUnsavedChanges(false);
       return saved;
     } finally {
@@ -325,28 +335,25 @@ export function PageBuilder({ onBack, initialLang = 'en', initialPages, initialS
   // ── Publishing actions ──────────────────────────────────────────────────────
   async function handleSaveDraft() {
     const currentPage = selectedPage;
-    await persistPage(currentPage);
+    await persistPage(currentPage, {
+      saveRevision: true,
+      revisionLabel: `Draft saved — ${new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`,
+      revisionNote: 'Draft saved',
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
-    await backendApi.saveRevision(selectedPage.slug, {
-      label: `Draft saved — ${new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`,
-      status: selectedPage.status,
-      blocks: JSON.parse(JSON.stringify(selectedPage.blocks)),
-      author: 'CMS Editor',
-      note: 'Draft saved',
-    });
   }
 
   function handlePublish() {
     updatePage(selectedPageId, { status: 'published' });
     setHasUnsavedChanges(true);
-    void persistPage({ ...selectedPage, status: 'published' });
+    void persistPage({ ...selectedPage, status: 'published' }, { saveRevision: true, revisionNote: 'Published page content' });
   }
 
   function handleUnpublish() {
     updatePage(selectedPageId, { status: 'draft' });
     setHasUnsavedChanges(true);
-    void persistPage({ ...selectedPage, status: 'draft' });
+    void persistPage({ ...selectedPage, status: 'draft' }, { saveRevision: true, revisionNote: 'Unpublished page content' });
   }
 
   function handlePreview() {
@@ -376,7 +383,7 @@ export function PageBuilder({ onBack, initialLang = 'en', initialPages, initialS
 
     autosaveTimerRef.current = window.setTimeout(() => {
       if (selectedPage) {
-        void persistPage(selectedPage);
+        void persistPage(selectedPage, { saveRevision: true, revisionNote: 'Autosaved page content' });
       }
       autosaveTimerRef.current = null;
     }, 1200);
