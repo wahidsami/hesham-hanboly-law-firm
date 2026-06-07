@@ -1,13 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { 
-  ShieldCheck, 
-  Scale, 
-  Award, 
   User, 
   Bookmark, 
-  GraduationCap, 
-  Building,
   ArrowLeft,
   ArrowRight
 } from 'lucide-react';
@@ -33,17 +28,6 @@ function toStringList(value: unknown): string[] {
   return value
     .map((item) => (typeof item === 'string' ? item.trim() : ''))
     .filter(Boolean);
-}
-
-function splitParagraphs(value: unknown): string[] {
-  if (typeof value === 'string') {
-    return value
-      .split(/\n\s*\n/)
-      .map((paragraph) => paragraph.trim())
-      .filter(Boolean);
-  }
-
-  return toStringList(value);
 }
 
 export default function TeamPage({ onScrollToContact, onBackToHome }: TeamPageProps) {
@@ -78,30 +62,20 @@ export default function TeamPage({ onScrollToContact, onBackToHome }: TeamPagePr
     };
   }, []);
 
-  const teamPageBlocks = useMemo(
-    () => teamCmsPage?.blocks ?? [],
-    [teamCmsPage]
-  );
-
   const teamBlocks = useMemo(
     () => teamCmsPage?.blocks?.filter((block) => block.type === 'team') ?? [],
     [teamCmsPage]
   );
 
-  const teamIntroBlock = useMemo(
-    () => teamPageBlocks.find((block) => block.type === 'image-text')
-      ?? teamPageBlocks.find((block) => block.type === 'rich-text')
-      ?? null,
-    [teamPageBlocks]
+  const teamPageBlocks = useMemo(
+    () => teamCmsPage?.blocks ?? [],
+    [teamCmsPage]
   );
 
   const teamCtaBlock = useMemo(
     () => teamPageBlocks.find((block) => block.type === 'cta') ?? null,
     [teamPageBlocks]
   );
-
-  const teamIntroParagraphsAr = useMemo(() => splitParagraphs(teamIntroBlock?.data?.bodyAr), [teamIntroBlock]);
-  const teamIntroParagraphsEn = useMemo(() => splitParagraphs(teamIntroBlock?.data?.bodyEn), [teamIntroBlock]);
 
   const leadership = useMemo(() => {
     const items = Array.isArray(teamBlocks[0]?.data?.items)
@@ -353,103 +327,6 @@ export default function TeamPage({ onScrollToContact, onBackToHome }: TeamPagePr
               siteSettings?.teamHeroDescEn || 'Specialized legal experts uniting deep scholarly wisdom with rich active advocacy to render prestigious counseling for individuals and industries, maintaining ultimate confidentiality and system security.'
             )}
           </motion.p>
-
-        </div>
-      </section>
-
-
-      {/* 2. ABOUT TEAM COLUMN SECTION */}
-      <section className="py-20 sm:py-28 bg-[#F8F5EF] relative border-b border-[#D8D1C7]/45">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
-            
-            {/* Left Side: Luxury Bureau imagery layout */}
-            <div className="lg:col-span-5 space-y-6 relative order-last lg:order-first">
-              <div className="rounded-2xl bg-[#F1ECE3] border border-[#D8D1C7] p-8 sm:p-10 space-y-6 relative overflow-hidden shadow-sm text-start">
-                
-                {/* Embedded Stylized Scale Layout */}
-                <div className="absolute -top-12 -left-12 opacity-[0.03] text-[#A56A1E] pointer-events-none select-none">
-                  <Scale className="w-64 h-64" />
-                </div>
-
-                <div className="space-y-4">
-                  <Building className="w-10 h-10 text-[#A56A1E] stroke-[1.5]" />
-                  <h3 className="text-xl font-extrabold text-[#1E1E1E]">
-                    {t(
-                      toStringValue(teamIntroBlock?.data?.subheadingAr, 'أروقة الصهر العادية والوقائية'),
-                      toStringValue(teamIntroBlock?.data?.subheadingEn, 'Fortified Dynamic Environments')
-                    )}
-                  </h3>
-                  <p className="text-sm text-[#5B5B5B] font-light leading-relaxed text-justify">
-                    {t(
-                      teamIntroParagraphsAr[0] || 'تلتزم شركة حنبولي الدولية بأعلى درجات الالتزام المهني والتحصين الوقائي لتلبية جميع تطلعات كبرى الشركات والهيئات والمستثمرين في الرياض وبقية المنطقة.',
-                      teamIntroParagraphsEn[0] || 'Hesham H. Hanboly International maintains extreme professional integrity and strategic transactional design to meet the soaring configurations of conglomerates, startups, and global investors.'
-                    )}
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-white/70 border border-[#D8D1C7]/60 flex items-center gap-3">
-                  <Award className="w-5 h-5 text-[#A56A1E] shrink-0" />
-                  <span className="text-xs font-semibold text-[#1E1E1E]">
-                    {t(
-                      toStringValue(teamIntroBlock?.data?.ctaPrimaryLabelAr, 'رؤية وطنية منسجمة مع تطلعات رؤية ٢٠٣٠ القضائية'),
-                      toStringValue(teamIntroBlock?.data?.ctaPrimaryLabelEn, 'National strategy fully in sync with judicial metrics of Saudi Vision 2030')
-                    )}
-                  </span>
-                </div>
-
-              </div>
-
-              {/* Stack effect background decoration */}
-              <div className={`absolute inset-0 bg-[#A56A1E]/5 rounded-2xl transform ${language === 'ar' ? 'translate-x-3' : '-translate-x-3'} translate-y-3 -z-10`} />
-            </div>
-
-            {/* Right Side: Editorial layout for team message */}
-            <div className="lg:col-span-7 space-y-8 text-start">
-              
-              <div className="space-y-4">
-                <span className={`text-xs font-bold text-[#A56A1E] uppercase tracking-wider block ${language === 'ar' ? 'border-r-2 pr-3' : 'border-l-2 pl-3'} border-[#A56A1E]`}>
-                  {t(
-                    toStringValue(teamIntroBlock?.data?.subheadingAr, 'أعضاء الشركة'),
-                    toStringValue(teamIntroBlock?.data?.subheadingEn, 'MEMBERS OF THE FIRM')
-                  )}
-                </span>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E1E1E] leading-tight">
-                  {t(
-                    toStringValue(teamIntroBlock?.data?.headingAr, 'فريق يسخر الكفاءة المعرفية لحسم أعقد الملفات'),
-                    toStringValue(teamIntroBlock?.data?.headingEn, 'Harnessing Multidimensional Caliber to Settle Critical Disputes')
-                  )}
-                </h2>
-                <div className="h-[1.5px] w-12 bg-[#A56A1E]" />
-              </div>
-
-              <p className="text-[#4B4B4B] text-base leading-relaxed text-justify font-light">
-                {t(
-                  teamIntroParagraphsAr[0] || 'تضم شركة هشام حسن حنبولي الدولية للاستشارات القانونية والمحاماة نخبة من المحامين والمستشارين القانونيين ذوي الكفاءة والخبرة في الناحيتين العلمية والعملية كلا في تخصصه وذلك من أجل تقديم خدمة متميزة لعملائنا في كافة المجالات والنواحي القانونية المرتبطة بالشركات والأفراد.',
-                  teamIntroParagraphsEn[0] || 'Hesham H. Hanboly International for Advocacy & Legal Consultations integrates an elite assembly of advocates and advisors of outstanding scientific background and active judicial practice, ensuring unmatched service delivery across corporate litigation, individual cases, and strategic compliance.'
-                )}
-              </p>
-
-              {/* Floating glassmorphism card */}
-              <motion.div
-                whileHover={{ y: -4, boxShadow: '0 12px 30px rgba(165,106,30,0.1)' }}
-                className="rounded-2xl p-6 bg-[#F1ECE3]/60 border border-[#A56A1E]/20 relative overflow-hidden"
-              >
-                {/* Gold Glow particle in background */}
-                <div className="absolute top-0 right-0 w-20 h-20 bg-[#A56A1E]/10 rounded-full blur-xl" />
-                
-                <p className="text-sm text-[#1E1E1E] font-medium leading-relaxed text-justify">
-                  {t(
-                    teamIntroParagraphsAr[1] || 'تعرفوا على مجموعة من أفضل محامين جدة تحت إشراف المحامي هشام حسن حنبولي محامي ومدير عام المركز ومحكم معتمد وعضو لجنة المحامين بالغرفة التجارية بمحافظة جدة.',
-                    teamIntroParagraphsEn[1] || 'Consult with a premium selection of Jeddah’s top-tier advocates commanded under direct management of Attorney Hesham H. Hanboly, certified Arbitrator and member of the Lawyers’ Committee at the Jeddah Chamber of Commerce.'
-                  )}
-                </p>
-              </motion.div>
-
-            </div>
-
-          </div>
 
         </div>
       </section>

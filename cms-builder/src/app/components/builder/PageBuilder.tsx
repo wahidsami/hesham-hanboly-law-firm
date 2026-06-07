@@ -68,9 +68,9 @@ export function PageBuilder({ onBack, initialLang = 'en', initialPages, initialS
     }
     if (normalizedPageSlug === 'team') {
       return [
-        { label: 'Hero copy', note: 'Use Home → Homepage settings', action: () => setSelectedPageId(pages.find((page) => page.slug === '/' || page.slug === 'home')?.id || selectedPageId) },
         { label: 'Leadership section', type: 'team' as BlockType },
-        { label: 'Intro section', type: 'rich-text' as BlockType },
+        { label: 'Consultants section', type: 'team' as BlockType },
+        { label: 'Support section', type: 'team' as BlockType },
         { label: 'CTA section', type: 'cta' as BlockType },
       ];
     }

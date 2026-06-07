@@ -95,6 +95,25 @@ const loadCmsPageBySlug = async (slug: string) => {
   return null;
 };
 
+const sanitizeCmsPageBlocks = (slug: string, blocks: unknown[]) => {
+  const normalizedSlug = slug.replace(/^\/+/, '').toLowerCase();
+  if (!Array.isArray(blocks)) {
+    return [];
+  }
+
+  if (normalizedSlug !== 'team') {
+    return blocks;
+  }
+
+  return blocks.filter((block) => {
+    if (!block || typeof block !== 'object') {
+      return true;
+    }
+    const typedBlock = block as { id?: unknown; type?: unknown };
+    return typedBlock.id !== 'team-intro';
+  });
+};
+
 const assertUniqueArticleSlug = async (slug: string, currentId?: string) => {
   const conflict = await prisma.article.findUnique({ where: { slug } });
   if (conflict && conflict.id !== currentId) {
@@ -478,7 +497,7 @@ app.get(
     const latestRevision = revisions[0];
     response.json({
       ...cmsPageToRecord(page),
-      blocks: latestRevision?.blocks || [],
+      blocks: sanitizeCmsPageBlocks(request.params.slug, latestRevision?.blocks || []),
     });
   }),
 );
@@ -615,7 +634,13 @@ app.get(
       return;
     }
 
-    response.json(await listCmsRevisions(page.id));
+    const revisions = await listCmsRevisions(page.id);
+    response.json(
+      revisions.map((revision) => ({
+        ...revision,
+        blocks: sanitizeCmsPageBlocks(request.params.slug, revision.blocks || []),
+      }))
+    );
   }),
 );
 

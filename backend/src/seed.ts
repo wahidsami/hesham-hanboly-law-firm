@@ -213,7 +213,7 @@ export const seedDatabase = async () => {
       { id: 'page-home', titleAr: 'الرئيسية', titleEn: 'Home', slug: '/', status: 'published', navVisible: true, blocksCount: 8, author: 'Sarah A.' },
       { id: 'page-about', titleAr: 'من نحن', titleEn: 'About Us', slug: '/about', status: 'published', navVisible: true, blocksCount: 5, author: 'Karim M.' },
       { id: 'page-services', titleAr: 'خدماتنا', titleEn: 'Our Services', slug: '/services', status: 'published', navVisible: true, blocksCount: 11, author: 'Sarah A.' },
-      { id: 'page-team', titleAr: 'الفريق القانوني', titleEn: 'Legal Team', slug: '/team', status: 'draft', navVisible: false, blocksCount: 3, author: 'Omar H.' },
+      { id: 'page-team', titleAr: 'الفريق القانوني', titleEn: 'Legal Team', slug: '/team', status: 'draft', navVisible: false, blocksCount: 4, author: 'Omar H.' },
       { id: 'page-practice-areas', titleAr: 'مجالات الممارسة', titleEn: 'Practice Areas', slug: '/practice-areas', status: 'published', navVisible: true, blocksCount: 7, author: 'Sarah A.' },
       { id: 'page-news', titleAr: 'الأخبار والرؤى', titleEn: 'News & Insights', slug: '/news', status: 'draft', navVisible: false, blocksCount: 2, author: 'Lena K.' },
       { id: 'page-contact', titleAr: 'اتصل بنا', titleEn: 'Contact', slug: '/contact', status: 'published', navVisible: true, blocksCount: 4, author: 'Karim M.' },
@@ -262,27 +262,9 @@ export const seedDatabase = async () => {
     if (revisionCount === 0) {
       const teamBlocks = [
         {
-          id: 'team-intro',
-          type: 'image-text',
-          order: 1,
-          data: {
-            headingAr: 'تعرف على فريقنا القانوني',
-            headingEn: 'Meet Our Legal Team',
-            subheadingAr: 'أعضاء الشركة',
-            subheadingEn: 'Members of the Firm',
-            bodyAr: 'تضم شركة هشام حسن حنبولي الدولية للاستشارات القانونية والمحاماة نخبة من المحامين والمستشارين القانونيين ذوي الكفاءة والخبرة في الناحيتين العلمية والعملية.\n\nهدفنا تقديم خدمة متميزة لعملائنا في كافة المجالات والنواحي القانونية المرتبطة بالشركات والأفراد.',
-            bodyEn: 'Hesham H. Hanboly International for Advocacy & Legal Consultations integrates an elite assembly of advocates and advisors of outstanding scientific background and active judicial practice.\n\nOur team delivers tailored counsel across corporate litigation, private matters, and strategic compliance.',
-            ctaPrimaryLabelAr: 'تصفّح فريق العمل بالكامل',
-            ctaPrimaryLabelEn: 'Explore Full Team Members',
-            imageUrl: seed.siteSettings.teamFounderImageUrl,
-            imageAltAr: seed.siteSettings.teamFounderImageAltAr,
-            imageAltEn: seed.siteSettings.teamFounderImageAltEn,
-          },
-        },
-        {
           id: 'team-leadership',
           type: 'team',
-          order: 2,
+          order: 1,
           data: {
             headingAr: 'الإدارة التنفيذية والقيادة',
             headingEn: 'Executive Leadership & Partners',
@@ -338,7 +320,7 @@ export const seedDatabase = async () => {
         {
           id: 'team-consultants',
           type: 'team',
-          order: 3,
+          order: 2,
           data: {
             headingAr: 'المستشارون القانونيون',
             headingEn: 'Legal Consultants & Advisors',
@@ -396,7 +378,7 @@ export const seedDatabase = async () => {
         {
           id: 'team-staff',
           type: 'team',
-          order: 4,
+          order: 3,
           data: {
             headingAr: 'فريق الدعم والإدارة',
             headingEn: 'Operations & Support Team',
@@ -436,7 +418,7 @@ export const seedDatabase = async () => {
         {
           id: 'team-cta',
           type: 'cta',
-          order: 5,
+          order: 4,
           data: {
             headingAr: 'ابدأ استشارتك القانونية معنا كشريك للنجاح',
             headingEn: 'Initiate Your Consultation with Your Lifetime Legal Partner',
@@ -469,6 +451,32 @@ export const seedDatabase = async () => {
       await prisma.cmsPage.update({
         where: { id: teamPage.id },
         data: { blocksCount: teamBlocks.length },
+      });
+    }
+
+    const teamRevisions = await prisma.cmsRevision.findMany({
+      where: { pageId: teamPage.id },
+      orderBy: [{ createdAt: 'desc' }],
+    });
+    let latestSanitizedCount = 0;
+    for (const revision of teamRevisions) {
+      const blocks = Array.isArray(revision.blocks) ? revision.blocks : [];
+      const sanitizedBlocks = blocks.filter((block) => !(block && typeof block === 'object' && (block as { id?: unknown }).id === 'team-intro'));
+      if (sanitizedBlocks.length !== blocks.length) {
+        await prisma.cmsRevision.update({
+          where: { id: revision.id },
+          data: { blocks: sanitizedBlocks },
+        });
+      }
+      if (latestSanitizedCount === 0) {
+        latestSanitizedCount = sanitizedBlocks.length;
+      }
+    }
+
+    if (latestSanitizedCount > 0) {
+      await prisma.cmsPage.update({
+        where: { id: teamPage.id },
+        data: { blocksCount: latestSanitizedCount },
       });
     }
   }
