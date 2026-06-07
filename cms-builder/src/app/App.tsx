@@ -35,11 +35,15 @@ export default function App() {
   const [pages, setPages] = useState<CMSPage[]>([]);
   const [selectedPage, setSelectedPage] = useState<CMSPage | null>(null);
   const [navItems, setNavItems] = useState<NavItem[]>([]);
+  const [articleCount, setArticleCount] = useState(0);
+  const [practiceAreaCount, setPracticeAreaCount] = useState(0);
 
   async function loadDashboardData() {
-    const [loadedPages, loadedNavItems] = await Promise.all([
+    const [loadedPages, loadedNavItems, loadedArticles, loadedPracticeAreas] = await Promise.all([
       backendApi.listPages(),
       backendApi.listNavigation(),
+      backendApi.listArticles(),
+      backendApi.listPracticeAreas(),
     ]);
     setPages(loadedPages.map((page) => ({
       id: page.id,
@@ -53,6 +57,8 @@ export default function App() {
       blocksCount: page.blocks.length,
     })));
     setNavItems(loadedNavItems);
+    setArticleCount(loadedArticles.length);
+    setPracticeAreaCount(loadedPracticeAreas.length);
   }
 
   useEffect(() => {
@@ -364,9 +370,9 @@ export default function App() {
           />
         );
       case "articles":
-        return <ArticlesModule lang={lang} />;
+        return <ArticlesModule lang={lang} onCountChange={setArticleCount} />;
       case "practice-areas":
-        return <PracticeAreasModule lang={lang} />;
+        return <PracticeAreasModule lang={lang} onCountChange={setPracticeAreaCount} />;
       case "media":
         return <MediaLibrary lang={lang} />;
       case "settings":
@@ -389,6 +395,9 @@ export default function App() {
         <Sidebar
           active={activeSection}
           onSelect={s => { setActiveSection(s); setSelectedPage(null); }}
+          pageCount={pages.length}
+          articleCount={articleCount}
+          practiceAreaCount={practiceAreaCount}
         />
         <main className="flex-1 overflow-hidden" style={{ background: "var(--background)" }}>
           {renderMain()}

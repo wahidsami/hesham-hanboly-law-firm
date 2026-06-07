@@ -6,16 +6,19 @@ import { PracticeAreaEditor } from './PracticeAreaEditor';
 
 interface PracticeAreasModuleProps {
   lang: 'en' | 'ar';
+  onCountChange?: (count: number) => void;
 }
 
 type View = { type: 'index' } | { type: 'editor'; practiceAreaId: string };
 
-export function PracticeAreasModule({ lang }: PracticeAreasModuleProps) {
+export function PracticeAreasModule({ lang, onCountChange }: PracticeAreasModuleProps) {
   const [practiceAreas, setPracticeAreas] = useState<PracticeArea[]>([]);
   const [view, setView] = useState<View>({ type: 'index' });
 
   async function refresh() {
-    setPracticeAreas(await backendApi.listPracticeAreas());
+    const loaded = await backendApi.listPracticeAreas();
+    setPracticeAreas(loaded);
+    onCountChange?.(loaded.length);
   }
 
   useEffect(() => {

@@ -20,18 +20,23 @@ export type SidebarSection =
 interface SidebarProps {
   active: SidebarSection;
   onSelect: (s: SidebarSection) => void;
+  pageCount: number;
+  articleCount: number;
+  practiceAreaCount: number;
 }
 
-const navItems: { id: SidebarSection; label: string; icon: React.ElementType; badge?: number }[] = [
-  { id: "pages", label: "Pages", icon: LayoutGrid, badge: 12 },
+const navItems: { id: SidebarSection; label: string; icon: React.ElementType; badge?: number | ((counts: { pages: number; articles: number; practiceAreas: number }) => number) }[] = [
+  { id: "pages", label: "Pages", icon: LayoutGrid, badge: (counts) => counts.pages },
   { id: "navigation", label: "Navigation", icon: Navigation2 },
-  { id: "articles", label: "Articles", icon: FileText, badge: 6 },
-  { id: "practice-areas", label: "Practice Areas", icon: Scale, badge: 4 },
+  { id: "articles", label: "Articles", icon: FileText, badge: (counts) => counts.articles },
+  { id: "practice-areas", label: "Practice Areas", icon: Scale, badge: (counts) => counts.practiceAreas },
   { id: "media", label: "Media Library", icon: Image },
   { id: "settings", label: "Site Settings", icon: Settings },
 ];
 
-export function Sidebar({ active, onSelect }: SidebarProps) {
+export function Sidebar({ active, onSelect, pageCount, articleCount, practiceAreaCount }: SidebarProps) {
+  const counts = { pages: pageCount, articles: articleCount, practiceAreas: practiceAreaCount };
+
   return (
     <aside
       className="flex flex-col h-full"
@@ -122,7 +127,7 @@ export function Sidebar({ active, onSelect }: SidebarProps) {
                     lineHeight: 1,
                   }}
                 >
-                  {item.badge}
+                  {typeof item.badge === "function" ? item.badge(counts) : item.badge}
                 </span>
               )}
               {isActive && (

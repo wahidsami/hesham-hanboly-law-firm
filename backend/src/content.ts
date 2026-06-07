@@ -268,7 +268,9 @@ export const cmsPageToRecord = (page: { id: string; titleAr: string; titleEn: st
   titleAr: page.titleAr,
   titleEn: page.titleEn,
   slug: page.slug,
-  status: (page.status as CMSPageRecord['status']) || 'draft',
+  status: (page.slug.replace(/^\/+/, '').toLowerCase() === 'team'
+    ? 'published'
+    : (page.status as CMSPageRecord['status']) || 'draft'),
   navVisible: page.navVisible,
   blocksCount: page.blocksCount,
   author: page.author,
@@ -930,6 +932,8 @@ export const saveCmsPage = async (originalSlug: string | undefined, body: unknow
   const blocksCount = hasBlocksCount
     ? Number((body as { blocksCount?: unknown }).blocksCount || 0)
     : Number(existing?.blocksCount ?? 0);
+  const normalizedSlug = String(payload.slug || '').replace(/^\/+/, '').toLowerCase();
+  const forcedStatus = normalizedSlug === 'team' ? 'published' : String(payload.status || 'draft');
 
   if (existing) {
     const updated = await prisma.cmsPage.update({
@@ -938,7 +942,7 @@ export const saveCmsPage = async (originalSlug: string | undefined, body: unknow
         titleAr: payload.titleAr!,
         titleEn: payload.titleEn!,
         slug: payload.slug!,
-        status: String(payload.status || 'draft'),
+        status: forcedStatus,
         navVisible: Boolean(payload.navVisible),
         blocksCount,
         author: payload.author || 'CMS Editor',
@@ -953,7 +957,7 @@ export const saveCmsPage = async (originalSlug: string | undefined, body: unknow
       titleAr: payload.titleAr!,
       titleEn: payload.titleEn!,
       slug: payload.slug!,
-      status: String(payload.status || 'draft'),
+      status: forcedStatus,
       navVisible: Boolean(payload.navVisible),
       blocksCount,
       author: payload.author || 'CMS Editor',

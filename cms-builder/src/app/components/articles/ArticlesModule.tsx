@@ -6,16 +6,19 @@ import { ArticleEditor } from './ArticleEditor';
 
 interface ArticlesModuleProps {
   lang: 'en' | 'ar';
+  onCountChange?: (count: number) => void;
 }
 
 type View = { type: 'index' } | { type: 'editor'; articleId: string };
 
-export function ArticlesModule({ lang }: ArticlesModuleProps) {
+export function ArticlesModule({ lang, onCountChange }: ArticlesModuleProps) {
   const [articles, setArticles] = useState<Article[]>([]);
   const [view, setView] = useState<View>({ type: 'index' });
 
   async function refresh() {
-    setArticles(await backendApi.listArticles() as Article[]);
+    const loaded = await backendApi.listArticles() as Article[];
+    setArticles(loaded);
+    onCountChange?.(loaded.length);
   }
 
   useEffect(() => {

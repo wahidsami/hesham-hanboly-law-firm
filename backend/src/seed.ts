@@ -246,7 +246,11 @@ export const seedDatabase = async () => {
     });
   }
 
-  const teamPage = await prisma.cmsPage.findUnique({ where: { slug: '/team' } });
+  const teamPage = await prisma.cmsPage.findFirst({
+    where: {
+      OR: [{ slug: '/team' }, { slug: 'team' }],
+    },
+  });
   if (teamPage) {
     if (teamPage.status !== 'published' || teamPage.navVisible !== false) {
       await prisma.cmsPage.update({
