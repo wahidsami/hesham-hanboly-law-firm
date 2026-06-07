@@ -492,18 +492,38 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
                 </MiniGroup>
                 <MiniGroup title="Footer logo" description="Use a different version for the footer if the footer is on a dark background. If empty, the header logo is used as a fallback.">
                   <div className="space-y-4">
-                    <div className="overflow-hidden rounded-2xl border border-[#D8D1C7] bg-[#FBF7F0]">
-                      {(siteSettings.footerLogoImageUrl || siteSettings.logoImageUrl) ? (
-                        <img
-                          src={siteSettings.footerLogoImageUrl || siteSettings.logoImageUrl}
-                          alt={lang === 'ar'
-                            ? siteSettings.footerLogoImageAltAr || siteSettings.logoImageAltAr
-                            : siteSettings.footerLogoImageAltEn || siteSettings.logoImageAltEn}
-                          className="h-40 w-full object-contain bg-white p-4"
-                        />
-                      ) : (
-                        <div className="flex h-40 items-center justify-center text-sm text-[#8A8A8A]">No footer logo selected</div>
-                      )}
+                    <div className="overflow-hidden rounded-2xl border border-[#D8D1C7] bg-[#FBF7F0] p-3">
+                      <div className="rounded-xl bg-[#121212] px-4 py-5">
+                        <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.24em] text-[#A56A1E]">Footer preview</div>
+                        <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/70">Logo</div>
+                            <div className="text-[11px] text-white/55">
+                              {lang === 'ar'
+                                ? 'معاينة داكنة للتذييل'
+                                : 'Dark footer preview'}
+                            </div>
+                          </div>
+                          <div className="text-[11px] font-semibold text-white/45">
+                            {lang === 'ar' ? 'الشريط السفلي' : 'Footer bar'}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4 py-4">
+                          {(siteSettings.footerLogoImageUrl || siteSettings.logoImageUrl) ? (
+                            <img
+                              src={siteSettings.footerLogoImageUrl || siteSettings.logoImageUrl}
+                              alt={lang === 'ar'
+                                ? siteSettings.footerLogoImageAltAr || siteSettings.logoImageAltAr
+                                : siteSettings.footerLogoImageAltEn || siteSettings.logoImageAltEn}
+                              className="h-16 max-w-[220px] object-contain"
+                            />
+                          ) : (
+                            <div className="flex h-16 w-full items-center justify-center rounded-xl border border-dashed border-white/10 text-sm text-white/40">
+                              {lang === 'ar' ? 'لا يوجد شعار للتذييل بعد' : 'No footer logo yet'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     <HomeField
                       label="Footer logo image URL"
