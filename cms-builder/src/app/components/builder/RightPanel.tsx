@@ -89,6 +89,7 @@ function ImageField({
   altLabel,
   altValue,
   onAltChange,
+  onCommit,
 }: {
   label: string;
   value: string;
@@ -97,6 +98,7 @@ function ImageField({
   altLabel?: string;
   altValue?: string;
   onAltChange?: (v: string) => void;
+  onCommit?: () => void;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const fileInputId = useId();
@@ -171,6 +173,7 @@ function ImageField({
                 const asset = await backendApi.uploadAsset(file, altValue || '', '');
                 onChange(asset.url);
                 if (onAltChange && altLabel) onAltChange(altValue || asset.altEn || '');
+                if (onCommit) window.setTimeout(onCommit, 0);
               } catch (error) {
                 console.error('Image upload failed', error);
               }
@@ -211,6 +214,7 @@ function ImageField({
         onSelect={(asset, nextAltEn) => {
           onChange(asset.url);
           if (onAltChange && altLabel) onAltChange(nextAltEn);
+          if (onCommit) window.setTimeout(onCommit, 0);
         }}
       />
     </div>
@@ -248,7 +252,7 @@ function LangTabs({ lang, onSet }: { lang: Lang; onSet: (l: Lang) => void }) {
 }
 
 // ─── Block forms ──────────────────────────────────────────────────────────────
-function HeroForm({ d, update, formLang, setFormLang }: { d: Record<string, string>; update: (k: string, v: string) => void; formLang: Lang; setFormLang: (l: Lang) => void }) {
+function HeroForm({ d, update, formLang, setFormLang, onCommit }: { d: Record<string, string>; update: (k: string, v: string) => void; formLang: Lang; setFormLang: (l: Lang) => void; onCommit?: () => void }) {
   return (
     <>
       <LangTabs lang={formLang} onSet={setFormLang} />
@@ -271,7 +275,7 @@ function HeroForm({ d, update, formLang, setFormLang }: { d: Record<string, stri
       <SectionLabel label="Settings" />
       <Field label="Primary CTA URL" value={d.ctaPrimaryUrl} onChange={(v) => update('ctaPrimaryUrl', v)} mono />
       <Field label="Secondary CTA URL" value={d.ctaSecondaryUrl} onChange={(v) => update('ctaSecondaryUrl', v)} mono />
-      <ImageField label="Image" value={d.imageUrl} onChange={(v) => update('imageUrl', v)} placeholder="Paste or choose an image…" />
+      <ImageField label="Image" value={d.imageUrl} onChange={(v) => update('imageUrl', v)} placeholder="Paste or choose an image…" onCommit={onCommit} />
       <div style={{ marginBottom: 12 }}>
         <label style={{ display: 'block', fontSize: 10, color: 'var(--muted-foreground)', fontFamily: 'DM Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
           Background Color
@@ -305,7 +309,7 @@ function RichTextForm({ d, update, formLang, setFormLang }: { d: Record<string, 
   );
 }
 
-function ImageTextForm({ d, update, formLang, setFormLang }: { d: Record<string, string>; update: (k: string, v: string) => void; formLang: Lang; setFormLang: (l: Lang) => void }) {
+function ImageTextForm({ d, update, formLang, setFormLang, onCommit }: { d: Record<string, string>; update: (k: string, v: string) => void; formLang: Lang; setFormLang: (l: Lang) => void; onCommit?: () => void }) {
   return (
     <>
       <LangTabs lang={formLang} onSet={setFormLang} />
@@ -332,6 +336,7 @@ function ImageTextForm({ d, update, formLang, setFormLang }: { d: Record<string,
         altLabel="Image Alt Text"
         altValue={d.imageAlt}
         onAltChange={(v) => update('imageAlt', v)}
+        onCommit={onCommit}
       />
       <div style={{ marginBottom: 12 }}>
         <label style={{ display: 'block', fontSize: 10, color: 'var(--muted-foreground)', fontFamily: 'DM Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Image Position</label>
@@ -503,7 +508,7 @@ function TestimonialsForm({ d, update, formLang, setFormLang }: { d: Record<stri
   );
 }
 
-function TeamForm({ d, update, formLang, setFormLang }: { d: Record<string, unknown>; update: (k: string, v: unknown) => void; formLang: Lang; setFormLang: (l: Lang) => void }) {
+function TeamForm({ d, update, formLang, setFormLang, onCommit }: { d: Record<string, unknown>; update: (k: string, v: unknown) => void; formLang: Lang; setFormLang: (l: Lang) => void; onCommit?: () => void }) {
   const items = (d.items as TeamMember[]) || [];
   return (
     <>
@@ -532,6 +537,7 @@ function TeamForm({ d, update, formLang, setFormLang }: { d: Record<string, unkn
             value={member.imageUrl}
             onChange={(v) => { const next = [...items]; next[i] = { ...member, imageUrl: v }; update('items', next); }}
             placeholder="Paste or choose a photo…"
+            onCommit={onCommit}
           />
           {formLang === 'en' ? (
             <>
@@ -686,7 +692,7 @@ function FAQForm({ d, update, formLang, setFormLang }: { d: Record<string, unkno
   );
 }
 
-function GalleryForm({ d, update, formLang, setFormLang }: { d: Record<string, unknown>; update: (k: string, v: unknown) => void; formLang: Lang; setFormLang: (l: Lang) => void }) {
+function GalleryForm({ d, update, formLang, setFormLang, onCommit }: { d: Record<string, unknown>; update: (k: string, v: unknown) => void; formLang: Lang; setFormLang: (l: Lang) => void; onCommit?: () => void }) {
   const items = (d.items as GalleryImage[]) || [];
   return (
     <>
@@ -708,6 +714,7 @@ function GalleryForm({ d, update, formLang, setFormLang }: { d: Record<string, u
             value={img.imageUrl}
             onChange={(v) => { const next = [...items]; next[i] = { ...img, imageUrl: v }; update('items', next); }}
             placeholder="Paste or choose an image…"
+            onCommit={onCommit}
           />
           {formLang === 'en'
             ? <Field label="Caption (EN)" value={img.captionEn} onChange={(v) => { const next = [...items]; next[i] = { ...img, captionEn: v }; update('items', next); }} />
@@ -810,17 +817,17 @@ export function RightPanel({ page, selectedBlock, onUpdatePage, onUpdateBlock, o
   function renderBlockForm() {
     if (!selectedBlock) return null;
     switch (selectedBlock.type) {
-      case 'hero': return <HeroForm d={d as Record<string, string>} update={updateBlockField} formLang={formLang} setFormLang={setFormLang} />;
+      case 'hero': return <HeroForm d={d as Record<string, string>} update={updateBlockField} formLang={formLang} setFormLang={setFormLang} onCommit={onSaveDraft} />;
       case 'rich-text': return <RichTextForm d={d as Record<string, string>} update={updateBlockField} formLang={formLang} setFormLang={setFormLang} />;
-      case 'image-text': return <ImageTextForm d={d as Record<string, string>} update={updateBlockField} formLang={formLang} setFormLang={setFormLang} />;
+      case 'image-text': return <ImageTextForm d={d as Record<string, string>} update={updateBlockField} formLang={formLang} setFormLang={setFormLang} onCommit={onSaveDraft} />;
       case 'cards': return <CardsForm d={d} update={updateBlockField} formLang={formLang} setFormLang={setFormLang} />;
       case 'stats': return <StatsForm d={d} update={updateBlockField} />;
       case 'cta': return <CTAForm d={d as Record<string, string>} update={updateBlockField} formLang={formLang} setFormLang={setFormLang} />;
       case 'testimonials': return <TestimonialsForm d={d} update={updateBlockField} formLang={formLang} setFormLang={setFormLang} />;
-      case 'team': return <TeamForm d={d} update={updateBlockField} formLang={formLang} setFormLang={setFormLang} />;
+      case 'team': return <TeamForm d={d} update={updateBlockField} formLang={formLang} setFormLang={setFormLang} onCommit={onSaveDraft} />;
       case 'contact': return <ContactForm d={d as Record<string, string>} update={updateBlockField} formLang={formLang} setFormLang={setFormLang} />;
       case 'faq': return <FAQForm d={d} update={updateBlockField} formLang={formLang} setFormLang={setFormLang} />;
-      case 'gallery': return <GalleryForm d={d} update={updateBlockField} formLang={formLang} setFormLang={setFormLang} />;
+      case 'gallery': return <GalleryForm d={d} update={updateBlockField} formLang={formLang} setFormLang={setFormLang} onCommit={onSaveDraft} />;
       case 'custom': return <CustomForm d={d as Record<string, string>} update={updateBlockField} />;
       default: return <div style={{ color: 'var(--muted-foreground)', fontSize: 12, padding: 16 }}>No settings for this block.</div>;
     }
