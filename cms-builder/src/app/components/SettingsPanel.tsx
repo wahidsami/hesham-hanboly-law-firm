@@ -76,6 +76,15 @@ const ENDPOINT_GROUPS: EndpointGroup[] = [
     ],
   },
   {
+    title: 'Admin — Doctor Shield Requests',
+    endpoints: [
+      { method: 'POST', path: '/api/doctor-shield-requests', description: 'Store a new Doctor Shield request submitted from the public program form.', auth: false, params: [{ name: 'fullName', in: 'body', type: 'string', required: true, description: 'Request holder name' }, { name: 'phone', in: 'body', type: 'string', required: true, description: 'Contact number' }, { name: 'email', in: 'body', type: 'string', required: true, description: 'Email address' }, { name: 'idNumber', in: 'body', type: 'string', required: true, description: 'Saudi ID or Iqama number' }, { name: 'specialty', in: 'body', type: 'string', required: true, description: 'Medical specialty' }], response: '{ data: DoctorShieldRequest }' },
+      { method: 'GET', path: '/api/admin/doctor-shield-requests', description: 'List all Doctor Shield requests in newest-first order.', auth: true, response: '{ data: DoctorShieldRequest[] }' },
+      { method: 'GET', path: '/api/admin/doctor-shield-requests/:id', description: 'Fetch the full detail record for a single Doctor Shield request.', auth: true, params: [{ name: 'id', in: 'path', type: 'string', required: true, description: 'Doctor Shield request id' }], response: '{ data: DoctorShieldRequest }' },
+      { method: 'PATCH', path: '/api/admin/doctor-shield-requests/:id', description: 'Update Doctor Shield request status and internal notes.', auth: true, params: [{ name: 'status', in: 'body', type: 'ConsultationStatus', required: false, description: 'new | reviewing | responded | closed' }, { name: 'adminNotes', in: 'body', type: 'string', required: false, description: 'Internal notes visible to the team' }], response: '{ data: DoctorShieldRequest }' },
+    ],
+  },
+  {
     title: 'Admin — Revisions',
     endpoints: [
       { method: 'GET', path: '/api/admin/pages/:slug/revisions', description: 'Get the revision history for a page (newest first).', auth: true, response: '{ data: ApiRevision[] }' },
@@ -238,6 +247,7 @@ export function SettingsPanel() {
         <div style={{ fontSize: 11, color: '#1A7B3C', lineHeight: 1.5 }}>
           Articles and practice areas are now wired through <code style={{ fontFamily: 'DM Mono, monospace', fontSize: 10 }}>src/app/api/backend.ts</code>.
           Pages, navigation, and media are now moving to the live backend as well.
+          Doctor Shield requests now have their own inbox and API surface alongside consultations.
           Revision snapshots are also persisted through the backend instead of the mock store.
           The live backend uses cookie-based auth, so the login flow should send <code style={{ fontFamily: 'DM Mono, monospace', fontSize: 10 }}>username</code> and <code style={{ fontFamily: 'DM Mono, monospace', fontSize: 10 }}>password</code>.
         </div>

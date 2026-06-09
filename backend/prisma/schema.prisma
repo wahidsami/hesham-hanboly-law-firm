@@ -295,3 +295,26 @@ model ConsultationRequest {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
+
+model DoctorShieldRequest {
+  id                String   @id
+  fullName          String
+  phone             String
+  email             String
+  idNumber          String
+  specialty         String
+  city              String
+  employer          String
+  notes             String
+  hasBeenConvicted  String
+  status            String
+  paymentStatus     String
+  paymentAmount     String
+  voucherId         String
+  paymentMethod     String
+  cardBrand         String
+  cardLast4         String
+  adminNotes        String   @default("")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}

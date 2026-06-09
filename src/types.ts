@@ -131,6 +131,32 @@ export interface ConsultationRequestRecord {
   updatedAt: string;
 }
 
+export type DoctorShieldRequestStatus = ConsultationStatus;
+export type DoctorShieldPaymentStatus = ConsultationPaymentStatus;
+
+export interface DoctorShieldRequestRecord {
+  id: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  idNumber: string;
+  specialty: string;
+  city: string;
+  employer: string;
+  notes: string;
+  hasBeenConvicted: 'yes' | 'no';
+  status: DoctorShieldRequestStatus;
+  paymentStatus: DoctorShieldPaymentStatus;
+  paymentAmount: string;
+  voucherId: string;
+  paymentMethod: string;
+  cardBrand: string;
+  cardLast4: string;
+  adminNotes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface HeroSlide {
   id: string;
   badgeAr: string;

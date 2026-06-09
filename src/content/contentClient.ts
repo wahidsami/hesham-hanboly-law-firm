@@ -1,4 +1,4 @@
-import type { ArticleRecord, CMSPublishedPageRecord, HeroSlideRecord, PracticeAreaRecord, SiteContent, SiteSettingsRecord, ConsultationRequestRecord } from '../types';
+import type { ArticleRecord, CMSPublishedPageRecord, DoctorShieldRequestRecord, HeroSlideRecord, PracticeAreaRecord, SiteContent, SiteSettingsRecord, ConsultationRequestRecord } from '../types';
 
 const requestJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(url, {
@@ -137,4 +137,25 @@ export const contentClient = {
     }
     return requestFormData<{ consultation: ConsultationRequestRecord }>('/api/consultations', formData);
   },
+  submitDoctorShieldRequest: (payload: {
+    fullName: string;
+    phone: string;
+    email: string;
+    idNumber: string;
+    specialty: string;
+    city: string;
+    employer: string;
+    notes: string;
+    hasBeenConvicted: 'yes' | 'no';
+    voucherId: string;
+    paymentAmount: string;
+    paymentStatus: string;
+    paymentMethod: string;
+    cardBrand: string;
+    cardLast4: string;
+  }) =>
+    requestJson<{ doctorShieldRequest: DoctorShieldRequestRecord }>('/api/doctor-shield-requests', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
 };

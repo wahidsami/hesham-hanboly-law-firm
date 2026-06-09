@@ -221,6 +221,28 @@ type ConsultationRequestRecord = {
   createdAt: string;
   updatedAt: string;
 };
+type DoctorShieldRequestRowRecord = {
+  id: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  idNumber: string;
+  specialty: string;
+  city: string;
+  employer: string;
+  notes: string;
+  hasBeenConvicted: 'yes' | 'no';
+  status: ConsultationRequestRecord['status'];
+  paymentStatus: ConsultationRequestRecord['paymentStatus'];
+  paymentAmount: string;
+  voucherId: string;
+  paymentMethod: string;
+  cardBrand: string;
+  cardLast4: string;
+  adminNotes: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 const collectReferencedUrls = (value: unknown, urls: Set<string>) => {
   if (!value) {
@@ -408,6 +430,29 @@ const consultationRowToRecord = (row: Record<string, unknown>): ConsultationRequ
   attachments: Array.isArray(row.attachments)
     ? (row.attachments as ConsultationAttachmentRecord[])
     : [],
+  adminNotes: String(row.adminNotes || ''),
+  createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt || new Date().toISOString()),
+  updatedAt: row.updatedAt instanceof Date ? row.updatedAt.toISOString() : String(row.updatedAt || new Date().toISOString()),
+});
+
+const doctorShieldRowToRecord = (row: Record<string, unknown>): DoctorShieldRequestRowRecord => ({
+  id: String(row.id || ''),
+  fullName: String(row.fullName || ''),
+  phone: String(row.phone || ''),
+  email: String(row.email || ''),
+  idNumber: String(row.idNumber || ''),
+  specialty: String(row.specialty || ''),
+  city: String(row.city || ''),
+  employer: String(row.employer || ''),
+  notes: String(row.notes || ''),
+  hasBeenConvicted: (String(row.hasBeenConvicted || 'no') as DoctorShieldRequestRowRecord['hasBeenConvicted']),
+  status: (String(row.status || 'new') as DoctorShieldRequestRowRecord['status']),
+  paymentStatus: (String(row.paymentStatus || 'pending') as DoctorShieldRequestRowRecord['paymentStatus']),
+  paymentAmount: String(row.paymentAmount || '2,300 SAR'),
+  voucherId: String(row.voucherId || ''),
+  paymentMethod: String(row.paymentMethod || ''),
+  cardBrand: String(row.cardBrand || ''),
+  cardLast4: String(row.cardLast4 || ''),
   adminNotes: String(row.adminNotes || ''),
   createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt || new Date().toISOString()),
   updatedAt: row.updatedAt instanceof Date ? row.updatedAt.toISOString() : String(row.updatedAt || new Date().toISOString()),
@@ -1265,4 +1310,105 @@ export const updateConsultation = async (id: string, patch: { status?: string; a
   );
 
   return getConsultationById(id);
+};
+
+export const listDoctorShieldRequests = async () => {
+  const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(`
+    SELECT *
+    FROM "DoctorShieldRequest"
+    ORDER BY "createdAt" DESC, "updatedAt" DESC
+  `);
+  return rows.map((row) => doctorShieldRowToRecord(row));
+};
+
+export const getDoctorShieldRequestById = async (id: string) => {
+  const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(`
+    SELECT *
+    FROM "DoctorShieldRequest"
+    WHERE "id" = $1
+    LIMIT 1
+  `, id);
+  const row = rows[0];
+  return row ? doctorShieldRowToRecord(row) : null;
+};
+
+export const createDoctorShieldRequest = async (payload: {
+  id: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  idNumber: string;
+  specialty: string;
+  city: string;
+  employer: string;
+  notes: string;
+  hasBeenConvicted: 'yes' | 'no';
+  status: DoctorShieldRequestRowRecord['status'];
+  paymentStatus: DoctorShieldRequestRowRecord['paymentStatus'];
+  paymentAmount: string;
+  voucherId: string;
+  paymentMethod: string;
+  cardBrand: string;
+  cardLast4: string;
+  adminNotes?: string;
+}) => {
+  await prisma.$executeRawUnsafe(
+    `
+      INSERT INTO "DoctorShieldRequest" (
+        "id", "fullName", "phone", "email", "idNumber", "specialty", "city", "employer", "notes",
+        "hasBeenConvicted", "status", "paymentStatus", "paymentAmount", "voucherId", "paymentMethod", "cardBrand", "cardLast4",
+        "adminNotes", "createdAt", "updatedAt"
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9,
+        $10, $11, $12, $13, $14, $15, $16, $17,
+        $18, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+      )
+    `,
+    payload.id,
+    payload.fullName,
+    payload.phone,
+    payload.email,
+    payload.idNumber,
+    payload.specialty,
+    payload.city,
+    payload.employer,
+    payload.notes,
+    payload.hasBeenConvicted,
+    payload.status,
+    payload.paymentStatus,
+    payload.paymentAmount,
+    payload.voucherId,
+    payload.paymentMethod,
+    payload.cardBrand,
+    payload.cardLast4,
+    payload.adminNotes || '',
+  );
+
+  return getDoctorShieldRequestById(payload.id);
+};
+
+export const updateDoctorShieldRequest = async (
+  id: string,
+  patch: { status?: string; adminNotes?: string },
+) => {
+  const existing = await getDoctorShieldRequestById(id);
+  if (!existing) {
+    throw new Error('Doctor Shield request not found.');
+  }
+
+  await prisma.$executeRawUnsafe(
+    `
+      UPDATE "DoctorShieldRequest"
+      SET
+        "status" = COALESCE($2, "status"),
+        "adminNotes" = COALESCE($3, "adminNotes"),
+        "updatedAt" = CURRENT_TIMESTAMP
+      WHERE "id" = $1
+    `,
+    id,
+    patch.status ?? null,
+    patch.adminNotes ?? null,
+  );
+
+  return getDoctorShieldRequestById(id);
 };

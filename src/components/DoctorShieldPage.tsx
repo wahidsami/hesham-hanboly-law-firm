@@ -79,6 +79,9 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
   const [paymentStep, setPaymentStep] = useState<boolean>(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('applepay');
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+  const [submissionLoading, setSubmissionLoading] = useState<boolean>(false);
+  const [submissionError, setSubmissionError] = useState<string>('');
+  const [lastVoucherId, setLastVoucherId] = useState<string>('');
 
   // Section 7: FAQ State
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -327,8 +330,40 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
     setPaymentStep(true);
   };
 
-  const handleFinalPaymentSubmit = () => {
-    setIsSubmitted(true);
+  const handleFinalPaymentSubmit = async () => {
+    if (submissionLoading) {
+      return;
+    }
+
+    const voucherId = `DS-${Date.now()}`;
+    setSubmissionLoading(true);
+    setSubmissionError('');
+
+    try {
+      await contentClient.submitDoctorShieldRequest({
+        fullName: formData.fullName.trim(),
+        phone: formData.phone.trim(),
+        email: formData.email.trim(),
+        idNumber: formData.idNumber.trim(),
+        specialty: formData.specialty.trim(),
+        city: formData.city.trim(),
+        employer: formData.employer.trim(),
+        notes: formData.notes.trim(),
+        hasBeenConvicted: formData.hasBeenConvicted,
+        voucherId,
+        paymentAmount: '2,300 SAR',
+        paymentStatus: 'paid',
+        paymentMethod: selectedPaymentMethod,
+        cardBrand: selectedPaymentMethod,
+        cardLast4: '0000',
+      });
+      setLastVoucherId(voucherId);
+      setIsSubmitted(true);
+    } catch (error) {
+      setSubmissionError(error instanceof Error ? error.message : t('فشل إرسال الطلب.', 'Failed to submit request.'));
+    } finally {
+      setSubmissionLoading(false);
+    }
   };
 
   return (
@@ -1103,6 +1138,13 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                         'Your corporate protection has been successfully initiated! We have secured your onboarding profile and the 2,300 SAR subscription investment. An executive legal representative from Hesham Hanboly International will contact you within the next hours.'
                       )}
                     </p>
+                    {lastVoucherId && (
+                      <div className="inline-flex items-center gap-2 rounded-2xl border border-[#D8D1C7] bg-white px-4 py-3 text-sm text-[#7A563D] font-semibold">
+                        <FileText className="w-4 h-4 text-[#A56A1E]" />
+                        <span>{t('مرجع الحجز:', 'Booking reference:')}</span>
+                        <span className="font-mono">{lastVoucherId}</span>
+                      </div>
+                    )}
 
                     <div className="pt-4 flex flex-wrap justify-center gap-3">
                       <button
@@ -1110,6 +1152,11 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                         onClick={() => {
                           setIsSubmitted(false);
                           setPaymentStep(false);
+                          setSelectedPaymentMethod('applepay');
+                          setSubmissionError('');
+                          setSubmissionLoading(false);
+                          setLastVoucherId('');
+                          setFormErrors({});
                           setFormData({
                             fullName: '',
                             phone: '',
@@ -1119,6 +1166,7 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                             city: '',
                             employer: '',
                             notes: '',
+                            hasBeenConvicted: 'no',
                             agreed: false
                           });
                         }}
@@ -1262,12 +1310,18 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                       <button
                         type="button"
                         onClick={handleFinalPaymentSubmit}
+                        disabled={submissionLoading}
                         className="px-8 py-3.5 rounded-xl bg-[#7A563D] text-white text-xs font-bold hover:bg-[#946B4B] transition-colors cursor-pointer shadow-md flex items-center justify-center gap-2"
                       >
                         <CreditCard className="w-4 h-4" />
-                        <span>{t('ادفع الآن ٢٣٠٠ ريال', 'Pay 2,300 SAR Now')}</span>
+                        <span>{submissionLoading ? t('جارٍ الإرسال…', 'Submitting…') : t('ادفع الآن ٢٣٠٠ ريال', 'Pay 2,300 SAR Now')}</span>
                       </button>
                     </div>
+                    {submissionError && (
+                      <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                        {submissionError}
+                      </div>
+                    )}
                   </motion.div>
                 ) : (
                   // Step 1: PROFILE / SUBSCRIPTION FORM fields

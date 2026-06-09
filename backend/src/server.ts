@@ -18,13 +18,16 @@ import {
   articleToRecord,
   cmsPageToRecord,
   createConsultation,
+  createDoctorShieldRequest,
   deleteCmsPage,
   deleteMediaAsset,
+  getDoctorShieldRequestById,
   getConsultationById,
   listMediaAssets,
   listCmsRevisions,
   listArticles,
   listConsultations,
+  listDoctorShieldRequests,
   listCmsPages,
   listHeroSlides,
   listNavigationItems,
@@ -37,6 +40,7 @@ import {
   saveCmsRevision,
   saveNavigationItems,
   restoreCmsRevision,
+  updateDoctorShieldRequest,
   updateConsultation,
   updateMediaAsset,
   practiceAreaToRecord,
@@ -911,6 +915,96 @@ app.patch(
 
     if (!updated) {
       response.status(404).json({ error: 'Consultation request not found.' });
+      return;
+    }
+
+    response.json(updated);
+  }),
+);
+
+app.post(
+  '/api/doctor-shield-requests',
+  asyncHandler(async (request, response) => {
+    const body = request.body as Record<string, unknown>;
+    const fullName = typeof body.fullName === 'string' ? body.fullName.trim() : '';
+    const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
+    const email = typeof body.email === 'string' ? body.email.trim() : '';
+    const idNumber = typeof body.idNumber === 'string' ? body.idNumber.trim() : '';
+    const specialty = typeof body.specialty === 'string' ? body.specialty.trim() : '';
+    const city = typeof body.city === 'string' ? body.city.trim() : '';
+    const employer = typeof body.employer === 'string' ? body.employer.trim() : '';
+    const notes = typeof body.notes === 'string' ? body.notes.trim() : '';
+    const hasBeenConvicted = typeof body.hasBeenConvicted === 'string' && body.hasBeenConvicted.trim() === 'yes' ? 'yes' : 'no';
+    const voucherId = typeof body.voucherId === 'string' && body.voucherId.trim() ? body.voucherId.trim() : `DS-${Date.now()}`;
+    const paymentAmount = typeof body.paymentAmount === 'string' && body.paymentAmount.trim() ? body.paymentAmount.trim() : '2,300 SAR';
+    const paymentStatus = typeof body.paymentStatus === 'string' && body.paymentStatus.trim() ? body.paymentStatus.trim() : 'paid';
+    const paymentMethod = typeof body.paymentMethod === 'string' && body.paymentMethod.trim() ? body.paymentMethod.trim() : 'card';
+    const cardBrand = typeof body.cardBrand === 'string' && body.cardBrand.trim() ? body.cardBrand.trim() : paymentMethod;
+    const cardLast4 = typeof body.cardLast4 === 'string' && body.cardLast4.trim() ? body.cardLast4.trim() : '';
+
+    if (!fullName || !phone || !email || !idNumber || !specialty) {
+      response.status(400).json({ error: 'Full name, phone, email, ID number, and specialty are required.' });
+      return;
+    }
+
+    const requestRecord = await createDoctorShieldRequest({
+      id: `doctor-shield-${Date.now()}`,
+      fullName,
+      phone,
+      email,
+      idNumber,
+      specialty,
+      city,
+      employer,
+      notes,
+      hasBeenConvicted,
+      status: 'new',
+      paymentStatus: paymentStatus as 'pending' | 'paid' | 'refunded',
+      paymentAmount,
+      voucherId,
+      paymentMethod,
+      cardBrand,
+      cardLast4,
+      adminNotes: '',
+    });
+
+    response.status(201).json({ doctorShieldRequest: requestRecord });
+  }),
+);
+
+app.get(
+  '/api/admin/doctor-shield-requests',
+  requireAdmin,
+  asyncHandler(async (_request, response) => {
+    response.json(await listDoctorShieldRequests());
+  }),
+);
+
+app.get(
+  '/api/admin/doctor-shield-requests/:id',
+  requireAdmin,
+  asyncHandler(async (request, response) => {
+    const requestRecord = await getDoctorShieldRequestById(request.params.id);
+    if (!requestRecord) {
+      response.status(404).json({ error: 'Doctor Shield request not found.' });
+      return;
+    }
+    response.json(requestRecord);
+  }),
+);
+
+app.patch(
+  '/api/admin/doctor-shield-requests/:id',
+  requireAdmin,
+  asyncHandler(async (request, response) => {
+    const patch = request.body as { status?: string; adminNotes?: string };
+    const updated = await updateDoctorShieldRequest(request.params.id, {
+      status: typeof patch.status === 'string' ? patch.status : undefined,
+      adminNotes: typeof patch.adminNotes === 'string' ? patch.adminNotes : undefined,
+    });
+
+    if (!updated) {
+      response.status(404).json({ error: 'Doctor Shield request not found.' });
       return;
     }
 

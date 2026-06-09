@@ -121,6 +121,29 @@ export interface ApiConsultationRequest {
   updatedAt: string;
 }
 
+export interface ApiDoctorShieldRequest {
+  id: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  idNumber: string;
+  specialty: string;
+  city: string;
+  employer: string;
+  notes: string;
+  hasBeenConvicted: 'yes' | 'no';
+  status: ConsultationStatus;
+  paymentStatus: ConsultationPaymentStatus;
+  paymentAmount: string;
+  voucherId: string;
+  paymentMethod: string;
+  cardBrand: string;
+  cardLast4: string;
+  adminNotes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 export interface ApiUser {

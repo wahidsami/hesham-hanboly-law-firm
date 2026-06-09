@@ -9,6 +9,7 @@ import { MediaLibrary } from "./components/MediaLibrary";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { ArticlesModule } from "./components/articles/ArticlesModule";
 import { ConsultationsModule } from "./components/consultations/ConsultationsModule";
+import { DoctorShieldRequestsModule } from "./components/doctor-shield/DoctorShieldRequestsModule";
 import { PracticeAreasModule } from "./components/practice-areas/PracticeAreasModule";
 import { backendApi } from "./api/backend";
 import { LogIn, ShieldCheck } from "lucide-react";
@@ -39,6 +40,7 @@ export default function App() {
   const [articleCount, setArticleCount] = useState(0);
   const [practiceAreaCount, setPracticeAreaCount] = useState(0);
   const [consultationCount, setConsultationCount] = useState(0);
+  const [doctorShieldRequestCount, setDoctorShieldRequestCount] = useState(0);
 
   const getDisplayBlocksCount = (page: { slug: string; blocksCount: number }) =>
     page.slug === "/" ? Math.max(page.blocksCount, 7) : page.blocksCount;
@@ -72,6 +74,12 @@ export default function App() {
       setConsultationCount(loadedConsultations.length);
     } catch {
       setConsultationCount(0);
+    }
+    try {
+      const loadedDoctorShield = await backendApi.listDoctorShieldRequests();
+      setDoctorShieldRequestCount(loadedDoctorShield.length);
+    } catch {
+      setDoctorShieldRequestCount(0);
     }
   }
 
@@ -165,6 +173,7 @@ export default function App() {
     setArticleCount(0);
     setPracticeAreaCount(0);
     setConsultationCount(0);
+    setDoctorShieldRequestCount(0);
     setSelectedPage(null);
   }
 
@@ -395,6 +404,8 @@ export default function App() {
         return <PracticeAreasModule lang={lang} onCountChange={setPracticeAreaCount} />;
       case "consultations":
         return <ConsultationsModule lang={lang} onCountChange={setConsultationCount} />;
+      case "doctor-shield-requests":
+        return <DoctorShieldRequestsModule lang={lang} onCountChange={setDoctorShieldRequestCount} />;
       case "media":
         return <MediaLibrary lang={lang} />;
       case "settings":
@@ -421,6 +432,7 @@ export default function App() {
           articleCount={articleCount}
           practiceAreaCount={practiceAreaCount}
           consultationCount={consultationCount}
+          doctorShieldRequestCount={doctorShieldRequestCount}
         />
         <main className="flex-1 overflow-hidden" style={{ background: "var(--background)" }}>
           {renderMain()}

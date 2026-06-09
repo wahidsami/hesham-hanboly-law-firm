@@ -7,6 +7,7 @@ import type {
   ApiPage,
   ApiNavItem,
   ApiRevision,
+  ApiDoctorShieldRequest,
   PracticeArea,
   PracticeAreaSummary,
   ArticleStatus,
@@ -121,6 +122,29 @@ type BackendConsultation = {
   recordingMimeType?: string | null;
   recordingSize?: number | null;
   attachments: BackendConsultationAttachment[];
+  adminNotes: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type BackendDoctorShieldRequest = {
+  id: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  idNumber: string;
+  specialty: string;
+  city: string;
+  employer: string;
+  notes: string;
+  hasBeenConvicted: 'yes' | 'no';
+  status: 'new' | 'reviewing' | 'responded' | 'closed';
+  paymentStatus: 'pending' | 'paid' | 'refunded';
+  paymentAmount: string;
+  voucherId: string;
+  paymentMethod: string;
+  cardBrand: string;
+  cardLast4: string;
   adminNotes: string;
   createdAt: string;
   updatedAt: string;
@@ -376,6 +400,31 @@ function mapConsultation(request: BackendConsultation): ApiConsultationRequest {
   };
 }
 
+function mapDoctorShieldRequest(request: BackendDoctorShieldRequest): ApiDoctorShieldRequest {
+  return {
+    id: request.id,
+    fullName: request.fullName,
+    phone: request.phone,
+    email: request.email,
+    idNumber: request.idNumber,
+    specialty: request.specialty,
+    city: request.city,
+    employer: request.employer,
+    notes: request.notes,
+    hasBeenConvicted: request.hasBeenConvicted,
+    status: request.status,
+    paymentStatus: request.paymentStatus,
+    paymentAmount: request.paymentAmount,
+    voucherId: request.voucherId,
+    paymentMethod: request.paymentMethod,
+    cardBrand: request.cardBrand,
+    cardLast4: request.cardLast4,
+    adminNotes: request.adminNotes,
+    createdAt: request.createdAt,
+    updatedAt: request.updatedAt,
+  };
+}
+
 function mapRevision(revision: BackendRevision): ApiRevision {
   return {
     id: revision.id,
@@ -605,6 +654,21 @@ export const backendApi = {
       body: JSON.stringify(patch),
     });
     return mapConsultation(response);
+  },
+  listDoctorShieldRequests: async (): Promise<ApiDoctorShieldRequest[]> => {
+    const response = await requestJson<BackendDoctorShieldRequest[]>('/api/admin/doctor-shield-requests');
+    return response.map(mapDoctorShieldRequest);
+  },
+  getDoctorShieldRequest: async (id: string): Promise<ApiDoctorShieldRequest> => {
+    const response = await requestJson<BackendDoctorShieldRequest>(`/api/admin/doctor-shield-requests/${encodeURIComponent(id)}`);
+    return mapDoctorShieldRequest(response);
+  },
+  updateDoctorShieldRequest: async (id: string, patch: Partial<Pick<ApiDoctorShieldRequest, 'status' | 'adminNotes'>>): Promise<ApiDoctorShieldRequest> => {
+    const response = await requestJson<BackendDoctorShieldRequest>(`/api/admin/doctor-shield-requests/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    });
+    return mapDoctorShieldRequest(response);
   },
 
   listPages: async (): Promise<ApiPage[]> => {
