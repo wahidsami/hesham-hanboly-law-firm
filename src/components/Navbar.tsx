@@ -27,9 +27,10 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
   const coreNavEntries = [
     { key: 'home', targets: ['', 'home', '/'], fallbackAr: 'الرئيسية', fallbackEn: 'Home', defaultOrder: 1 },
     { key: 'about', targets: ['about'], fallbackAr: 'من نحن', fallbackEn: 'About Us', defaultOrder: 2 },
-    { key: 'services', targets: ['services'], fallbackAr: 'خدماتنا', fallbackEn: 'Our Services', defaultOrder: 3 },
-    { key: 'practice-areas', targets: ['practice-areas'], fallbackAr: 'مجالات الممارسات', fallbackEn: 'Practice Areas', defaultOrder: 4 },
-    { key: 'contact', targets: ['contact'], fallbackAr: 'اتصل بنا', fallbackEn: 'Contact', defaultOrder: 5 },
+    { key: 'practice-areas', targets: ['practice-areas', 'services'], fallbackAr: 'مجالات الممارسات', fallbackEn: 'Practice Areas', defaultOrder: 3 },
+    { key: 'team', targets: ['team'], fallbackAr: 'فريق عملنا', fallbackEn: 'Our Team', defaultOrder: 4 },
+    { key: 'articles', targets: ['articles', 'insights'], fallbackAr: 'الأخبار والتحليلات', fallbackEn: 'Insights', defaultOrder: 5 },
+    { key: 'contact', targets: ['contact'], fallbackAr: 'اتصل بنا', fallbackEn: 'Contact', defaultOrder: 6 },
   ] as const;
 
   const normalizeNavTarget = (value: string) => value.replace(/^#/, '').replace(/^\/+|\/+$/g, '').toLowerCase();
@@ -188,13 +189,29 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
       return;
     }
     if (normalized === 'practice-areas') {
+      scrollToSection('services');
+      return;
+    }
+    if (normalized === 'team') {
       if (onNavigate) {
-        onNavigate('cms-page', normalized);
+        onNavigate('team');
+      }
+      return;
+    }
+    if (normalized === 'articles' || normalized === 'insights') {
+      if (onNavigate) {
+        onNavigate('articles');
       }
       return;
     }
     if (normalized === 'contact') {
       scrollToSection('contact');
+      return;
+    }
+    if (normalized === 'services') {
+      if (onNavigate) {
+        onNavigate('cms-page', normalized);
+      }
       return;
     }
     if (onNavigate) {
@@ -236,7 +253,7 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
           <nav className="hidden lg:flex items-center justify-center gap-8 xl:gap-10 h-full">
             {navLinks.filter((link) => link.desktopVisible).map((link) => {
               const normalizedUrl = normalizeNavTarget(link.url || '');
-              const isServicesDropdown = normalizedUrl === 'services';
+              const isServicesDropdown = normalizedUrl === 'practice-areas' || normalizedUrl === 'services';
               const isHome = ['home', 'hero', ''].includes(normalizedUrl);
 
               if (isServicesDropdown) {
@@ -340,7 +357,7 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
           <div className="flex flex-col gap-3 pt-6">
             {navLinks.filter((link) => link.mobileVisible).map((link) => {
               const normalizedUrl = normalizeNavTarget(link.url || '');
-              const isServicesDropdown = normalizedUrl === 'services';
+              const isServicesDropdown = normalizedUrl === 'practice-areas' || normalizedUrl === 'services';
               const isHome = ['home', 'hero', ''].includes(normalizedUrl);
 
               if (isServicesDropdown) {
