@@ -205,12 +205,12 @@ const savePracticeArea = async (originalSlug: string | undefined, body: unknown)
         categoryEn: payload.categoryEn!,
         shortDescAr: payload.shortDescAr!,
         shortDescEn: payload.shortDescEn!,
-        aboutAr: payload.aboutAr,
-        aboutEn: payload.aboutEn,
-        features: payload.features,
-        processSteps: payload.processSteps,
-        useCases: payload.useCases,
-        faq: payload.faq,
+        aboutAr: payload.aboutAr as Prisma.InputJsonValue,
+        aboutEn: payload.aboutEn as Prisma.InputJsonValue,
+        features: payload.features as Prisma.InputJsonValue,
+        processSteps: payload.processSteps as Prisma.InputJsonValue,
+        useCases: payload.useCases as Prisma.InputJsonValue,
+        faq: payload.faq as Prisma.InputJsonValue,
         imageUrl: payload.imageUrl,
         published: Boolean(payload.published),
         order: Number(payload.order || 0),
@@ -229,12 +229,12 @@ const savePracticeArea = async (originalSlug: string | undefined, body: unknown)
       categoryEn: payload.categoryEn!,
       shortDescAr: payload.shortDescAr!,
       shortDescEn: payload.shortDescEn!,
-      aboutAr: payload.aboutAr,
-      aboutEn: payload.aboutEn,
-      features: payload.features,
-      processSteps: payload.processSteps,
-      useCases: payload.useCases,
-      faq: payload.faq,
+      aboutAr: payload.aboutAr as Prisma.InputJsonValue,
+      aboutEn: payload.aboutEn as Prisma.InputJsonValue,
+      features: payload.features as Prisma.InputJsonValue,
+      processSteps: payload.processSteps as Prisma.InputJsonValue,
+      useCases: payload.useCases as Prisma.InputJsonValue,
+      faq: payload.faq as Prisma.InputJsonValue,
       imageUrl: payload.imageUrl,
       published: Boolean(payload.published),
       order: Number(payload.order || 0),
@@ -925,7 +925,7 @@ app.put(
       return;
     }
 
-    const normalizedSlides = heroSlides.map((rawSlide, index) => {
+    const normalizedSlides: Prisma.HeroSlideCreateManyInput[] = heroSlides.map((rawSlide, index) => {
       const slide = rawSlide as Record<string, unknown>;
       if (typeof slide.id !== 'string' || !slide.id.trim()) {
         throw new Error('Hero slide id is required.');
@@ -949,7 +949,7 @@ app.put(
         image: String(slide.image || ''),
         imageAltAr: String(slide.imageAltAr || ''),
         imageAltEn: String(slide.imageAltEn || ''),
-        highlightBox: slide.highlightBox ?? null,
+        highlightBox: (slide.highlightBox ?? null) as Prisma.InputJsonValue | null,
         order: index + 1,
       };
     });

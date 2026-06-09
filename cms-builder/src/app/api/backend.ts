@@ -13,7 +13,7 @@ import type {
   PageStatus,
   PracticeAreaStatus,
 } from './types';
-import type { HeroSlideRecord, SiteContent, SiteSettingsRecord } from '../../../../../src/types';
+import type { HeroSlideRecord, SiteContent, SiteSettingsRecord } from '../../../../src/types';
 
 type BackendArticle = {
   id: string;

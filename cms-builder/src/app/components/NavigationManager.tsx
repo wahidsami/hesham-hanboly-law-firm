@@ -15,6 +15,7 @@ export interface NavItem {
   url: string;
   desktopVisible: boolean;
   mobileVisible: boolean;
+  order: number;
 }
 
 export interface NavPage {

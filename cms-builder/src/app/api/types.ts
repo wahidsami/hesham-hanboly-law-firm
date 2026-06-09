@@ -26,6 +26,7 @@ export interface ApiPage {
   slug: string;
   status: PageStatus;
   navVisible: boolean;
+  blocksCount?: number;
   seoTitleEn: string;
   seoTitleAr: string;
   seoDescEn: string;
