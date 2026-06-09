@@ -7,6 +7,7 @@ import {
   Settings,
   ChevronRight,
   Layers,
+  MessageSquareText,
 } from "lucide-react";
 
 export type SidebarSection =
@@ -14,6 +15,7 @@ export type SidebarSection =
   | "navigation"
   | "articles"
   | "practice-areas"
+  | "consultations"
   | "media"
   | "settings";
 
@@ -23,6 +25,7 @@ interface SidebarProps {
   pageCount: number;
   articleCount: number;
   practiceAreaCount: number;
+  consultationCount: number;
 }
 
 const navItems: { id: SidebarSection; label: string; icon: React.ElementType; badge?: number | ((counts: { pages: number; articles: number; practiceAreas: number }) => number) }[] = [
@@ -30,11 +33,12 @@ const navItems: { id: SidebarSection; label: string; icon: React.ElementType; ba
   { id: "navigation", label: "Navigation", icon: Navigation2 },
   { id: "articles", label: "Articles", icon: FileText, badge: (counts) => counts.articles },
   { id: "practice-areas", label: "Practice Areas", icon: Scale, badge: (counts) => counts.practiceAreas },
+  { id: "consultations", label: "Consultations", icon: MessageSquareText },
   { id: "media", label: "Media Library", icon: Image },
   { id: "settings", label: "Site Settings", icon: Settings },
 ];
 
-export function Sidebar({ active, onSelect, pageCount, articleCount, practiceAreaCount }: SidebarProps) {
+export function Sidebar({ active, onSelect, pageCount, articleCount, practiceAreaCount, consultationCount }: SidebarProps) {
   const counts = { pages: pageCount, articles: articleCount, practiceAreas: practiceAreaCount };
 
   return (
@@ -126,8 +130,22 @@ export function Sidebar({ active, onSelect, pageCount, articleCount, practiceAre
                     fontSize: 10,
                     lineHeight: 1,
                   }}
+                  >
+                    {typeof item.badge === "function" ? item.badge(counts) : item.badge}
+                  </span>
+                )}
+              {item.id === "consultations" && consultationCount > 0 && (
+                <span
+                  className="rounded-full px-1.5 py-0.5"
+                  style={{
+                    background: "rgba(255,255,255,0.08)",
+                    color: "rgba(224,224,232,0.5)",
+                    fontFamily: "DM Mono, monospace",
+                    fontSize: 10,
+                    lineHeight: 1,
+                  }}
                 >
-                  {typeof item.badge === "function" ? item.badge(counts) : item.badge}
+                  {consultationCount}
                 </span>
               )}
               {isActive && (

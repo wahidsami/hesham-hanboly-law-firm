@@ -17,11 +17,14 @@ import { ensureAdminUser, ensureDatabaseSchema, prisma } from './db';
 import {
   articleToRecord,
   cmsPageToRecord,
+  createConsultation,
   deleteCmsPage,
   deleteMediaAsset,
+  getConsultationById,
   listMediaAssets,
   listCmsRevisions,
   listArticles,
+  listConsultations,
   listCmsPages,
   listHeroSlides,
   listNavigationItems,
@@ -34,6 +37,7 @@ import {
   saveCmsRevision,
   saveNavigationItems,
   restoreCmsRevision,
+  updateConsultation,
   updateMediaAsset,
   practiceAreaToRecord,
   siteSettingsToRecord,
@@ -44,6 +48,7 @@ import { seedDatabase } from './seed';
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 12 * 1024 * 1024 } });
+const consultationUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 const distPath = path.resolve(process.cwd(), 'dist');
 const localUploadsPath = path.resolve(process.cwd(), 'backend', 'uploads');
 
@@ -750,6 +755,144 @@ app.post(
     });
 
     response.json({ asset });
+  }),
+);
+
+app.post(
+  '/api/consultations',
+  consultationUpload.fields([
+    { name: 'attachments', maxCount: 12 },
+    { name: 'recording', maxCount: 1 },
+  ]),
+  asyncHandler(async (request, response) => {
+    const body = request.body as Record<string, unknown>;
+    const fullName = typeof body.fullName === 'string' ? body.fullName.trim() : '';
+    const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
+    const email = typeof body.email === 'string' ? body.email.trim() : '';
+    const idNumber = typeof body.idNumber === 'string' ? body.idNumber.trim() : '';
+    const message = typeof body.message === 'string' ? body.message.trim() : '';
+    const voucherId = typeof body.voucherId === 'string' && body.voucherId.trim() ? body.voucherId.trim() : `KSA-${Date.now()}`;
+    const paymentAmount = typeof body.paymentAmount === 'string' && body.paymentAmount.trim() ? body.paymentAmount.trim() : '80.00 SAR';
+    const paymentStatus = typeof body.paymentStatus === 'string' && body.paymentStatus.trim() ? body.paymentStatus.trim() : 'paid';
+    const cardBrand = typeof body.cardBrand === 'string' && body.cardBrand.trim() ? body.cardBrand.trim() : 'card';
+    const cardLast4 = typeof body.cardLast4 === 'string' && body.cardLast4.trim() ? body.cardLast4.trim() : '';
+
+    if (!fullName || !phone || !email || !idNumber) {
+      response.status(400).json({ error: 'Full name, phone, email, and ID number are required.' });
+      return;
+    }
+
+    const filesByField = request.files as
+      | { [fieldname: string]: Express.Multer.File[] }
+      | Express.Multer.File[]
+      | undefined;
+    const fileGroups = !Array.isArray(filesByField) ? filesByField : undefined;
+
+    const attachmentFiles = fileGroups?.attachments || [];
+    const recordingFile = fileGroups?.recording?.[0];
+
+    const attachments = [];
+    for (const file of attachmentFiles || []) {
+      const asset = await uploadBufferToS3({
+        buffer: file.buffer,
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        size: file.size,
+      });
+      attachments.push({
+        id: asset.id,
+        name: asset.originalName,
+        url: asset.url,
+        mimeType: asset.mimeType,
+        sizeBytes: asset.size,
+        kind: asset.mimeType.startsWith('image/')
+          ? 'image'
+          : asset.mimeType.startsWith('audio/')
+            ? 'audio'
+            : 'document',
+      });
+    }
+
+    let recordingUrl: string | null = null;
+    let recordingName: string | null = null;
+    let recordingMimeType: string | null = null;
+    let recordingSize: number | null = null;
+
+    if (recordingFile) {
+      const recordingAsset = await uploadBufferToS3({
+        buffer: recordingFile.buffer,
+        originalName: recordingFile.originalname,
+        mimeType: recordingFile.mimetype,
+        size: recordingFile.size,
+      });
+      recordingUrl = recordingAsset.url;
+      recordingName = recordingAsset.originalName;
+      recordingMimeType = recordingAsset.mimeType;
+      recordingSize = recordingAsset.size;
+    }
+
+    const consultation = await createConsultation({
+      id: `consult-${Date.now()}`,
+      fullName,
+      phone,
+      email,
+      idNumber,
+      message,
+      status: 'new',
+      paymentStatus: paymentStatus as 'paid' | 'pending' | 'refunded',
+      paymentAmount,
+      voucherId,
+      cardBrand,
+      cardLast4,
+      recordingUrl,
+      recordingName,
+      recordingMimeType,
+      recordingSize,
+      attachments,
+      adminNotes: '',
+    });
+
+    response.status(201).json({ consultation });
+  }),
+);
+
+app.get(
+  '/api/admin/consultations',
+  requireAdmin,
+  asyncHandler(async (_request, response) => {
+    response.json(await listConsultations());
+  }),
+);
+
+app.get(
+  '/api/admin/consultations/:id',
+  requireAdmin,
+  asyncHandler(async (request, response) => {
+    const consultation = await getConsultationById(request.params.id);
+    if (!consultation) {
+      response.status(404).json({ error: 'Consultation request not found.' });
+      return;
+    }
+    response.json(consultation);
+  }),
+);
+
+app.patch(
+  '/api/admin/consultations/:id',
+  requireAdmin,
+  asyncHandler(async (request, response) => {
+    const patch = request.body as { status?: string; adminNotes?: string };
+    const updated = await updateConsultation(request.params.id, {
+      status: typeof patch.status === 'string' ? patch.status : undefined,
+      adminNotes: typeof patch.adminNotes === 'string' ? patch.adminNotes : undefined,
+    });
+
+    if (!updated) {
+      response.status(404).json({ error: 'Consultation request not found.' });
+      return;
+    }
+
+    response.json(updated);
   }),
 );
 

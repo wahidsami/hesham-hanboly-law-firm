@@ -5,6 +5,8 @@ export type Lang = 'en' | 'ar';
 export type BlockType =
   | 'hero' | 'rich-text' | 'image-text' | 'cards' | 'stats' | 'cta'
   | 'testimonials' | 'team' | 'contact' | 'faq' | 'gallery' | 'custom';
+export type ConsultationStatus = 'new' | 'reviewing' | 'responded' | 'closed';
+export type ConsultationPaymentStatus = 'pending' | 'paid' | 'refunded';
 
 // ─── Block ────────────────────────────────────────────────────────────────────
 
@@ -82,6 +84,40 @@ export interface ApiRevision {
   createdAt: string;
   author: string;
   note: string;
+}
+
+// ─── Consultation Requests ───────────────────────────────────────────────────
+
+export interface ApiConsultationAttachment {
+  id: string;
+  name: string;
+  url: string;
+  mimeType: string;
+  sizeBytes: number;
+  kind: 'image' | 'document' | 'audio';
+}
+
+export interface ApiConsultationRequest {
+  id: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  idNumber: string;
+  message: string;
+  status: ConsultationStatus;
+  paymentStatus: ConsultationPaymentStatus;
+  paymentAmount: string;
+  voucherId: string;
+  cardBrand: string;
+  cardLast4: string;
+  recordingUrl?: string | null;
+  recordingName?: string | null;
+  recordingMimeType?: string | null;
+  recordingSize?: number | null;
+  attachments: ApiConsultationAttachment[];
+  adminNotes: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────

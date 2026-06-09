@@ -96,6 +96,41 @@ export interface Booking {
   status: 'pending' | 'confirmed';
 }
 
+export type ConsultationStatus = 'new' | 'reviewing' | 'responded' | 'closed';
+export type ConsultationPaymentStatus = 'pending' | 'paid' | 'refunded';
+
+export interface ConsultationAttachment {
+  id: string;
+  name: string;
+  url: string;
+  mimeType: string;
+  sizeBytes: number;
+  kind: 'image' | 'document' | 'audio';
+}
+
+export interface ConsultationRequestRecord {
+  id: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  idNumber: string;
+  message: string;
+  status: ConsultationStatus;
+  paymentStatus: ConsultationPaymentStatus;
+  paymentAmount: string;
+  voucherId: string;
+  cardBrand: string;
+  cardLast4: string;
+  recordingUrl?: string | null;
+  recordingName?: string | null;
+  recordingMimeType?: string | null;
+  recordingSize?: number | null;
+  attachments: ConsultationAttachment[];
+  adminNotes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface HeroSlide {
   id: string;
   badgeAr: string;

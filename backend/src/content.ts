@@ -163,6 +163,36 @@ type MediaAssetRecord = {
   uploadedBy: string;
   usedInPages: string[];
 };
+type ConsultationAttachmentRecord = {
+  id: string;
+  name: string;
+  url: string;
+  mimeType: string;
+  sizeBytes: number;
+  kind: 'image' | 'document' | 'audio';
+};
+type ConsultationRequestRecord = {
+  id: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  idNumber: string;
+  message: string;
+  status: 'new' | 'reviewing' | 'responded' | 'closed';
+  paymentStatus: 'pending' | 'paid' | 'refunded';
+  paymentAmount: string;
+  voucherId: string;
+  cardBrand: string;
+  cardLast4: string;
+  recordingUrl?: string | null;
+  recordingName?: string | null;
+  recordingMimeType?: string | null;
+  recordingSize?: number | null;
+  attachments: ConsultationAttachmentRecord[];
+  adminNotes: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 const collectReferencedUrls = (value: unknown, urls: Set<string>) => {
   if (!value) {
@@ -328,6 +358,31 @@ export const mediaAssetToRecord = (asset: Asset, usedInPages: string[] = []): Me
   uploadedAt: asset.createdAt.toISOString(),
   uploadedBy: 'CMS Editor',
   usedInPages,
+});
+
+const consultationRowToRecord = (row: Record<string, unknown>): ConsultationRequestRecord => ({
+  id: String(row.id || ''),
+  fullName: String(row.fullName || ''),
+  phone: String(row.phone || ''),
+  email: String(row.email || ''),
+  idNumber: String(row.idNumber || ''),
+  message: String(row.message || ''),
+  status: (String(row.status || 'new') as ConsultationRequestRecord['status']),
+  paymentStatus: (String(row.paymentStatus || 'pending') as ConsultationRequestRecord['paymentStatus']),
+  paymentAmount: String(row.paymentAmount || '80.00 SAR'),
+  voucherId: String(row.voucherId || ''),
+  cardBrand: String(row.cardBrand || 'card'),
+  cardLast4: String(row.cardLast4 || ''),
+  recordingUrl: typeof row.recordingUrl === 'string' ? row.recordingUrl : null,
+  recordingName: typeof row.recordingName === 'string' ? row.recordingName : null,
+  recordingMimeType: typeof row.recordingMimeType === 'string' ? row.recordingMimeType : null,
+  recordingSize: typeof row.recordingSize === 'number' ? row.recordingSize : null,
+  attachments: Array.isArray(row.attachments)
+    ? (row.attachments as ConsultationAttachmentRecord[])
+    : [],
+  adminNotes: String(row.adminNotes || ''),
+  createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt || new Date().toISOString()),
+  updatedAt: row.updatedAt instanceof Date ? row.updatedAt.toISOString() : String(row.updatedAt || new Date().toISOString()),
 });
 
 export const heroSlideToRecord = (heroSlide: HeroSlide): HeroSlideRecord => ({
@@ -1079,4 +1134,104 @@ export const deleteMediaAsset = async (assetId: string) => {
   await fs.unlink(localPath).catch(() => undefined);
   await prisma.asset.delete({ where: { id: assetId } });
   return true;
+};
+
+export const listConsultations = async () => {
+  const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(`
+    SELECT *
+    FROM "ConsultationRequest"
+    ORDER BY "createdAt" DESC, "updatedAt" DESC
+  `);
+  return rows.map((row) => consultationRowToRecord(row));
+};
+
+export const getConsultationById = async (id: string) => {
+  const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(`
+    SELECT *
+    FROM "ConsultationRequest"
+    WHERE "id" = $1
+    LIMIT 1
+  `, id);
+  const row = rows[0];
+  return row ? consultationRowToRecord(row) : null;
+};
+
+export const createConsultation = async (payload: {
+  id: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  idNumber: string;
+  message: string;
+  status: ConsultationRequestRecord['status'];
+  paymentStatus: ConsultationRequestRecord['paymentStatus'];
+  paymentAmount: string;
+  voucherId: string;
+  cardBrand: string;
+  cardLast4: string;
+  recordingUrl?: string | null;
+  recordingName?: string | null;
+  recordingMimeType?: string | null;
+  recordingSize?: number | null;
+  attachments: ConsultationAttachmentRecord[];
+  adminNotes?: string;
+}) => {
+  await prisma.$executeRawUnsafe(
+    `
+      INSERT INTO "ConsultationRequest" (
+        "id", "fullName", "phone", "email", "idNumber", "message",
+        "status", "paymentStatus", "paymentAmount", "voucherId", "cardBrand", "cardLast4",
+        "recordingUrl", "recordingName", "recordingMimeType", "recordingSize",
+        "attachments", "adminNotes", "createdAt", "updatedAt"
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6,
+        $7, $8, $9, $10, $11, $12,
+        $13, $14, $15, $16,
+        $17::jsonb, $18, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+      )
+    `,
+    payload.id,
+    payload.fullName,
+    payload.phone,
+    payload.email,
+    payload.idNumber,
+    payload.message,
+    payload.status,
+    payload.paymentStatus,
+    payload.paymentAmount,
+    payload.voucherId,
+    payload.cardBrand,
+    payload.cardLast4,
+    payload.recordingUrl ?? null,
+    payload.recordingName ?? null,
+    payload.recordingMimeType ?? null,
+    payload.recordingSize ?? null,
+    JSON.stringify(payload.attachments),
+    payload.adminNotes || '',
+  );
+
+  return getConsultationById(payload.id);
+};
+
+export const updateConsultation = async (id: string, patch: { status?: string; adminNotes?: string }) => {
+  const existing = await getConsultationById(id);
+  if (!existing) {
+    throw new Error('Consultation request not found.');
+  }
+
+  await prisma.$executeRawUnsafe(
+    `
+      UPDATE "ConsultationRequest"
+      SET
+        "status" = COALESCE($2, "status"),
+        "adminNotes" = COALESCE($3, "adminNotes"),
+        "updatedAt" = CURRENT_TIMESTAMP
+      WHERE "id" = $1
+    `,
+    id,
+    patch.status ?? null,
+    patch.adminNotes ?? null,
+  );
+
+  return getConsultationById(id);
 };

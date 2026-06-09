@@ -45,6 +45,7 @@ type AttachmentItem = {
   type: string;
   category: 'document' | 'image';
   previewUrl: string;
+  file: File;
 };
 
 const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
@@ -120,6 +121,7 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
   const [recordingStatus, setRecordingStatus] = useState<'idle' | 'recording' | 'paused'>('idle');
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [recordingBlobUrl, setRecordingBlobUrl] = useState('');
+  const [recordingFile, setRecordingFile] = useState<File | null>(null);
   const [recordingError, setRecordingError] = useState('');
   const [isRecordingSupported, setIsRecordingSupported] = useState(true);
   const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
@@ -130,6 +132,7 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
   const [showCardBack, setShowCardBack] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [voucherId, setVoucherId] = useState('');
+  const [submitError, setSubmitError] = useState('');
   const [paymentSummary, setPaymentSummary] = useState({
     fullName: '',
     phone: '',
@@ -172,8 +175,13 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
     recorderRef.current = null;
     recorderStreamRef.current = null;
     recordingChunksRef.current = [];
+    if (recordingBlobUrl) {
+      URL.revokeObjectURL(recordingBlobUrl);
+    }
     setRecordingStatus('idle');
     setRecordingSeconds(0);
+    setRecordingBlobUrl('');
+    setRecordingFile(null);
   };
 
   const stopRecording = () => {
@@ -212,6 +220,7 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
         const blob = new Blob(recordingChunksRef.current, { type: 'audio/webm' });
         const blobUrl = URL.createObjectURL(blob);
         setRecordingBlobUrl(blobUrl);
+        setRecordingFile(new File([blob], `consultation-recording-${Date.now()}.webm`, { type: 'audio/webm' }));
         setRecordingStatus('paused');
         if (recordingTimerRef.current) {
           window.clearInterval(recordingTimerRef.current);
@@ -252,6 +261,7 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
       type: file.type || 'application/octet-stream',
       category: file.type.startsWith('image/') ? 'image' : 'document',
       previewUrl: URL.createObjectURL(file),
+      file,
     }));
 
     setAttachments((current) => [...current, ...nextItems]);
@@ -302,11 +312,32 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
       return;
     }
     setIsPaymentProcessing(true);
-    await new Promise((resolve) => window.setTimeout(resolve, 1500));
-    setIsPaymentProcessing(false);
-    setVoucherId(`KSA-${Math.floor(100000 + Math.random() * 900000)}`);
-    setPaymentSuccess(true);
-    setBookingStep('done');
+    setSubmitError('');
+    const generatedVoucherId = `KSA-${Math.floor(100000 + Math.random() * 900000)}`;
+    try {
+      await new Promise((resolve) => window.setTimeout(resolve, 900));
+      const consultation = await contentClient.submitConsultation({
+        fullName: paymentSummary.fullName || formData.fullName,
+        phone: paymentSummary.phone || formData.phone,
+        email: paymentSummary.email || formData.email,
+        idNumber: paymentSummary.idNumber || idNumber,
+        message: paymentSummary.message || formData.message,
+        voucherId: generatedVoucherId,
+        paymentAmount: '80.00 SAR',
+        paymentStatus: 'paid',
+        cardBrand: detectCardBrand(cardNumber),
+        cardLast4: cardNumber.replace(/\D/g, '').slice(-4),
+        attachments: attachments.map((item) => item.file),
+        recording: recordingFile,
+      });
+      setVoucherId(consultation.consultation.voucherId || generatedVoucherId);
+      setPaymentSuccess(true);
+      setBookingStep('done');
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Failed to submit consultation.');
+    } finally {
+      setIsPaymentProcessing(false);
+    }
   };
 
   useEffect(() => {
@@ -743,6 +774,11 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
                       </span>
                     ))}
                   </div>
+                  {submitError && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                      {submitError}
+                    </div>
+                  )}
                 </div>
 
                 {bookingStep === 'details' && (
@@ -1197,11 +1233,14 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
                           setCardCvv('');
                           setIdNumber('');
                           setIdTouched(false);
+                          attachments.forEach((item) => URL.revokeObjectURL(item.previewUrl));
                           setAttachments([]);
                           setFormData({ fullName: '', phone: '', email: '', message: '' });
                           setRecordingBlobUrl('');
+                          setRecordingFile(null);
                           setRecordingSeconds(0);
                           setRecordingStatus('idle');
+                          setSubmitError('');
                         }}
                         className="px-8 py-3 rounded-lg bg-[#A56A1E] hover:bg-[#946B4B] text-white text-xs font-bold transition-all shadow-md cursor-pointer"
                       >

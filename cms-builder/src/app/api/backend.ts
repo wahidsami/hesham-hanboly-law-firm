@@ -2,6 +2,7 @@ import type {
   Article,
   ArticleSummary,
   ApiAsset,
+  ApiConsultationRequest,
   ApiBlock,
   ApiPage,
   ApiNavItem,
@@ -9,6 +10,7 @@ import type {
   PracticeArea,
   PracticeAreaSummary,
   ArticleStatus,
+  PageStatus,
   PracticeAreaStatus,
 } from './types';
 import type { HeroSlideRecord, SiteContent, SiteSettingsRecord } from '../../../../../src/types';
@@ -88,6 +90,38 @@ type BackendAsset = {
   originalName: string;
   altAr?: string | null;
   altEn?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type BackendConsultationAttachment = {
+  id: string;
+  name: string;
+  url: string;
+  mimeType: string;
+  sizeBytes: number;
+  kind: 'image' | 'document' | 'audio';
+};
+
+type BackendConsultation = {
+  id: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  idNumber: string;
+  message: string;
+  status: 'new' | 'reviewing' | 'responded' | 'closed';
+  paymentStatus: 'pending' | 'paid' | 'refunded';
+  paymentAmount: string;
+  voucherId: string;
+  cardBrand: string;
+  cardLast4: string;
+  recordingUrl?: string | null;
+  recordingName?: string | null;
+  recordingMimeType?: string | null;
+  recordingSize?: number | null;
+  attachments: BackendConsultationAttachment[];
+  adminNotes: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -333,6 +367,15 @@ function mapAsset(asset: BackendAsset): ApiAsset {
   };
 }
 
+function mapConsultation(request: BackendConsultation): ApiConsultationRequest {
+  return {
+    ...request,
+    status: request.status,
+    paymentStatus: request.paymentStatus,
+    attachments: request.attachments || [],
+  };
+}
+
 function mapRevision(revision: BackendRevision): ApiRevision {
   return {
     id: revision.id,
@@ -548,6 +591,21 @@ export const backendApi = {
       method: 'PUT',
       body: JSON.stringify(siteSettings),
     }),
+  listConsultations: async (): Promise<ApiConsultationRequest[]> => {
+    const response = await requestJson<BackendConsultation[]>('/api/admin/consultations');
+    return response.map(mapConsultation);
+  },
+  getConsultation: async (id: string): Promise<ApiConsultationRequest> => {
+    const response = await requestJson<BackendConsultation>(`/api/admin/consultations/${encodeURIComponent(id)}`);
+    return mapConsultation(response);
+  },
+  updateConsultation: async (id: string, patch: Partial<Pick<ApiConsultationRequest, 'status' | 'adminNotes'>>): Promise<ApiConsultationRequest> => {
+    const response = await requestJson<BackendConsultation>(`/api/admin/consultations/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    });
+    return mapConsultation(response);
+  },
 
   listPages: async (): Promise<ApiPage[]> => {
     const response = await requestJson<BackendPage[]>('/api/admin/pages');

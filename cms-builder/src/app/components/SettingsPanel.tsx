@@ -68,6 +68,14 @@ const ENDPOINT_GROUPS: EndpointGroup[] = [
     ],
   },
   {
+    title: 'Admin — Consultations',
+    endpoints: [
+      { method: 'GET', path: '/api/admin/consultations', description: 'List all consultation requests in newest-first order.', auth: true, response: '{ data: ConsultationRequest[] }' },
+      { method: 'GET', path: '/api/admin/consultations/:id', description: 'Fetch the full detail record for a single consultation request.', auth: true, params: [{ name: 'id', in: 'path', type: 'string', required: true, description: 'Consultation request id' }], response: '{ data: ConsultationRequest }' },
+      { method: 'PATCH', path: '/api/admin/consultations/:id', description: 'Update consultation status and internal notes.', auth: true, params: [{ name: 'status', in: 'body', type: 'ConsultationStatus', required: false, description: 'new | reviewing | responded | closed' }, { name: 'adminNotes', in: 'body', type: 'string', required: false, description: 'Internal notes visible to the team' }], response: '{ data: ConsultationRequest }' },
+    ],
+  },
+  {
     title: 'Admin — Revisions',
     endpoints: [
       { method: 'GET', path: '/api/admin/pages/:slug/revisions', description: 'Get the revision history for a page (newest first).', auth: true, response: '{ data: ApiRevision[] }' },

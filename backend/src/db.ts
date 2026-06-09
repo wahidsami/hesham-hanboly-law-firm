@@ -273,6 +273,29 @@ export const ensureDatabaseSchema = async () => {
       "updatedAt" TIMESTAMP(3) NOT NULL,
       CONSTRAINT "CmsRevision_pkey" PRIMARY KEY ("id")
     )`,
+    `CREATE TABLE IF NOT EXISTS "ConsultationRequest" (
+      "id" TEXT NOT NULL,
+      "fullName" TEXT NOT NULL,
+      "phone" TEXT NOT NULL,
+      "email" TEXT NOT NULL,
+      "idNumber" TEXT NOT NULL,
+      "message" TEXT NOT NULL,
+      "status" TEXT NOT NULL,
+      "paymentStatus" TEXT NOT NULL,
+      "paymentAmount" TEXT NOT NULL,
+      "voucherId" TEXT NOT NULL,
+      "cardBrand" TEXT NOT NULL,
+      "cardLast4" TEXT NOT NULL,
+      "recordingUrl" TEXT,
+      "recordingName" TEXT,
+      "recordingMimeType" TEXT,
+      "recordingSize" INTEGER,
+      "attachments" JSONB NOT NULL DEFAULT '[]'::jsonb,
+      "adminNotes" TEXT NOT NULL DEFAULT '',
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL,
+      CONSTRAINT "ConsultationRequest_pkey" PRIMARY KEY ("id")
+    )`,
     `CREATE UNIQUE INDEX IF NOT EXISTS "AdminUser_username_key" ON "AdminUser"("username")`,
     `CREATE UNIQUE INDEX IF NOT EXISTS "AdminSession_token_key" ON "AdminSession"("token")`,
     `CREATE UNIQUE INDEX IF NOT EXISTS "Asset_key_key" ON "Asset"("key")`,
@@ -283,6 +306,8 @@ export const ensureDatabaseSchema = async () => {
     `CREATE UNIQUE INDEX IF NOT EXISTS "CmsPage_slug_key" ON "CmsPage"("slug")`,
     `CREATE UNIQUE INDEX IF NOT EXISTS "NavItem_pageId_key" ON "NavItem"("pageId")`,
     `CREATE INDEX IF NOT EXISTS "CmsRevision_pageId_idx" ON "CmsRevision"("pageId")`,
+    `CREATE INDEX IF NOT EXISTS "ConsultationRequest_status_idx" ON "ConsultationRequest"("status")`,
+    `CREATE INDEX IF NOT EXISTS "ConsultationRequest_createdAt_idx" ON "ConsultationRequest"("createdAt")`,
   ];
 
   statements.push(`

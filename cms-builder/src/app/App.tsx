@@ -8,6 +8,7 @@ import { NavigationManager, type NavItem } from "./components/NavigationManager"
 import { MediaLibrary } from "./components/MediaLibrary";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { ArticlesModule } from "./components/articles/ArticlesModule";
+import { ConsultationsModule } from "./components/consultations/ConsultationsModule";
 import { PracticeAreasModule } from "./components/practice-areas/PracticeAreasModule";
 import { backendApi } from "./api/backend";
 import { LogIn, ShieldCheck } from "lucide-react";
@@ -37,6 +38,7 @@ export default function App() {
   const [navItems, setNavItems] = useState<NavItem[]>([]);
   const [articleCount, setArticleCount] = useState(0);
   const [practiceAreaCount, setPracticeAreaCount] = useState(0);
+  const [consultationCount, setConsultationCount] = useState(0);
 
   const getDisplayBlocksCount = (page: { slug: string; blocksCount: number }) =>
     page.slug === "/" ? Math.max(page.blocksCount, 7) : page.blocksCount;
@@ -65,6 +67,12 @@ export default function App() {
     setNavItems(loadedNavItems);
     setArticleCount(loadedArticles.length);
     setPracticeAreaCount(loadedPracticeAreas.length);
+    try {
+      const loadedConsultations = await backendApi.listConsultations();
+      setConsultationCount(loadedConsultations.length);
+    } catch {
+      setConsultationCount(0);
+    }
   }
 
   useEffect(() => {
@@ -154,6 +162,9 @@ export default function App() {
     setCurrentUser("");
     setPages([]);
     setNavItems([]);
+    setArticleCount(0);
+    setPracticeAreaCount(0);
+    setConsultationCount(0);
     setSelectedPage(null);
   }
 
@@ -382,6 +393,8 @@ export default function App() {
         return <ArticlesModule lang={lang} onCountChange={setArticleCount} />;
       case "practice-areas":
         return <PracticeAreasModule lang={lang} onCountChange={setPracticeAreaCount} />;
+      case "consultations":
+        return <ConsultationsModule lang={lang} onCountChange={setConsultationCount} />;
       case "media":
         return <MediaLibrary lang={lang} />;
       case "settings":
@@ -401,12 +414,13 @@ export default function App() {
         onLogout={handleLogout}
       />
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar
+          <Sidebar
           active={activeSection}
           onSelect={s => { setActiveSection(s); setSelectedPage(null); }}
           pageCount={pages.length}
           articleCount={articleCount}
           practiceAreaCount={practiceAreaCount}
+          consultationCount={consultationCount}
         />
         <main className="flex-1 overflow-hidden" style={{ background: "var(--background)" }}>
           {renderMain()}

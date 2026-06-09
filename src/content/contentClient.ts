@@ -1,4 +1,4 @@
-import type { ArticleRecord, CMSPublishedPageRecord, HeroSlideRecord, PracticeAreaRecord, SiteContent, SiteSettingsRecord } from '../types';
+import type { ArticleRecord, CMSPublishedPageRecord, HeroSlideRecord, PracticeAreaRecord, SiteContent, SiteSettingsRecord, ConsultationRequestRecord } from '../types';
 
 const requestJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(url, {
@@ -103,5 +103,38 @@ export const contentClient = {
     if (altAr) formData.append('altAr', altAr);
     if (altEn) formData.append('altEn', altEn);
     return requestFormData<{ asset: { id: string; url: string; key: string } }>('/api/admin/uploads', formData);
+  },
+  submitConsultation: (payload: {
+    fullName: string;
+    phone: string;
+    email: string;
+    idNumber: string;
+    message: string;
+    voucherId: string;
+    paymentAmount: string;
+    paymentStatus: string;
+    cardBrand: string;
+    cardLast4: string;
+    attachments?: File[];
+    recording?: File | null;
+  }) => {
+    const formData = new FormData();
+    formData.append('fullName', payload.fullName);
+    formData.append('phone', payload.phone);
+    formData.append('email', payload.email);
+    formData.append('idNumber', payload.idNumber);
+    formData.append('message', payload.message);
+    formData.append('voucherId', payload.voucherId);
+    formData.append('paymentAmount', payload.paymentAmount);
+    formData.append('paymentStatus', payload.paymentStatus);
+    formData.append('cardBrand', payload.cardBrand);
+    formData.append('cardLast4', payload.cardLast4);
+    payload.attachments?.forEach((file) => {
+      formData.append('attachments', file);
+    });
+    if (payload.recording) {
+      formData.append('recording', payload.recording);
+    }
+    return requestFormData<{ consultation: ConsultationRequestRecord }>('/api/consultations', formData);
   },
 };
