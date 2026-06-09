@@ -428,7 +428,7 @@ export const heroSlideToRecord = (heroSlide: HeroSlide): HeroSlideRecord => ({
   ctaTextEn: heroSlide.ctaTextEn,
   actionType: heroSlide.actionType as HeroSlideRecord['actionType'],
   actionParam: heroSlide.actionParam || undefined,
-  image: heroSlide.image,
+  image: normalizePublicAssetPath(heroSlide.image),
   imageAltAr: heroSlide.imageAltAr,
   imageAltEn: heroSlide.imageAltEn,
   highlightBox: heroSlide.highlightBox ? (heroSlide.highlightBox as HeroSlideRecord['highlightBox']) : undefined,
