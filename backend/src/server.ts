@@ -364,9 +364,14 @@ const saveSiteSettings = async (body: unknown) => {
     footerBadgeEn: String(input.footerBadgeEn || ''),
   };
 
-  const columns = Object.keys(payload);
+  const payloadWithTimestamp = {
+    ...payload,
+    updatedAt: new Date(),
+  };
+
+  const columns = Object.keys(payloadWithTimestamp);
   const columnFragments = columns.map((column) => Prisma.raw(`"${column}"`));
-  const valueFragments = columns.map((column) => Prisma.sql`${payload[column as keyof typeof payload]}`);
+  const valueFragments = columns.map((column) => Prisma.sql`${payloadWithTimestamp[column as keyof typeof payloadWithTimestamp]}`);
   const updateFragments = columns
     .filter((column) => column !== 'id')
     .map((column) => Prisma.sql`${Prisma.raw(`"${column}"`)} = EXCLUDED.${Prisma.raw(`"${column}"`)}`);
