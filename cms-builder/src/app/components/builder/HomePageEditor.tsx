@@ -117,6 +117,7 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
   const [loading, setLoading] = useState(true);
   const [savingHero, setSavingHero] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsSyncedAt, setSettingsSyncedAt] = useState<number | null>(null);
   const [heroSlides, setHeroSlides] = useState<HeroSlideRecord[]>([]);
   const [siteSettings, setSiteSettings] = useState<SiteSettingsRecord | null>(null);
   const [selectedSlideId, setSelectedSlideId] = useState<string | null>(null);
@@ -196,6 +197,7 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
       await backendApi.saveSiteSettings(siteSettings);
       window.dispatchEvent(new Event('site-content-updated'));
       localStorage.setItem('site-content-updated', String(Date.now()));
+      setSettingsSyncedAt(Date.now());
     } finally {
       setSavingSettings(false);
     }
@@ -776,6 +778,11 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
                 {savingSettings ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 Save homepage settings
               </button>
+              {settingsSyncedAt && !savingSettings && (
+                <span className="rounded-full border border-[#CFE8D6] bg-[#EEF8F1] px-3 py-1 text-xs font-semibold text-[#2F7D46]">
+                  Saved & synced
+                </span>
+              )}
             </div>
           </section>
         )}
