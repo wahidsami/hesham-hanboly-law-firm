@@ -77,7 +77,7 @@ export default function Team({ onExploreTeam }: TeamProps) {
               <div className="rounded-xl overflow-hidden aspect-[4/5] w-full max-w-[400px] shadow-xl border border-[#D8D1C7] relative group bg-[#F8F5EF]">
                 <div className="absolute inset-0 bg-gradient-to-t from-[#121212]/80 via-transparent to-transparent z-10" />
                 <img
-                src={siteSettings?.teamFounderImageUrl || '/src/assets/images/founder_hesham_hanboly_1780491593879.png'}
+                src={siteSettings?.teamFounderImageUrl || '/images/founder_hesham_hanboly_1780491593879.png'}
                 alt={t(
                   siteSettings?.teamFounderImageAltAr || siteSettings?.teamFounderNameAr || 'المحامي / هشام بن حسن حنبولي',
                   siteSettings?.teamFounderImageAltEn || siteSettings?.teamFounderNameEn || 'Advocate / Hesham bin Hasan Hanboly'

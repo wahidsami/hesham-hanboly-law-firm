@@ -270,7 +270,7 @@ export default function AboutPage({ onScrollToContact }: AboutPageProps) {
         {/* Parallax Background Visual Layout */}
         <div className="absolute inset-0 z-0 opacity-45">
           <img 
-            src="/src/assets/images/luxury_legal_office_1780491575816.png" 
+            src="/images/luxury_legal_office_1780491575816.png" 
             alt="Corporate Legal Interior" 
             className="w-full h-full object-cover scale-105 pointer-events-none"
           />
@@ -372,7 +372,7 @@ export default function AboutPage({ onScrollToContact }: AboutPageProps) {
 
               <div className="rounded-xl overflow-hidden aspect-[4/5] bg-[#F1ECE3] shadow-2xl border border-[#D8D1C7] relative group">
                 <img 
-                  src="/src/assets/images/luxury_books_meeting_1780493103320.png" 
+                  src="/images/luxury_books_meeting_1780493103320.png" 
                   alt="Modern executive legal room" 
                   className="w-full h-full object-cover transition-transform duration-[1200ms] group-hover:scale-105"
                   referrerPolicy="no-referrer"

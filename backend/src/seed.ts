@@ -298,7 +298,7 @@ export const seedDatabase = async () => {
                 roleEn: 'Deputy Managing Director',
                 bioAr: 'محامي ومستشار قانوني متخصّص في الاستشارات الوقائية وصياغة العقود المتطابقة مع الأنظمة المحلية والاتفاقيات الدولية.',
                 bioEn: 'Legal consultant focused on preventative advisory and drafting agreements aligned with local regulations and international standards.',
-                imageUrl: '/src/assets/images/deputy_abdullah_1780495865817.png',
+                imageUrl: '/images/deputy_abdullah_1780495865817.png',
                 credentials: [
                   'عضو الهيئة السعودية للمحامين',
                   'متخصص في صياغة العقود الاستثمارية العابرة للحدود',
@@ -312,7 +312,7 @@ export const seedDatabase = async () => {
                 roleEn: 'Riyadh Branch Director',
                 bioAr: 'محامي ومستشار قانوني يشرف على المرافعة والتمثيل وتوفير الدعم الوقائي والامتثال لشركاء النجاح في العاصمة الرياض.',
                 bioEn: 'Legal practitioner overseeing advocacy, representation, and preventive compliance for clients in Riyadh.',
-                imageUrl: '/src/assets/images/manager_sami_1780495881512.png',
+                imageUrl: '/images/manager_sami_1780495881512.png',
                 credentials: [
                   'بكالوريوس أنظمة - جامعة الملك عبدالعزيز',
                   'عضو الهيئة السعودية للمحامين',

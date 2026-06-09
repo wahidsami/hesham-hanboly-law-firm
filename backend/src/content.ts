@@ -18,6 +18,16 @@ import type {
   SiteContent,
 } from '../../src/types';
 
+const normalizePublicAssetPath = (value?: string | null) => {
+  if (typeof value !== 'string') {
+    return value || '';
+  }
+
+  return value.startsWith('/src/assets/images/')
+    ? value.replace('/src/assets/images/', '/images/')
+    : value;
+};
+
 type ArticleInput = Partial<ArticleRecord> & { image?: string; imageUrl?: string; originalSlug?: string };
 type PracticeAreaInput = Partial<PracticeAreaRecord> & { imageUrl?: string | null; originalSlug?: string };
 type CmsPageInput = Partial<CMSPageRecord>;
@@ -265,7 +275,7 @@ export const articleToRecord = (article: Article): ArticleRecord => ({
   date: article.date,
   readTimeAr: article.readTimeAr,
   readTimeEn: article.readTimeEn,
-  image: article.imageUrl,
+  image: normalizePublicAssetPath(article.imageUrl),
   bodyAr: article.bodyAr,
   bodyEn: article.bodyEn,
   published: article.published,
@@ -288,7 +298,7 @@ export const practiceAreaToRecord = (practiceArea: PracticeArea): PracticeAreaRe
   processSteps: practiceArea.processSteps as PracticeAreaStep[],
   useCases: practiceArea.useCases as LocalizedText[],
   faq: practiceArea.faq as PracticeAreaFaq[],
-  imageUrl: practiceArea.imageUrl || undefined,
+  imageUrl: normalizePublicAssetPath(practiceArea.imageUrl) || undefined,
   published: practiceArea.published,
   order: practiceArea.order,
 });
@@ -530,10 +540,10 @@ export const siteSettingsToRecord = (siteSettings: {
   footerBadgeEn: string;
 }): SiteSettingsRecord => ({
   id: siteSettings.id,
-  logoImageUrl: siteSettings.logoImageUrl || '',
+  logoImageUrl: normalizePublicAssetPath(siteSettings.logoImageUrl) || '',
   logoImageAltAr: siteSettings.logoImageAltAr || 'شعار شركة هشام حسن حنبولي الدولية',
   logoImageAltEn: siteSettings.logoImageAltEn || 'Hesham H. Hanboly International logo',
-  footerLogoImageUrl: siteSettings.footerLogoImageUrl || '',
+  footerLogoImageUrl: normalizePublicAssetPath(siteSettings.footerLogoImageUrl) || '',
   footerLogoImageAltAr: siteSettings.footerLogoImageAltAr || 'شعار التذييل لشركة هشام حسن حنبولي الدولية',
   footerLogoImageAltEn: siteSettings.footerLogoImageAltEn || 'Hesham H. Hanboly International footer logo',
   navbarCtaAr: siteSettings.navbarCtaAr,
@@ -597,7 +607,7 @@ export const siteSettingsToRecord = (siteSettings: {
   teamFounderRoleEn: siteSettings.teamFounderRoleEn,
   teamFounderIntroAr: siteSettings.teamFounderIntroAr,
   teamFounderIntroEn: siteSettings.teamFounderIntroEn,
-  teamFounderImageUrl: siteSettings.teamFounderImageUrl || '/src/assets/images/founder_hesham_hanboly_1780491593879.png',
+  teamFounderImageUrl: normalizePublicAssetPath(siteSettings.teamFounderImageUrl) || '/images/founder_hesham_hanboly_1780491593879.png',
   teamFounderImageAltAr: siteSettings.teamFounderImageAltAr || 'المحامي / هشام بن حسن حنبولي',
   teamFounderImageAltEn: siteSettings.teamFounderImageAltEn || 'Advocate / Hesham H. Hanboly',
   teamSectionCtaAr: siteSettings.teamSectionCtaAr,
@@ -824,7 +834,7 @@ export const toSiteContent = async (): Promise<SiteContent> => {
         footerLogoImageAltEn: 'Hesham H. Hanboly International footer logo',
         navbarCtaAr: 'طلب استشارة',
         navbarCtaEn: 'Book Counsel',
-        teamFounderImageUrl: '/src/assets/images/founder_hesham_hanboly_1780491593879.png',
+        teamFounderImageUrl: '/images/founder_hesham_hanboly_1780491593879.png',
         teamFounderImageAltAr: 'المحامي / هشام بن حسن حنبولي',
         teamFounderImageAltEn: 'Advocate / Hesham H. Hanboly',
           aboutHeroBadgeAr: '',

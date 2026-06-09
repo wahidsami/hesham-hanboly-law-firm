@@ -125,7 +125,7 @@ const seedSiteSettings = (): SiteSettingsRecord => ({
   teamFounderRoleEn: 'Managing Director • Active Senior Legal Consultant',
   teamFounderIntroAr: 'يقود المستشار هشام بن حسن حنبولي أعمال الشركة بتوجيه استراتيجي متميز يجمع بين فهم الواقع الاقتصادي وصحيح الأحكام القضائية.',
   teamFounderIntroEn: 'Senior Counsel Hesham H. Hanboly leads the firm with a strategic, high-impact approach, bridging economic realities with regulatory environments.',
-  teamFounderImageUrl: '/src/assets/images/founder_hesham_hanboly_1780491593879.png',
+  teamFounderImageUrl: '/images/founder_hesham_hanboly_1780491593879.png',
   teamFounderImageAltAr: 'المحامي / هشام بن حسن حنبولي',
   teamFounderImageAltEn: 'Advocate / Hesham H. Hanboly',
   teamSectionCtaAr: 'تصفّح فريق العمل بالكامل',

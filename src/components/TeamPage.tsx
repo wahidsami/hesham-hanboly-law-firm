@@ -90,7 +90,7 @@ export default function TeamPage({ onScrollToContact, onBackToHome }: TeamPagePr
             'محامي ومستشار قانوني وعضو الهيئة السعودية للمحامين ومحكم معتمد وعضو لجنة المحامين بالغرفة التجارية بمحافظة جدة. يمتلك خبرة قضائية عريقة في تحصين وصياغة الاستراتيجيات الوقائية للشركات والمجموعات الاستثمارية الكبرى.',
             'Attorney-at-Law, Legal Practitioner, member of the Saudi Bar Association, certified Arbitrator, and board member of the Lawyers’ Committee at the Jeddah Chamber of Commerce. He possesses immense judicial expertise in safeguarding corporate interests and structuring preventative strategies for leading commercial conglomerates.'
           ),
-          image: '/src/assets/images/founder_hesham_hanboly_1780491593879.png',
+          image: '/images/founder_hesham_hanboly_1780491593879.png',
           featured: true,
           credentials: [
             t('عضو لجنة المحامين بالغرفة التجارية بجدة', 'Board Member, Lawyers Committee, Jeddah Chamber of Commerce'),
@@ -106,7 +106,7 @@ export default function TeamPage({ onScrollToContact, onBackToHome }: TeamPagePr
             'محامي ومستشار قانوني وعضو الهيئة السعودية للمحامين حاصل على بكالوريوس الدراسات القانونية من جامعة جانون بالولايات المتحدة الأمريكية. خبير في الاستشارات الوقائية وصياغة العقود المتطابقة مع الأنظمة المحلية والاتفاقيات الدولية.',
             'Advocate, Legal Advisor, and member of the Saudi Bar Association, holding his Bachelor of Arts in Legal Studies from Gannon University, USA. Specialist in defensive legal counseling and structuring agreements in absolute sync with regional frameworks and international commerce standards.'
           ),
-          image: '/src/assets/images/deputy_abdullah_1780495865817.png',
+          image: '/images/deputy_abdullah_1780495865817.png',
           credentials: [
             t('بكالوريوس الدراسات القانونية - جامعة جانون الأمريكية', 'B.A. in Legal Studies - Gannon University, USA'),
             t('عضو الهيئة السعودية للمحامين', 'Member of the Saudi Bar Association'),
@@ -120,7 +120,7 @@ export default function TeamPage({ onScrollToContact, onBackToHome }: TeamPagePr
             'محامي ومستشار قانوني وعضو الهيئة السعودية للمحامين حاصل على بكالوريوس أنظمة من جامعة الملك عبدالعزيز. يشرف على المرافعة والتمثيل وتوفير الدعم الوقائي والامتثال لشركاء النجاح في العاصمة الرياض.',
             'Advocate, Legal Advisor, and member of the Saudi Bar Association, holding a Bachelor of Laws (LL.B.) from King Abdulaziz University. He oversees proactive litigation, corporate representation, and compliance structures for our partners in Riyadh.'
           ),
-          image: '/src/assets/images/manager_sami_1780495881512.png',
+          image: '/images/manager_sami_1780495881512.png',
           credentials: [
             t('بكالوريوس أنظمة - جامعة الملك عبدالعزيز', 'LL.B. (Bachelor of Laws) - King Abdulaziz University'),
             t('عضو الهيئة السعودية للمحامين', 'Member of the Saudi Bar Association'),
@@ -136,7 +136,7 @@ export default function TeamPage({ onScrollToContact, onBackToHome }: TeamPagePr
         name: language === 'ar' ? toStringValue(item.nameAr, '') : toStringValue(item.nameEn, ''),
         role: language === 'ar' ? toStringValue(item.roleAr, '') : toStringValue(item.roleEn, ''),
         desc: language === 'ar' ? toStringValue(item.bioAr, '') : toStringValue(item.bioEn, ''),
-        image: toStringValue(item.imageUrl, index === 0 ? '/src/assets/images/founder_hesham_hanboly_1780491593879.png' : ''),
+        image: toStringValue(item.imageUrl, index === 0 ? '/images/founder_hesham_hanboly_1780491593879.png' : ''),
         featured: index === 0,
         credentials: credentials.length > 0
           ? credentials

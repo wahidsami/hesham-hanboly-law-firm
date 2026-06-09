@@ -404,7 +404,7 @@ export const ensureDatabaseSchema = async () => {
   statements.push(`
     UPDATE "SiteSettings"
     SET
-      "teamFounderImageUrl" = COALESCE("teamFounderImageUrl", '/src/assets/images/founder_hesham_hanboly_1780491593879.png'),
+      "teamFounderImageUrl" = COALESCE("teamFounderImageUrl", '/images/founder_hesham_hanboly_1780491593879.png'),
       "teamFounderImageAltAr" = COALESCE("teamFounderImageAltAr", 'المحامي / هشام بن حسن حنبولي'),
       "teamFounderImageAltEn" = COALESCE("teamFounderImageAltEn", 'Advocate / Hesham H. Hanboly');
   `);

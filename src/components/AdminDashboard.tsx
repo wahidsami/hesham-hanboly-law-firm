@@ -64,7 +64,7 @@ const emptyArticle = (): ArticleRecord => ({
   date: new Date().toISOString().slice(0, 10),
   readTimeAr: 'قراءة ٥ دقائق',
   readTimeEn: '5 min read',
-  image: '/src/assets/images/luxury_legal_office_1780491575816.png',
+  image: '/images/luxury_legal_office_1780491575816.png',
   bodyAr: '',
   bodyEn: '',
   published: false,

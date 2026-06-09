@@ -443,7 +443,7 @@ export const heroSlidesData: HeroSlide[] = [
     ctaTextEn: 'Learn More',
     actionType: 'about',
     actionParam: 'about-hero',
-    image: '/src/assets/images/luxury_legal_office_1780491575816.png',
+    image: '/images/luxury_legal_office_1780491575816.png',
     imageAltAr: 'مكتب شركة هشام حسن حنبولي الدولية',
     imageAltEn: 'Hesham H. Hanboly Law Offices'
   },
@@ -468,7 +468,7 @@ export const heroSlidesData: HeroSlide[] = [
     ctaTextEn: 'Subscribe Now',
     actionType: 'service-detail',
     actionParam: 'doctor-shield',
-    image: '/src/assets/images/saudi_doctor_shield_1780660866668.png',
+    image: '/images/saudi_doctor_shield_1780660866668.png',
     imageAltAr: 'سند الطبيب - حماية قانونية للأطباء',
     imageAltEn: 'Doctor Shield Legal Protection'
   },
@@ -486,7 +486,7 @@ export const heroSlidesData: HeroSlide[] = [
     ctaTextAr: 'طلب استشارة',
     ctaTextEn: 'Request Consultation',
     actionType: 'contact',
-    image: '/src/assets/images/premium_consultation_1780660885439.png',
+    image: '/images/premium_consultation_1780660885439.png',
     imageAltAr: 'استشارة قانونية متخصصة',
     imageAltEn: 'Specialized Legal Consultations'
   }
