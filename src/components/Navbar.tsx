@@ -51,8 +51,8 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
       key: item?.id || targets[0] || fallbackEn,
       url: item?.url || fallbackUrl,
       label: language === 'ar' ? item?.labelAr || fallbackAr : item?.labelEn || fallbackEn,
-      desktopVisible: item ? item.desktopVisible : true,
-      mobileVisible: item ? item.mobileVisible : true,
+      desktopVisible: true,
+      mobileVisible: true,
       order: item ? item.order : defaultOrder,
     };
   };
