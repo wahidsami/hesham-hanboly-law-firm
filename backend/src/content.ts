@@ -28,6 +28,24 @@ const normalizePublicAssetPath = (value?: string | null) => {
     : value;
 };
 
+const normalizeBlockAssetPaths = (value: unknown): unknown => {
+  if (typeof value === 'string') {
+    return normalizePublicAssetPath(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeBlockAssetPaths(item));
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, entry]) => [key, normalizeBlockAssetPaths(entry)]),
+    );
+  }
+
+  return value;
+};
+
 type ArticleInput = Partial<ArticleRecord> & { image?: string; imageUrl?: string; originalSlug?: string };
 type PracticeAreaInput = Partial<PracticeAreaRecord> & { imageUrl?: string | null; originalSlug?: string };
 type CmsPageInput = Partial<CMSPageRecord>;
@@ -343,7 +361,7 @@ export const cmsRevisionToRecord = (revision: {
   pageId: revision.pageId,
   label: revision.label,
   status: (revision.status as CMSRevisionRecord['status']) || 'draft',
-  blocks: Array.isArray(revision.blocks) ? revision.blocks : [],
+  blocks: Array.isArray(revision.blocks) ? (revision.blocks.map((block) => normalizeBlockAssetPaths(block)) as unknown[]) : [],
   createdAt: revision.createdAt.toISOString(),
   author: revision.author,
   note: revision.note,
@@ -1043,13 +1061,16 @@ export const deleteCmsPage = async (slug: string) => {
 
 export const saveCmsRevision = async (pageId: string, body: unknown) => {
   const input = body as CmsRevisionInput;
+  const normalizedBlocks = Array.isArray(input.blocks)
+    ? input.blocks.map((block) => normalizeBlockAssetPaths(block))
+    : [];
   const created = await prisma.cmsRevision.create({
     data: {
       id: typeof input.id === 'string' && input.id.trim() ? input.id.trim() : `rev-${Date.now()}`,
       pageId,
       label: typeof input.label === 'string' && input.label.trim() ? input.label.trim() : 'Manual snapshot',
       status: typeof input.status === 'string' ? input.status : 'draft',
-      blocks: Array.isArray(input.blocks) ? input.blocks : [],
+      blocks: normalizedBlocks,
       author: typeof input.author === 'string' && input.author.trim() ? input.author.trim() : 'CMS Editor',
       note: typeof input.note === 'string' && input.note.trim() ? input.note.trim() : 'Manual snapshot',
     },

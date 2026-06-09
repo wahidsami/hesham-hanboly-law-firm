@@ -106,11 +106,33 @@ const sanitizeCmsPageBlocks = (slug: string, blocks: unknown[]) => {
     return [];
   }
 
+  const normalizeBlockAssetPaths = (value: unknown): unknown => {
+    if (typeof value === 'string') {
+      return value.startsWith('/src/assets/images/')
+        ? value.replace('/src/assets/images/', '/images/')
+        : value;
+    }
+
+    if (Array.isArray(value)) {
+      return value.map((item) => normalizeBlockAssetPaths(item));
+    }
+
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(
+        Object.entries(value as Record<string, unknown>).map(([key, entry]) => [key, normalizeBlockAssetPaths(entry)]),
+      );
+    }
+
+    return value;
+  };
+
+  const normalizedBlocks = blocks.map((block) => normalizeBlockAssetPaths(block));
+
   if (normalizedSlug !== 'team') {
-    return blocks;
+    return normalizedBlocks;
   }
 
-  return blocks.filter((block) => {
+  return normalizedBlocks.filter((block) => {
     if (!block || typeof block !== 'object') {
       return true;
     }
