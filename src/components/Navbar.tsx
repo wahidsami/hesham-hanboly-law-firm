@@ -50,7 +50,8 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
     return {
       key: item?.id || targets[0] || fallbackEn,
       url: item?.url || fallbackUrl,
-      label: language === 'ar' ? item?.labelAr || fallbackAr : item?.labelEn || fallbackEn,
+      labelAr: item?.labelAr || fallbackAr,
+      labelEn: item?.labelEn || fallbackEn,
       desktopVisible: true,
       mobileVisible: true,
       order: item ? item.order : defaultOrder,
@@ -79,7 +80,8 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
       .map((item) => ({
         key: item.id,
         url: item.url,
-        label: language === 'ar' ? item.labelAr : item.labelEn,
+        labelAr: item.labelAr,
+        labelEn: item.labelEn,
         desktopVisible: item.desktopVisible,
         mobileVisible: item.mobileVisible,
         order: item.order,
