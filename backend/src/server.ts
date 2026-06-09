@@ -375,7 +375,7 @@ const saveSiteSettings = async (body: unknown) => {
     Prisma.sql`
       INSERT INTO "SiteSettings" (${Prisma.join(columnFragments)})
       VALUES (${Prisma.join(valueFragments)})
-      ON CONFLICT ("id") DO UPDATE SET ${Prisma.join(updateFragments)}
+      ON CONFLICT ("id") DO UPDATE SET ${Prisma.join(updateFragments)}, "updatedAt" = CURRENT_TIMESTAMP
     `,
   );
 };

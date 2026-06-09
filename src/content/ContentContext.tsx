@@ -33,6 +33,26 @@ export function ContentProvider({ children }: { children: React.ReactNode }) {
     void refresh();
   }, []);
 
+  useEffect(() => {
+    const handleContentUpdate = () => {
+      void refresh();
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === 'site-content-updated') {
+        void refresh();
+      }
+    };
+
+    window.addEventListener('site-content-updated', handleContentUpdate as EventListener);
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      window.removeEventListener('site-content-updated', handleContentUpdate as EventListener);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
+
   const value = useMemo(
     () => ({ content, loading, error, refresh }),
     [content, loading, error],

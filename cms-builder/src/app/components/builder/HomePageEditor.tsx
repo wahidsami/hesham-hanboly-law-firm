@@ -194,6 +194,8 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
     setSavingSettings(true);
     try {
       await backendApi.saveSiteSettings(siteSettings);
+      window.dispatchEvent(new Event('site-content-updated'));
+      localStorage.setItem('site-content-updated', String(Date.now()));
     } finally {
       setSavingSettings(false);
     }
