@@ -76,7 +76,11 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
       .sort((left, right) => left.order - right.order)
       .filter((item) => {
         const normalizedUrl = normalizeNavTarget(item.url || '');
-        return !coreNavEntries.some((entry) => entry.targets.some((target) => normalizeNavTarget(target) === normalizedUrl));
+        return !coreNavEntries.some((entry) => {
+          const isCoreTarget = entry.targets.some((target) => normalizeNavTarget(target) === normalizedUrl);
+          const isDuplicateHome = normalizedUrl === 'home' && entry.key === 'home';
+          return isCoreTarget || isDuplicateHome;
+        });
       })
       .map((item) => ({
         key: item.id,
