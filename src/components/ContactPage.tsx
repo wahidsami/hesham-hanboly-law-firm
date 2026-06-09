@@ -152,6 +152,24 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
   const recordingChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<number | null>(null);
 
+  useEffect(() => {
+    const supported =
+      typeof window !== 'undefined' &&
+      window.isSecureContext &&
+      Boolean(navigator.mediaDevices?.getUserMedia) &&
+      typeof window.MediaRecorder !== 'undefined';
+
+    setIsRecordingSupported(supported);
+    if (!supported) {
+      setRecordingError(
+        t(
+          'التسجيل الصوتي يحتاج إلى متصفح حديث داخل اتصال آمن HTTPS. يمكنك إرفاق ملفاتك بدلًا منه.',
+          'Voice recording needs a modern browser over HTTPS. You can attach files instead.'
+        )
+      );
+    }
+  }, [t]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -197,9 +215,18 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
 
   const startRecording = async () => {
     setRecordingError('');
-    if (!navigator.mediaDevices?.getUserMedia || typeof window.MediaRecorder === 'undefined') {
+    if (
+      !window.isSecureContext ||
+      !navigator.mediaDevices?.getUserMedia ||
+      typeof window.MediaRecorder === 'undefined'
+    ) {
       setIsRecordingSupported(false);
-      setRecordingError(t('التسجيل الصوتي غير مدعوم في هذا المتصفح.', 'Voice recording is not supported in this browser.'));
+      setRecordingError(
+        t(
+          'التسجيل الصوتي غير متاح هنا. تأكد أنك تستخدم HTTPS ومتصفحًا حديثًا مثل Chrome أو Edge أو Safari المحدث.',
+          'Voice recording is unavailable here. Please use HTTPS and a modern browser such as Chrome, Edge, or an up-to-date Safari.'
+        )
+      );
       return;
     }
 
@@ -945,15 +972,16 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
                         </div>
 
                         <div className="flex flex-wrap items-center gap-3">
-                          {recordingStatus !== 'recording' ? (
-                            <button
-                              type="button"
-                              onClick={startRecording}
-                              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1E1E1E] text-white text-sm font-semibold"
-                            >
-                              <Mic className="w-4 h-4" />
-                              <span>{t('ابدأ التسجيل', 'Start recording')}</span>
-                            </button>
+                        {recordingStatus !== 'recording' ? (
+                          <button
+                            type="button"
+                            onClick={startRecording}
+                            disabled={!isRecordingSupported}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1E1E1E] text-white text-sm font-semibold"
+                          >
+                            <Mic className="w-4 h-4" />
+                            <span>{t('ابدأ التسجيل', 'Start recording')}</span>
+                          </button>
                           ) : (
                             <button
                               type="button"
@@ -982,7 +1010,11 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
                               </button>
                             </>
                           )}
-                          {recordingError && <span className="text-xs text-red-600">{recordingError}</span>}
+                        {recordingError && (
+                          <span className="text-xs text-red-600">
+                            {recordingError}
+                          </span>
+                        )}
                         </div>
                       </div>
 
