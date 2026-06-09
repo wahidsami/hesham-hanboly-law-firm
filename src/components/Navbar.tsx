@@ -24,6 +24,13 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
   const leaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const navigationItems = content?.navigation ?? [];
+  const coreNavEntries = [
+    { key: 'home', targets: ['', 'home', '/'], fallbackAr: 'الرئيسية', fallbackEn: 'Home', defaultOrder: 1 },
+    { key: 'about', targets: ['about'], fallbackAr: 'من نحن', fallbackEn: 'About Us', defaultOrder: 2 },
+    { key: 'services', targets: ['services'], fallbackAr: 'خدماتنا', fallbackEn: 'Our Services', defaultOrder: 3 },
+    { key: 'practice-areas', targets: ['practice-areas'], fallbackAr: 'مجالات الممارسات', fallbackEn: 'Practice Areas', defaultOrder: 4 },
+    { key: 'contact', targets: ['contact'], fallbackAr: 'اتصل بنا', fallbackEn: 'Contact', defaultOrder: 5 },
+  ] as const;
 
   const normalizeNavTarget = (value: string) => value.replace(/^#/, '').replace(/^\/+|\/+$/g, '').toLowerCase();
 
@@ -35,7 +42,14 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
 
   const getNavigationConfig = (targets: string[], fallbackAr: string, fallbackEn: string, defaultOrder: number) => {
     const item = findNavigationItem(targets);
+    const primaryTarget = targets[0] || '';
+    const fallbackUrl =
+      primaryTarget === '' || primaryTarget === 'home'
+        ? '/'
+        : `/${primaryTarget}`;
     return {
+      key: item?.id || targets[0] || fallbackEn,
+      url: item?.url || fallbackUrl,
       label: language === 'ar' ? item?.labelAr || fallbackAr : item?.labelEn || fallbackEn,
       desktopVisible: item ? item.desktopVisible : true,
       mobileVisible: item ? item.mobileVisible : true,
@@ -54,7 +68,23 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
     };
   }, []);
 
-  const navLinks = [...navigationItems].sort((left, right) => left.order - right.order);
+  const navLinks = [
+    ...coreNavEntries.map((entry) => getNavigationConfig(entry.targets as string[], entry.fallbackAr, entry.fallbackEn, entry.defaultOrder)),
+    ...[...navigationItems]
+      .sort((left, right) => left.order - right.order)
+      .filter((item) => {
+        const normalizedUrl = normalizeNavTarget(item.url || '');
+        return !coreNavEntries.some((entry) => entry.targets.some((target) => normalizeNavTarget(target) === normalizedUrl));
+      })
+      .map((item) => ({
+        key: item.id,
+        url: item.url,
+        label: language === 'ar' ? item.labelAr : item.labelEn,
+        desktopVisible: item.desktopVisible,
+        mobileVisible: item.mobileVisible,
+        order: item.order,
+      })),
+  ].sort((left, right) => left.order - right.order);
 
 
   const scrollToSection = (id: string) => {
@@ -204,7 +234,7 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
               if (isServicesDropdown) {
                 return (
                   <div
-                    key={link.id}
+                    key={link.key}
                     onMouseEnter={handleMouseEnter}
                     className="relative flex items-center h-full"
                   >
@@ -223,7 +253,7 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
 
               return (
                 <button
-                  key={link.id}
+                  key={link.key}
                   onClick={() => {
                     if (isHome) {
                       scrollToSection('hero');
@@ -307,7 +337,7 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
 
               if (isServicesDropdown) {
                 return (
-                  <div key={link.id} className="border-b border-[#D8D1C7]/40 py-2.5">
+                  <div key={link.key} className="border-b border-[#D8D1C7]/40 py-2.5">
                     <button
                       onClick={() => setIsMobileMegaOpen(!isMobileMegaOpen)}
                       className="w-full text-start text-[#1E1E1E] hover:text-[#A56A1E] text-base font-bold cursor-pointer flex justify-between items-center"
@@ -372,7 +402,7 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
 
               return (
                 <button
-                  key={link.id}
+                  key={link.key}
                   onClick={() => {
                     setIsMobileMenuOpen(false);
                     if (isHome) {
