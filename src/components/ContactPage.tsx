@@ -50,6 +50,7 @@ type AttachmentItem = {
 
 const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
 const MAX_RECORDING_SECONDS = 180;
+const PREFERRED_AUDIO_MIME_TYPES = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -151,24 +152,52 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
   const recorderStreamRef = useRef<MediaStream | null>(null);
   const recordingChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<number | null>(null);
+  const recordingSupport = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return { supported: true, reason: '' };
+    }
+    if (!window.isSecureContext) {
+      return {
+        supported: false,
+        reason: t(
+          'يجب فتح الصفحة عبر اتصال آمن لتشغيل التسجيل الصوتي.',
+          'Voice recording requires a secure connection.'
+        ),
+      };
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      return {
+        supported: false,
+        reason: t(
+          'المتصفح الحالي لا يتيح الوصول إلى الميكروفون.',
+          'This browser does not expose microphone access.'
+        ),
+      };
+    }
+    if (typeof window.MediaRecorder === 'undefined') {
+      return {
+        supported: false,
+        reason: t(
+          'المتصفح الحالي لا يدعم التسجيل الصوتي.',
+          'This browser does not support audio recording.'
+        ),
+      };
+    }
+    return { supported: true, reason: '' };
+  }, [t]);
 
   useEffect(() => {
-    const supported =
-      typeof window !== 'undefined' &&
-      window.isSecureContext &&
-      Boolean(navigator.mediaDevices?.getUserMedia) &&
-      typeof window.MediaRecorder !== 'undefined';
-
-    setIsRecordingSupported(supported);
-    if (!supported) {
+    setIsRecordingSupported(recordingSupport.supported);
+    if (!recordingSupport.supported) {
       setRecordingError(
-        t(
-          'التسجيل الصوتي يحتاج إلى متصفح حديث داخل اتصال آمن HTTPS. يمكنك إرفاق ملفاتك بدلًا منه.',
-          'Voice recording needs a modern browser over HTTPS. You can attach files instead.'
-        )
+        recordingSupport.reason ||
+          t(
+            'التسجيل الصوتي يحتاج إلى متصفح حديث داخل اتصال آمن HTTPS. يمكنك إرفاق ملفاتك بدلًا منه.',
+            'Voice recording needs a modern browser over HTTPS. You can attach files instead.'
+          )
       );
     }
-  }, [t]);
+  }, [recordingSupport.reason, recordingSupport.supported, t]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -215,17 +244,11 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
 
   const startRecording = async () => {
     setRecordingError('');
-    if (
-      !window.isSecureContext ||
-      !navigator.mediaDevices?.getUserMedia ||
-      typeof window.MediaRecorder === 'undefined'
-    ) {
+    if (!recordingSupport.supported) {
       setIsRecordingSupported(false);
       setRecordingError(
-        t(
-          'التسجيل الصوتي غير متاح هنا. تأكد أنك تستخدم HTTPS ومتصفحًا حديثًا مثل Chrome أو Edge أو Safari المحدث.',
-          'Voice recording is unavailable here. Please use HTTPS and a modern browser such as Chrome, Edge, or an up-to-date Safari.'
-        )
+        recordingSupport.reason ||
+          t('التسجيل الصوتي غير مدعوم في هذا المتصفح.', 'Voice recording is not supported in this browser.')
       );
       return;
     }
@@ -234,7 +257,8 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
       resetRecording();
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       recorderStreamRef.current = stream;
-      const recorder = new MediaRecorder(stream);
+      const preferredMimeType = PREFERRED_AUDIO_MIME_TYPES.find((mimeType) => MediaRecorder.isTypeSupported(mimeType));
+      const recorder = preferredMimeType ? new MediaRecorder(stream, { mimeType: preferredMimeType }) : new MediaRecorder(stream);
       recorderRef.current = recorder;
       recordingChunksRef.current = [];
       setRecordingStatus('recording');
@@ -244,10 +268,12 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
         }
       };
       recorder.onstop = () => {
-        const blob = new Blob(recordingChunksRef.current, { type: 'audio/webm' });
+        const blobType = recorder.mimeType || 'audio/webm';
+        const blob = new Blob(recordingChunksRef.current, { type: blobType });
         const blobUrl = URL.createObjectURL(blob);
         setRecordingBlobUrl(blobUrl);
-        setRecordingFile(new File([blob], `consultation-recording-${Date.now()}.webm`, { type: 'audio/webm' }));
+        const fileExtension = blobType.includes('mp4') ? 'm4a' : 'webm';
+        setRecordingFile(new File([blob], `consultation-recording-${Date.now()}.${fileExtension}`, { type: blobType }));
         setRecordingStatus('paused');
         if (recordingTimerRef.current) {
           window.clearInterval(recordingTimerRef.current);
