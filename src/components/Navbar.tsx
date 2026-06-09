@@ -90,6 +90,8 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
   const scrollToSection = (id: string) => {
     setIsMobileMenuOpen(false);
     setIsMegaOpen(false);
+    setIsMobileMegaOpen(false);
+    setMobileActiveSub(null);
     
     if (id === 'about') {
       if (onNavigate) {
@@ -167,6 +169,10 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
 
   const navigateByUrl = (url: string) => {
     const normalized = url.replace(/^#/, '').replace(/^\/+|\/+$/g, '').toLowerCase();
+    setIsMobileMenuOpen(false);
+    setIsMegaOpen(false);
+    setIsMobileMegaOpen(false);
+    setMobileActiveSub(null);
     if (['', 'home', 'hero'].includes(normalized)) {
       scrollToSection('hero');
       return;
@@ -339,7 +345,10 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
                 return (
                   <div key={link.key} className="border-b border-[#D8D1C7]/40 py-2.5">
                     <button
-                      onClick={() => setIsMobileMegaOpen(!isMobileMegaOpen)}
+                      onClick={() => {
+                        setMobileActiveSub(null);
+                        setIsMobileMegaOpen((current) => !current);
+                      }}
                       className="w-full text-start text-[#1E1E1E] hover:text-[#A56A1E] text-base font-bold cursor-pointer flex justify-between items-center"
                     >
                       <div className="flex items-center gap-2">
@@ -375,6 +384,8 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
                                       key={ssIdx}
                                       onClick={() => {
                                         setIsMobileMenuOpen(false);
+                                        setIsMobileMegaOpen(false);
+                                        setMobileActiveSub(null);
                                         if (onNavigate) {
                                           onNavigate('service-detail', sub.slug);
                                         }
@@ -405,6 +416,8 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
                   key={link.key}
                   onClick={() => {
                     setIsMobileMenuOpen(false);
+                    setIsMobileMegaOpen(false);
+                    setMobileActiveSub(null);
                     if (isHome) {
                       scrollToSection('hero');
                       return;
@@ -430,6 +443,8 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
           <button
             onClick={() => {
               setIsMobileMenuOpen(false);
+              setIsMobileMegaOpen(false);
+              setMobileActiveSub(null);
               scrollToSection('contact');
             }}
             className="w-full py-3.5 rounded-xl bg-[#7B5A42] hover:bg-[#946B4B] text-white font-bold text-center transition-all cursor-pointer flex items-center justify-center gap-2 text-sm shadow-md"
