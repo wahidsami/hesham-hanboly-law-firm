@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { 
   Phone, 
@@ -11,8 +11,17 @@ import {
   ArrowRight,
   ChevronLeft,
   Briefcase,
-  Compass,
-  Clock
+  Clock,
+  Upload,
+  Trash2,
+  FileText,
+  Paperclip,
+  Mic,
+  StopCircle,
+  ShieldCheck,
+  CreditCard,
+  BadgeCheck,
+  Lock
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSiteContent } from '../content/ContentContext';
@@ -26,6 +35,47 @@ interface ContactPageProps {
 
 function toStringValue(value: unknown, fallback = ''): string {
   return typeof value === 'string' && value.trim() ? value : fallback;
+}
+
+type BookingStep = 'details' | 'gateway' | 'done';
+type AttachmentItem = {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  category: 'document' | 'image';
+  previewUrl: string;
+};
+
+const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
+const MAX_RECORDING_SECONDS = 180;
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function detectCardBrand(cardNumber: string) {
+  const digits = cardNumber.replace(/\D/g, '');
+  if (/^(588845|440795|457865|486094|486095|446404|968208)/.test(digits)) return 'mada';
+  if (/^4/.test(digits)) return 'visa';
+  if (/^5[1-5]/.test(digits)) return 'mastercard';
+  return 'card';
+}
+
+function validateSaudiId(idValue: string) {
+  const digits = idValue.replace(/\D/g, '');
+  if (!digits) {
+    return { valid: false, message: '' };
+  }
+  if (!/^[12]\d{9}$/.test(digits)) {
+    return {
+      valid: false,
+      message: 'Saudi ID/Iqama must be 10 digits and start with 1 (citizen) or 2 (resident).',
+    };
+  }
+  return { valid: true, message: digits.startsWith('1') ? 'Valid Saudi citizen ID' : 'Valid resident Iqama' };
 }
 
 export default function ContactPage({ onScrollToContact, onBackToHome }: ContactPageProps) {
@@ -62,6 +112,31 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
   }, []);
 
   const [activeOfficeIndex, setActiveOfficeIndex] = useState(0);
+  const [bookingStep, setBookingStep] = useState<BookingStep>('details');
+  const [idNumber, setIdNumber] = useState('');
+  const [idTouched, setIdTouched] = useState(false);
+  const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+  const [recordingStatus, setRecordingStatus] = useState<'idle' | 'recording' | 'paused'>('idle');
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [recordingBlobUrl, setRecordingBlobUrl] = useState('');
+  const [recordingError, setRecordingError] = useState('');
+  const [isRecordingSupported, setIsRecordingSupported] = useState(true);
+  const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardHolder, setCardHolder] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+  const [showCardBack, setShowCardBack] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [voucherId, setVoucherId] = useState('');
+  const [paymentSummary, setPaymentSummary] = useState({
+    fullName: '',
+    phone: '',
+    email: '',
+    idNumber: '',
+    message: '',
+  });
   
   const [formData, setFormData] = useState({
     fullName: '',
@@ -69,21 +144,181 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
     email: '',
     message: ''
   });
-  const [formSubmitted, setFormSubmitted] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.fullName || !formData.phone || !formData.email) {
-      alert(t('الرجاء تعبئة الحقول الأساسية (الاسم، الجوال، والبريد الإلكتروني)', 'Please fill in the primary fields (Full Name, Phone, and Email)'));
-      return;
-    }
-    setFormSubmitted(true);
-  };
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recorderStreamRef = useRef<MediaStream | null>(null);
+  const recordingChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<number | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
+  const idValidation = validateSaudiId(idNumber);
+  const detectedBrand = detectCardBrand(cardNumber);
+  const canProceedToGateway = Boolean(
+    formData.fullName.trim() &&
+    formData.phone.trim() &&
+    formData.email.trim() &&
+    idValidation.valid
+  );
+
+  const resetRecording = () => {
+    if (recordingTimerRef.current) {
+      window.clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+    recorderStreamRef.current?.getTracks().forEach((track) => track.stop());
+    recorderRef.current = null;
+    recorderStreamRef.current = null;
+    recordingChunksRef.current = [];
+    setRecordingStatus('idle');
+    setRecordingSeconds(0);
+  };
+
+  const stopRecording = () => {
+    const recorder = recorderRef.current;
+    if (recorder && recorder.state !== 'inactive') {
+      recorder.stop();
+    }
+    if (recordingTimerRef.current) {
+      window.clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+  };
+
+  const startRecording = async () => {
+    setRecordingError('');
+    if (!navigator.mediaDevices?.getUserMedia || typeof window.MediaRecorder === 'undefined') {
+      setIsRecordingSupported(false);
+      setRecordingError(t('التسجيل الصوتي غير مدعوم في هذا المتصفح.', 'Voice recording is not supported in this browser.'));
+      return;
+    }
+
+    try {
+      resetRecording();
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recorderStreamRef.current = stream;
+      const recorder = new MediaRecorder(stream);
+      recorderRef.current = recorder;
+      recordingChunksRef.current = [];
+      setRecordingStatus('recording');
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordingChunksRef.current.push(event.data);
+        }
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(recordingChunksRef.current, { type: 'audio/webm' });
+        const blobUrl = URL.createObjectURL(blob);
+        setRecordingBlobUrl(blobUrl);
+        setRecordingStatus('paused');
+        if (recordingTimerRef.current) {
+          window.clearInterval(recordingTimerRef.current);
+          recordingTimerRef.current = null;
+        }
+        recorderStreamRef.current?.getTracks().forEach((track) => track.stop());
+      };
+      recorder.start();
+      recordingTimerRef.current = window.setInterval(() => {
+        setRecordingSeconds((current) => {
+          const nextValue = current + 1;
+          if (nextValue >= MAX_RECORDING_SECONDS) {
+            stopRecording();
+            return MAX_RECORDING_SECONDS;
+          }
+          return nextValue;
+        });
+      }, 1000);
+    } catch {
+      setRecordingError(t('تعذر الوصول إلى الميكروفون. تأكد من منح الإذن.', 'Could not access the microphone. Please allow microphone permissions.'));
+    }
+  };
+
+  const addFiles = (fileList: FileList | File[]) => {
+    const accepted = Array.from(fileList).filter((file) => {
+      const isValidType =
+        file.type.startsWith('image/') ||
+        file.type === 'application/pdf' ||
+        file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        file.name.toLowerCase().endsWith('.docx');
+      return isValidType && file.size <= MAX_UPLOAD_BYTES;
+    });
+
+    const nextItems = accepted.map((file) => ({
+      id: `${file.name}-${file.lastModified}-${Math.random().toString(36).slice(2, 7)}`,
+      name: file.name,
+      size: file.size,
+      type: file.type || 'application/octet-stream',
+      category: file.type.startsWith('image/') ? 'image' : 'document',
+      previewUrl: URL.createObjectURL(file),
+    }));
+
+    setAttachments((current) => [...current, ...nextItems]);
+  };
+
+  const handleFilesFromEvent = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      addFiles(event.target.files);
+      event.target.value = '';
+    }
+  };
+
+  const handleDropFiles = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDraggingFiles(false);
+    if (event.dataTransfer.files.length > 0) {
+      addFiles(event.dataTransfer.files);
+    }
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments((current) => {
+      const target = current.find((item) => item.id === id);
+      if (target) {
+        URL.revokeObjectURL(target.previewUrl);
+      }
+      return current.filter((item) => item.id !== id);
+    });
+  };
+
+  const handleProceedToGateway = () => {
+    setIdTouched(true);
+    if (!canProceedToGateway) {
+      return;
+    }
+    setPaymentSummary({
+      fullName: formData.fullName,
+      phone: formData.phone,
+      email: formData.email,
+      idNumber,
+      message: formData.message,
+    });
+    setBookingStep('gateway');
+  };
+
+  const handlePayment = async () => {
+    if (!cardNumber.trim() || !cardHolder.trim() || !cardExpiry.trim() || !cardCvv.trim()) {
+      return;
+    }
+    setIsPaymentProcessing(true);
+    await new Promise((resolve) => window.setTimeout(resolve, 1500));
+    setIsPaymentProcessing(false);
+    setVoucherId(`KSA-${Math.floor(100000 + Math.random() * 900000)}`);
+    setPaymentSuccess(true);
+    setBookingStep('done');
+  };
+
+  useEffect(() => {
+    return () => {
+      resetRecording();
+      attachments.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+      if (recordingBlobUrl) {
+        URL.revokeObjectURL(recordingBlobUrl);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const contactBlocks = useMemo(
     () => contactCmsPage?.blocks?.filter((block) => block.type === 'contact') ?? [],
@@ -468,144 +703,514 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
 
             </div>
 
-            {/* RIGHT SIDE: Luxury Contact Form with fields focus animations */}
+            {/* RIGHT SIDE: High-caliber booking flow */}
             <div className={`lg:col-span-7 bg-white p-8 sm:p-10 rounded-2xl border border-[#D8D1C7] ${textAlignClass} shadow-sm relative overflow-hidden`}>
               <div className="absolute top-0 left-0 w-24 h-24 bg-[#A56A1E]/5 rounded-full blur-xl pointer-events-none" />
 
-              {formSubmitted ? (
-                <div className="py-16 px-4 flex flex-col items-center justify-center text-center space-y-6">
-                  <div className="w-20 h-20 rounded-full bg-[#A56A1E]/15 flex items-center justify-center text-[#A56A1E] animate-bounce">
-                    <CheckCircle className="w-12 h-12" />
+              <div className="relative z-10 space-y-6">
+                <div className="space-y-2 border-b border-[#D8D1C7]/40 pb-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-xl font-extrabold text-[#1E1E1E]">{t('احجز استشارة', 'Book Counsel')}</h3>
+                      <p className="text-xs sm:text-sm text-[#5B5B5B] font-light">
+                        {t(
+                          'أكمل بياناتك، ارفع الملفات، وسجل ملاحظة صوتية قصيرة ثم انتقل إلى بوابة الدفع الآمنة.',
+                          'Complete your details, upload files, record a short voice note, then move to the secure payment gateway.'
+                        )}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 rounded-full border border-[#A56A1E]/20 bg-[#A56A1E]/5 px-3 py-1 text-xs font-semibold text-[#7B5A42]">
+                      <ShieldCheck className="w-4 h-4 text-[#A56A1E]" />
+                      <span>{t('بوابة آمنة', 'Secure Gate')}</span>
+                    </div>
                   </div>
-                  <h3 className="text-2xl font-bold text-[#1E1E1E]">
-                    {t('تم تقديم استفسارك القانوني بنجاح', 'Your Inquiry Received Successfully')}
-                  </h3>
-                  <p className="text-sm text-[#5B5B5B] max-w-lg mx-auto leading-relaxed">
-                    {t(
-                      `شكراً لثقتكم واختياركم لمجموعتنا. لقد تم تسجيل طلبكم برقم تتبع آمن وسيتم تحويله فوراً لكبير المستشارين بفرع ${offices[activeOfficeIndex]?.name || 'جدة'} لمراجعة التفاصيل، والاتصال بكم عبر الهاتف ${formData.phone} أو البريد الإلكتروني في غضون ٢٤ ساعة كحد أقصى.`,
-                      `Thank you for placing your trust in our firm. Your inquiry has been successfully logged into our secure dispatch systems. A senior counsel from our ${offices[activeOfficeIndex]?.name || 'Jeddah Head Office'} will review your file detail and get in touch with you at ${formData.phone} or your email address within 24 hours.`
-                    )}
-                  </p>
-                  
-                  <button
-                    onClick={() => {
-                      setFormData({
-                        fullName: '',
-                        phone: '',
-                        email: '',
-                        message: ''
-                      });
-                      setFormSubmitted(false);
-                    }}
-                    className="px-8 py-3 rounded-lg bg-[#A56A1E] hover:bg-[#946B4B] text-white text-xs font-bold transition-all shadow-md cursor-pointer"
-                  >
-                    {t('تقديم استفسار قانوني آخر', 'Submit Another Case Brief')}
-                  </button>
+
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {[
+                      { id: 'details', label: t('البيانات', 'Details') },
+                      { id: 'gateway', label: t('الدفع', 'Gateway') },
+                      { id: 'done', label: t('النتيجة', 'Receipt') },
+                    ].map((step) => (
+                      <span
+                        key={step.id}
+                        className={`rounded-full px-4 py-1.5 text-xs font-bold border ${
+                          bookingStep === step.id
+                            ? 'bg-[#A56A1E] text-white border-[#A56A1E]'
+                            : 'bg-[#F5F2EC] text-[#5B5B5B] border-[#D8D1C7]'
+                        }`}
+                      >
+                        {step.label}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="space-y-2 border-b border-[#D8D1C7]/40 pb-4">
-                    <h3 className="text-xl font-extrabold text-[#1E1E1E]">{t('تواصل معنا', 'Brief Our Experts')}</h3>
-                    <p className="text-xs sm:text-sm text-[#5B5B5B] font-light">
-                      {t('أرسل استفسارك القانوني الآن وسيقوم مستشار القانوني بالرد والاتصال بكم.', 'Send us your specific case scope. An expert lawyer will evaluate and coordinate with you immediately.')}
-                    </p>
-                  </div>
 
-                  {/* Field: Full Name */}
-                  <div className="space-y-2">
-                    <label htmlFor="fullname-field" className="text-xs font-semibold text-[#1E1E1E] block">
-                      {t('الاسم بالكامل', 'Full Name')} <span className="text-red-500">*</span>
-                    </label>
-                    <input 
-                      type="text"
-                      id="fullname-field"
-                      name="fullName"
-                      required
-                      placeholder={t('أدخل الاسم الثلاثي بالكامل', 'Provide your full legal name')}
-                      value={formData.fullName}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 rounded-xl bg-[#F5F2EC] border border-[#D9D2C8] focus:border-[#A56A1E] focus:outline-none text-sm text-[#1E1E1E] transition-all duration-300"
-                    />
-                  </div>
+                {bookingStep === 'details' && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2 md:col-span-2">
+                        <label className="text-xs font-semibold text-[#1E1E1E] block">
+                          {t('الاسم بالكامل', 'Full Name')} <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          name="fullName"
+                          required
+                          placeholder={t('أدخل الاسم الثلاثي بالكامل', 'Provide your full legal name')}
+                          value={formData.fullName}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-3 rounded-xl bg-[#F5F2EC] border border-[#D9D2C8] focus:border-[#A56A1E] focus:outline-none text-sm text-[#1E1E1E] transition-all duration-300"
+                        />
+                      </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Field: Email */}
-                    <div className="space-y-2">
-                      <label htmlFor="email-field" className="text-xs font-semibold text-[#1E1E1E] block">
-                        {t('البريد الإلكتروني', 'Email')} <span className="text-red-500">*</span>
-                      </label>
-                      <input 
-                        type="email"
-                        id="email-field"
-                        name="email"
-                        required
-                        placeholder="example@domain.com"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 rounded-xl bg-[#F5F2EC] border border-[#D9D2C8] focus:border-[#A56A1E] focus:outline-none text-sm text-[#1E1E1E] transition-all duration-300 font-mono text-left"
-                        style={{ direction: 'ltr' }}
-                      />
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold text-[#1E1E1E] block">
+                          {t('البريد الإلكتروني', 'Email')} <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          name="email"
+                          required
+                          placeholder="example@domain.com"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-3 rounded-xl bg-[#F5F2EC] border border-[#D9D2C8] focus:border-[#A56A1E] focus:outline-none text-sm text-[#1E1E1E] transition-all duration-300 font-mono text-left"
+                          style={{ direction: 'ltr' }}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold text-[#1E1E1E] block">
+                          {t('الجوال', 'Mobile Number')} <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          name="phone"
+                          required
+                          placeholder={t('05xxxxxxxx', '05xxxxxxxx')}
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-3 rounded-xl bg-[#F5F2EC] border border-[#D9D2C8] focus:border-[#A56A1E] focus:outline-none text-sm text-[#1E1E1E] transition-all duration-300 font-mono text-left"
+                          style={{ direction: 'ltr' }}
+                        />
+                      </div>
+
+                      <div className="space-y-2 md:col-span-2">
+                        <label className="text-xs font-semibold text-[#1E1E1E] block">
+                          {t('رقم الهوية / الإقامة', 'Saudi ID / Iqama')} <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder={t('١٠ أرقام تبدأ بـ 1 أو 2', '10 digits starting with 1 or 2')}
+                          value={idNumber}
+                          onChange={(event) => {
+                            setIdNumber(event.target.value.replace(/\D/g, '').slice(0, 10));
+                            setIdTouched(true);
+                          }}
+                          onBlur={() => setIdTouched(true)}
+                          className={`w-full px-4 py-3 rounded-xl bg-[#F5F2EC] border text-sm text-[#1E1E1E] transition-all duration-300 font-mono text-left ${
+                            idTouched && !idValidation.valid ? 'border-red-400 focus:border-red-500' : 'border-[#D9D2C8] focus:border-[#A56A1E]'
+                          }`}
+                          style={{ direction: 'ltr' }}
+                        />
+                        <div className="flex items-center justify-between gap-3 text-xs">
+                          <span className={idValidation.valid ? 'text-emerald-600 font-semibold' : 'text-[#5B5B5B]'}>
+                            {idValidation.valid
+                              ? idValidation.message
+                              : t('سيتحقق الحقل فورياً من هوية سعودي أو مقيم', 'This field validates Saudi citizen IDs and resident Iqamas in real time.')}
+                          </span>
+                          {idValidation.valid && <BadgeCheck className="w-4 h-4 text-emerald-600 shrink-0" />}
+                        </div>
+                      </div>
+
+                      <div className="md:col-span-2 space-y-2">
+                        <label className="text-xs font-semibold text-[#1E1E1E] block">
+                          {t('الملفات الداعمة', 'Supporting documents')}
+                        </label>
+                        <div
+                          onDragOver={(event) => {
+                            event.preventDefault();
+                            setIsDraggingFiles(true);
+                          }}
+                          onDragLeave={() => setIsDraggingFiles(false)}
+                          onDrop={handleDropFiles}
+                          className={`rounded-2xl border-2 border-dashed p-5 transition-all duration-300 ${
+                            isDraggingFiles ? 'border-[#A56A1E] bg-[#A56A1E]/5' : 'border-[#D8D1C7] bg-[#F8F5EF]'
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-11 h-11 rounded-xl bg-white border border-[#D8D1C7] flex items-center justify-center text-[#A56A1E]">
+                                <Upload className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <p className="font-semibold text-[#1E1E1E]">{t('اسحب الملفات هنا أو اختر من جهازك', 'Drop files here or browse your device')}</p>
+                                <p className="text-xs text-[#5B5B5B]">
+                                  {t('PDF و DOCX و الصور حتى 15MB لكل ملف', 'PDF, DOCX, and images up to 15MB each')}
+                                </p>
+                              </div>
+                            </div>
+                            <label className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[#D8D1C7] bg-white hover:border-[#A56A1E] cursor-pointer text-sm font-semibold text-[#1E1E1E]">
+                              <Paperclip className="w-4 h-4 text-[#A56A1E]" />
+                              <span>{t('إرفاق ملفات', 'Attach files')}</span>
+                              <input type="file" multiple accept=".pdf,.docx,image/*" className="hidden" onChange={handleFilesFromEvent} />
+                            </label>
+                          </div>
+
+                          {attachments.length > 0 && (
+                            <div className="mt-4 space-y-2">
+                              {attachments.map((item) => (
+                                <div key={item.id} className="flex items-center justify-between gap-3 rounded-xl bg-white border border-[#D8D1C7] px-4 py-3">
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <div className="w-9 h-9 rounded-lg bg-[#A56A1E]/10 text-[#A56A1E] flex items-center justify-center shrink-0">
+                                      <FileText className="w-4 h-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-semibold text-[#1E1E1E] truncate">{item.name}</p>
+                                      <p className="text-xs text-[#5B5B5B]">{formatBytes(item.size)}</p>
+                                    </div>
+                                  </div>
+                                  <button type="button" onClick={() => removeAttachment(item.id)} className="text-[#7B5A42] hover:text-red-600">
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="md:col-span-2 space-y-3 rounded-2xl border border-[#D8D1C7] bg-[#FBF8F2] p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <h4 className="font-bold text-[#1E1E1E]">{t('مذكرة صوتية سريعة', '3-minute voice note')}</h4>
+                            <p className="text-xs text-[#5B5B5B]">
+                              {t('يسجل حتى ٣ دقائق ثم يتوقف تلقائياً مع إمكانية المعاينة والحذف.', 'Records up to 3 minutes, auto-stops, then lets you preview or delete it.')}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs font-bold px-3 py-1 rounded-full ${recordingStatus === 'recording' ? 'bg-red-100 text-red-700' : 'bg-[#EDE6DC] text-[#7B5A42]'}`}>
+                              {recordingStatus === 'recording' ? t('تسجيل...', 'Recording...') : recordingStatus === 'paused' ? t('جاهز', 'Ready') : t('متوقف', 'Idle')}
+                            </span>
+                            <span className="text-xs text-[#5B5B5B] font-mono">{String(Math.floor(recordingSeconds / 60)).padStart(2, '0')}:{String(recordingSeconds % 60).padStart(2, '0')} / 03:00</span>
+                          </div>
+                        </div>
+
+                        {!isRecordingSupported && (
+                          <p className="text-xs text-red-600">{recordingError}</p>
+                        )}
+
+                        <div className="h-2 w-full rounded-full bg-[#E6DDD0] overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-[#A56A1E] transition-all duration-200"
+                            style={{ width: `${Math.min((recordingSeconds / MAX_RECORDING_SECONDS) * 100, 100)}%` }}
+                          />
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3">
+                          {recordingStatus !== 'recording' ? (
+                            <button
+                              type="button"
+                              onClick={startRecording}
+                              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1E1E1E] text-white text-sm font-semibold"
+                            >
+                              <Mic className="w-4 h-4" />
+                              <span>{t('ابدأ التسجيل', 'Start recording')}</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={stopRecording}
+                              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold"
+                            >
+                              <StopCircle className="w-4 h-4" />
+                              <span>{t('إيقاف التسجيل', 'Stop recording')}</span>
+                            </button>
+                          )}
+                          {recordingBlobUrl && (
+                            <>
+                              <audio controls src={recordingBlobUrl} className="h-10 max-w-full" />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  URL.revokeObjectURL(recordingBlobUrl);
+                                  setRecordingBlobUrl('');
+                                  setRecordingSeconds(0);
+                                  setRecordingStatus('idle');
+                                }}
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[#D8D1C7] text-sm font-semibold text-[#7B5A42]"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                <span>{t('حذف', 'Delete')}</span>
+                              </button>
+                            </>
+                          )}
+                          {recordingError && <span className="text-xs text-red-600">{recordingError}</span>}
+                        </div>
+                      </div>
+
+                      <div className="md:col-span-2 space-y-2">
+                        <label className="text-xs font-semibold text-[#1E1E1E] block">
+                          {t('أخبرنا باستفسارك القانوني', 'State Your Legal Inquiry')}
+                        </label>
+                        <textarea
+                          name="message"
+                          rows={5}
+                          placeholder={t(
+                            'صف هنا طبيعة استفسارك بالتفصيل (مثل: قضايا عمالية، استثمار دولي، تأسيس شركات) لنتمكن من توجيه الطلب للمحامي الأكفأ بمشكلتكم.',
+                            'Detail the nature of your concern (e.g. corporate liquidation, cross-border commercial laws, arbitration, labor regulations) so we can assign the most specialized legal specialist to your file.'
+                          )}
+                          value={formData.message}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-3 rounded-xl bg-[#F5F2EC] border border-[#D9D2C8] focus:border-[#A56A1E] focus:outline-none text-sm text-[#1E1E1E] transition-all duration-300 font-light leading-relaxed"
+                        />
+                      </div>
                     </div>
 
-                    {/* Field: Phone */}
-                    <div className="space-y-2">
-                      <label htmlFor="phone-field" className="text-xs font-semibold text-[#1E1E1E] block">
-                        {t('الجوال', 'Mobile Number')} <span className="text-red-500">*</span>
-                      </label>
-                      <input 
-                        type="tel"
-                        id="phone-field"
-                        name="phone"
-                        required
-                        placeholder={t('05xxxxxxxx', '05xxxxxxxx')}
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 rounded-xl bg-[#F5F2EC] border border-[#D9D2C8] focus:border-[#A56A1E] focus:outline-none text-sm text-[#1E1E1E] transition-all duration-300 font-mono text-left"
-                        style={{ direction: 'ltr' }}
-                      />
+                    <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between pt-2">
+                      <p className="text-[11px] text-[#5B5B5B] leading-relaxed max-w-xl">
+                        {t(
+                          'نستخدم رقم الهوية/الإقامة للتحقق الفوري، والملفات الصوتية والمرفقات تبقى جاهزة قبل الانتقال إلى بوابة الدفع الآمنة.',
+                          'We use the ID/Iqama for instant validation, while files and voice notes stay ready before moving to the secure payment gateway.'
+                        )}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleProceedToGateway}
+                        className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-[#A56A1E] hover:bg-[#946B4B] text-white font-extrabold text-sm transition-all duration-300 shadow-[0_10px_25px_-5px_rgba(165,106,30,0.25)] cursor-pointer"
+                      >
+                        <span>{t('الانتقال إلى الدفع', 'Next: Secure Checkout')}</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
+                )}
 
-                  {/* Field: Message */}
-                  <div className="space-y-2">
-                    <label htmlFor="message-field" className="text-xs font-semibold text-[#1E1E1E] block">
-                      {t('أخبرنا باستفسارك القانوني', 'State Your Legal Inquiry')}
-                    </label>
-                    <textarea 
-                      id="message-field"
-                      name="message"
-                      rows={5}
-                      placeholder={t(
-                        'صف هنا طبيعة استفسارك بالتفصيل (مثل: قضايا عمالية، استثمار دولي، تأسيس شركات) لنتمكن من توجيه الطلب للمحامي الأكفأ بمشكلتكم.',
-                        'Detail the nature of your concern (e.g. corporate liquidation, cross-border commercial laws, arbitration, labor regulations) so we can assign the most specialized legal specialist to your file.'
-                      )}
-                      value={formData.message}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 rounded-xl bg-[#F5F2EC] border border-[#D9D2C8] focus:border-[#A56A1E] focus:outline-none text-sm text-[#1E1E1E] transition-all duration-300 font-light leading-relaxed"
-                    />
+                {bookingStep === 'gateway' && (
+                  <div className="space-y-6">
+                    <div className="rounded-2xl border border-[#D8D1C7] bg-[#FBF8F2] p-5 space-y-5">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="space-y-1">
+                          <h4 className="text-lg font-extrabold text-[#1E1E1E]">{t('بوابة الدفع الآمنة', 'Secure payment gateway')}</h4>
+                          <p className="text-sm text-[#5B5B5B]">
+                            {t('سداد رمزي بقيمة 80.00 ريال سعودي مع شارة الأمان SAMA والبطاقة ثلاثية الأبعاد.', 'A symbolic 80.00 SAR payment with SAMA security badges and a 3D card widget.')}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                          <Lock className="w-4 h-4" />
+                          <span>{t('محمي بالكامل', 'Fully protected')}</span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                        <div className="lg:col-span-7 rounded-[1.5rem] bg-[#1A1A1A] text-white p-5 shadow-xl border border-white/10">
+                          <div className="flex items-center justify-between mb-8">
+                            <div>
+                              <p className="text-[10px] uppercase tracking-[0.3em] text-white/60">{t('بوابة الدفع السريع', 'Rapid pay gateway')}</p>
+                              <p className="text-sm font-semibold text-white/80">{t('SAMA • 3D Secure • Tokenized', 'SAMA • 3D Secure • Tokenized')}</p>
+                            </div>
+                            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-white/60">
+                              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                              <span>{t('Verified', 'Verified')}</span>
+                            </div>
+                          </div>
+
+                          <div
+                            className="relative h-56 rounded-[1.5rem] overflow-hidden border border-white/10 bg-gradient-to-br from-[#2B2B2B] via-[#171717] to-[#000]"
+                            onMouseEnter={() => setShowCardBack(true)}
+                            onMouseLeave={() => setShowCardBack(false)}
+                          >
+                            <div className={`absolute inset-0 transition-transform duration-500 ${showCardBack ? 'rotate-y-180' : ''}`} style={{ transformStyle: 'preserve-3d' }}>
+                              <div className="absolute inset-0 p-5 backface-hidden">
+                                <div className="flex items-start justify-between">
+                                  <div className="space-y-1">
+                                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/50">{t('بطاقة العميل', 'Customer card')}</p>
+                                    <p className="text-lg font-bold">{cardHolder || t('اسم حامل البطاقة', 'Cardholder name')}</p>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-white/75">
+                                    <CreditCard className="w-5 h-5" />
+                                    <span className="text-xs font-bold uppercase">{detectedBrand}</span>
+                                  </div>
+                                </div>
+
+                                <div className="mt-12 text-2xl font-mono tracking-[0.2em]">
+                                  {cardNumber ? cardNumber.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim() : '•••• •••• •••• ••••'}
+                                </div>
+
+                                <div className="mt-10 flex items-end justify-between text-sm">
+                                  <div>
+                                    <p className="text-white/50 text-[10px] uppercase tracking-[0.2em]">{t('المبلغ', 'Amount')}</p>
+                                    <p className="font-bold">80.00 SAR</p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-white/50 text-[10px] uppercase tracking-[0.2em]">{t('البطاقة', 'Card type')}</p>
+                                    <p className="font-bold capitalize">{detectedBrand}</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="absolute inset-0 p-5 backface-hidden rotate-y-180" style={{ transform: 'rotateY(180deg)' }}>
+                                <div className="absolute inset-0 bg-gradient-to-br from-black to-[#1E1E1E]" />
+                                <div className="relative z-10 pt-8">
+                                  <div className="h-12 bg-[#0B0B0B] w-full rounded-md mb-8" />
+                                  <div className="bg-white/90 rounded-md p-3 flex items-center justify-between text-black">
+                                    <span className="text-sm font-bold tracking-[0.2em]">CVV</span>
+                                    <span className="font-mono">{cardCvv || '•••'}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="lg:col-span-5 space-y-4">
+                          <div className="grid grid-cols-1 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-xs font-semibold text-[#1E1E1E] block">{t('اسم حامل البطاقة', 'Cardholder name')}</label>
+                              <input
+                                value={cardHolder}
+                                onChange={(event) => setCardHolder(event.target.value)}
+                                placeholder={t('الاسم كما يظهر على البطاقة', 'Name as printed on the card')}
+                                className="w-full px-4 py-3 rounded-xl bg-[#F5F2EC] border border-[#D9D2C8] focus:border-[#A56A1E] focus:outline-none text-sm text-[#1E1E1E]"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-xs font-semibold text-[#1E1E1E] block">{t('رقم البطاقة', 'Card number')}</label>
+                              <input
+                                value={cardNumber}
+                                onChange={(event) => setCardNumber(event.target.value.replace(/[^\d ]/g, '').slice(0, 19))}
+                                placeholder="0000 0000 0000 0000"
+                                className="w-full px-4 py-3 rounded-xl bg-[#F5F2EC] border border-[#D9D2C8] focus:border-[#A56A1E] focus:outline-none text-sm text-[#1E1E1E] font-mono text-left"
+                                style={{ direction: 'ltr' }}
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-2">
+                                <label className="text-xs font-semibold text-[#1E1E1E] block">{t('الانتهاء', 'Expiry')}</label>
+                                <input
+                                  value={cardExpiry}
+                                  onChange={(event) => setCardExpiry(event.target.value.replace(/[^\d/]/g, '').slice(0, 5))}
+                                  placeholder="MM/YY"
+                                  className="w-full px-4 py-3 rounded-xl bg-[#F5F2EC] border border-[#D9D2C8] focus:border-[#A56A1E] focus:outline-none text-sm text-[#1E1E1E] font-mono text-left"
+                                  style={{ direction: 'ltr' }}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-semibold text-[#1E1E1E] block">{t('CVV', 'CVV')}</label>
+                                <input
+                                  value={cardCvv}
+                                  onChange={(event) => setCardCvv(event.target.value.replace(/\D/g, '').slice(0, 4))}
+                                  onFocus={() => setShowCardBack(true)}
+                                  onBlur={() => setShowCardBack(false)}
+                                  placeholder="123"
+                                  className="w-full px-4 py-3 rounded-xl bg-[#F5F2EC] border border-[#D9D2C8] focus:border-[#A56A1E] focus:outline-none text-sm text-[#1E1E1E] font-mono text-left"
+                                  style={{ direction: 'ltr' }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="rounded-2xl border border-[#D8D1C7] bg-[#FBF8F2] p-4 space-y-3">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-[#5B5B5B]">{t('رسوم الاستشارة الرمزية', 'Symbolic advisory fee')}</span>
+                              <span className="font-bold text-[#1E1E1E]">80.00 SAR</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-[#5B5B5B]">{t('الهوية المعتمدة', 'Validated ID')}</span>
+                              <span className="font-mono text-[#1E1E1E]">{paymentSummary.idNumber || idNumber}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-[#5B5B5B]">
+                              <BadgeCheck className="w-4 h-4 text-emerald-600" />
+                              <span>{t('نقبل Mada و Visa و Mastercard ضمن هذه المحاكاة الآمنة.', 'We accept Mada, Visa, and Mastercard in this secure simulation.')}</span>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={handlePayment}
+                            disabled={isPaymentProcessing}
+                            className="w-full inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-[#A56A1E] hover:bg-[#946B4B] disabled:opacity-60 disabled:cursor-not-allowed text-white font-extrabold text-sm transition-all duration-300 shadow-[0_10px_25px_-5px_rgba(165,106,30,0.25)]"
+                          >
+                            {isPaymentProcessing ? (
+                              <span>{t('جارٍ المعالجة...', 'Processing...')}</span>
+                            ) : (
+                              <>
+                                <span>{t('ادفع 80.00 ريال', 'Pay 80.00 SAR')}</span>
+                                <ArrowRight className="w-4 h-4" />
+                              </>
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setBookingStep('details')}
+                            className="w-full inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl border border-[#D8D1C7] text-[#7B5A42] hover:border-[#A56A1E] font-semibold text-sm transition-colors"
+                          >
+                            <ArrowLeft className="w-4 h-4" />
+                            <span>{t('العودة للتفاصيل', 'Back to details')}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
+                )}
 
-                  {/* Action row with submit button */}
-                  <div className="pt-2 text-left space-y-3">
-                    <button
-                      type="submit"
-                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-[#A56A1E] hover:bg-[#946B4B] text-white font-extrabold text-sm transition-all duration-300 shadow-[0_10px_25px_-5px_rgba(165,106,30,0.25)] hover:shadow-lg hover:shadow-[#A56A1E]/25 transform active:scale-98 cursor-pointer"
-                    >
-                      <Send className={`w-4 h-4 ${isRtl ? 'ml-1' : 'mr-1'}`} />
-                      <span>{t('إرسال الاستفسار', 'Submit Brief')}</span>
-                    </button>
-                    
-                    <p className={`text-[11px] text-[#5B5B5B] font-light leading-relaxed ${textAlignClass}`}>
+                {bookingStep === 'done' && (
+                  <div className="py-10 px-4 flex flex-col items-center justify-center text-center space-y-5">
+                    <div className="w-20 h-20 rounded-full bg-[#A56A1E]/15 flex items-center justify-center text-[#A56A1E] animate-bounce">
+                      <CheckCircle className="w-12 h-12" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-[#1E1E1E]">
+                      {t('تم تأكيد الدفع وإصدار voucher', 'Payment confirmed and voucher issued')}
+                    </h3>
+                    <p className="text-sm text-[#5B5B5B] max-w-lg mx-auto leading-relaxed">
                       {t(
-                        'بمجرد ارسالك، سيصلنا استفسارك وسنتواصل معك في أقرب فرصة.',
-                        'By submitting this brief, your request goes directly to our secure central archive to initiate senior analysis.'
+                        `تم إنشاء رقم القيد ${voucherId} بنجاح، وسيقوم الفريق التنفيذي بمراجعة الملف والرد خلال 24 ساعة عمل.`,
+                        `Voucher ${voucherId} has been issued successfully. Our executive team will review the file and respond within 24 business hours.`
                       )}
                     </p>
+
+                    <div className="w-full max-w-xl rounded-2xl border border-[#D8D1C7] bg-[#FBF8F2] p-5 text-start space-y-3">
+                      <div className="flex items-center gap-2 font-semibold text-[#1E1E1E]">
+                        <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                        <span>{t('قائمة المستندات المؤمنة', 'Authorized files checklist')}</span>
+                      </div>
+                      <ul className="space-y-2 text-sm text-[#5B5B5B]">
+                        <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600" />{t('الهوية / الإقامة', 'ID / Iqama')}</li>
+                        <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600" />{t('المرفقات والملفات الداعمة', 'Supporting attachments')}</li>
+                        <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600" />{t('المذكرة الصوتية القصيرة', 'Short voice note')}</li>
+                        <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600" />{t('سند الدفع بقيمة 80.00 ريال', '80.00 SAR payment receipt')}</li>
+                      </ul>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBookingStep('details');
+                          setPaymentSuccess(false);
+                          setVoucherId('');
+                          setCardNumber('');
+                          setCardHolder('');
+                          setCardExpiry('');
+                          setCardCvv('');
+                          setIdNumber('');
+                          setIdTouched(false);
+                          setAttachments([]);
+                          setFormData({ fullName: '', phone: '', email: '', message: '' });
+                          setRecordingBlobUrl('');
+                          setRecordingSeconds(0);
+                          setRecordingStatus('idle');
+                        }}
+                        className="px-8 py-3 rounded-lg bg-[#A56A1E] hover:bg-[#946B4B] text-white text-xs font-bold transition-all shadow-md cursor-pointer"
+                      >
+                        {t('بدء طلب جديد', 'Start another request')}
+                      </button>
+                    </div>
                   </div>
-
-                </form>
-              )}
-
+                )}
+              </div>
             </div>
 
           </div>
@@ -664,6 +1269,60 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
 
         </div>
       </section>
+
+      {paymentSuccess && (
+        <div className="fixed inset-0 z-[90] bg-black/70 backdrop-blur-sm flex items-center justify-center px-4 py-8">
+          <div className="w-full max-w-2xl rounded-3xl bg-[#F8F5EF] border border-[#D8D1C7] shadow-2xl overflow-hidden">
+            <div className="bg-[#A56A1E] px-6 py-4 text-white flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-white/70">{t('إيصال مؤقت', 'Temporary receipt')}</p>
+                <h3 className="text-2xl font-extrabold">{t('تم الدفع بنجاح', 'Payment successful')}</h3>
+              </div>
+              <div className="rounded-2xl bg-white/15 px-4 py-2 text-sm font-mono">{voucherId}</div>
+            </div>
+
+            <div className="p-6 space-y-5 text-start">
+              <p className="text-[#5B5B5B] leading-relaxed">
+                {t(
+                  `تم إصدار الرقم ${voucherId} مع اعتماد الملفات المرفقة. سيقوم فريقنا بالتواصل خلال 24 ساعة لتأكيد خطوات المتابعة.`,
+                  `Voucher ${voucherId} has been issued with the attached file set approved. Our team will follow up within 24 hours to confirm next steps.`
+                )}
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="rounded-2xl border border-[#D8D1C7] bg-white p-4">
+                  <p className="text-xs font-bold text-[#A56A1E] uppercase tracking-widest mb-2">{t('الخطوات التالية', 'Next steps')}</p>
+                  <ul className="space-y-2 text-sm text-[#1E1E1E]">
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600" />{t('استلام الطلب وتأكيد رقم الملف', 'Receive request and confirm file number')}</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600" />{t('مراجعة المرفقات خلال 24 ساعة', 'Review attachments within 24 hours')}</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600" />{t('تواصل تنفيذي من المستشار المناوب', 'Executive callback from the duty counsel')}</li>
+                  </ul>
+                </div>
+
+                <div className="rounded-2xl border border-[#D8D1C7] bg-white p-4">
+                  <p className="text-xs font-bold text-[#A56A1E] uppercase tracking-widest mb-2">{t('سند الحجز', 'Advisory receipt')}</p>
+                  <div className="space-y-2 text-sm text-[#1E1E1E]">
+                    <p><span className="font-semibold">{t('الاسم:', 'Name:')}</span> {paymentSummary.fullName}</p>
+                    <p><span className="font-semibold">{t('الجوال:', 'Phone:')}</span> {paymentSummary.phone}</p>
+                    <p><span className="font-semibold">{t('الهوية:', 'ID:')}</span> {paymentSummary.idNumber}</p>
+                    <p><span className="font-semibold">{t('الرسوم:', 'Fee:')}</span> 80.00 SAR</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setPaymentSuccess(false)}
+                  className="px-6 py-3 rounded-xl border border-[#D8D1C7] text-[#7B5A42] font-semibold"
+                >
+                  {t('إغلاق', 'Close')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
