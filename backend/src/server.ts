@@ -373,14 +373,14 @@ const saveSiteSettings = async (body: unknown) => {
   const columnFragments = columns.map((column) => Prisma.raw(`"${column}"`));
   const valueFragments = columns.map((column) => Prisma.sql`${payloadWithTimestamp[column as keyof typeof payloadWithTimestamp]}`);
   const updateFragments = columns
-    .filter((column) => column !== 'id')
+    .filter((column) => column !== 'id' && column !== 'updatedAt')
     .map((column) => Prisma.sql`${Prisma.raw(`"${column}"`)} = EXCLUDED.${Prisma.raw(`"${column}"`)}`);
 
   await prisma.$executeRaw(
     Prisma.sql`
       INSERT INTO "SiteSettings" (${Prisma.join(columnFragments)})
       VALUES (${Prisma.join(valueFragments)})
-      ON CONFLICT ("id") DO UPDATE SET ${Prisma.join(updateFragments)}, "updatedAt" = CURRENT_TIMESTAMP
+      ON CONFLICT ("id") DO UPDATE SET ${Prisma.join(updateFragments)}, "updatedAt" = EXCLUDED."updatedAt"
     `,
   );
 };
