@@ -187,6 +187,7 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
   value: string; onChange: (v: string) => void; rtl?: boolean; placeholder?: string;
 }) {
   const [preview, setPreview] = useState(false);
+  const [selectionNotice, setSelectionNotice] = useState('');
 
   function insertMarkdown(before: string, after = '') {
     const ta = document.getElementById(rtl ? 'md-ar' : 'md-en') as HTMLTextAreaElement | null;
@@ -248,11 +249,17 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
     const start = ta.selectionStart;
     const end = ta.selectionEnd;
     if (start !== 0 || end !== value.length) {
+      setSelectionNotice(rtl
+        ? 'اختر النص بالكامل لإزالة التنسيقات.'
+        : 'Select the full text to clear formatting.');
+      window.setTimeout(() => setSelectionNotice(''), 2200);
       return;
     }
 
     const cleaned = stripMarkdownFormatting(value);
     onChange(cleaned);
+    setSelectionNotice(rtl ? 'تمت إزالة التنسيقات.' : 'Formatting cleared.');
+    window.setTimeout(() => setSelectionNotice(''), 2200);
     setTimeout(() => {
       ta.selectionStart = 0;
       ta.selectionEnd = 0;
@@ -311,6 +318,18 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
           <Eye size={10} /> {preview ? 'Edit' : 'Preview'}
         </button>
       </div>
+      {selectionNotice && (
+        <div style={{
+          padding: '6px 10px',
+          fontSize: 10,
+          color: '#7A4D0A',
+          background: '#FFF8EC',
+          borderBottom: '1px solid var(--border)',
+          fontFamily: 'DM Mono, monospace',
+        }}>
+          {selectionNotice}
+        </div>
+      )}
 
       {/* Editor or preview */}
       {preview ? (
