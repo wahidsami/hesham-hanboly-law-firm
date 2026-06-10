@@ -175,4 +175,20 @@ export const contentClient = {
       formData.append('licenseFile', payload.licenseFile);
       return formData;
     })()),
+  trackAnalyticsEvent: (payload: {
+    visitorId?: string;
+    sessionId?: string;
+    type?: 'page_view' | 'cta_click';
+    name?: string;
+    path: string;
+    title?: string;
+    referrer?: string;
+    locale?: string;
+    screenWidth?: number;
+    screenHeight?: number;
+  }) =>
+    requestJson<{ ok: true }>('/api/analytics/events', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
 };

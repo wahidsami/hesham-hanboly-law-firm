@@ -7,6 +7,7 @@ import { PageBuilder } from "./components/builder/PageBuilder";
 import { NavigationManager, type NavItem } from "./components/NavigationManager";
 import { MediaLibrary } from "./components/MediaLibrary";
 import { SettingsPanel } from "./components/SettingsPanel";
+import { OverviewModule } from "./components/overview/OverviewModule";
 import { ArticlesModule } from "./components/articles/ArticlesModule";
 import { ConsultationsModule } from "./components/consultations/ConsultationsModule";
 import { DoctorShieldRequestsModule } from "./components/doctor-shield/DoctorShieldRequestsModule";
@@ -18,7 +19,7 @@ import { LogIn, ShieldCheck } from "lucide-react";
 
 export default function App() {
   const [mode, setMode] = useState<"cms" | "builder">("cms");
-  const [activeSection, setActiveSection] = useState<SidebarSection>("pages");
+  const [activeSection, setActiveSection] = useState<SidebarSection>("overview");
   const [lang, setLang] = useState<Lang>("en");
   const [authLoading, setAuthLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
@@ -168,6 +169,7 @@ export default function App() {
     await backendApi.authLogout();
     setAuthenticated(false);
     setCurrentUser("");
+    setActiveSection("overview");
     setPages([]);
     setNavItems([]);
     setArticleCount(0);
@@ -371,6 +373,8 @@ export default function App() {
 
   function renderMain() {
     switch (activeSection) {
+      case "overview":
+        return <OverviewModule lang={lang} />;
       case "pages":
         return (
           <PagesIndex

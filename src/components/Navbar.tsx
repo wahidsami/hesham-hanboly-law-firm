@@ -5,7 +5,19 @@ import MegaMenu from './MegaMenu';
 import { useLanguage } from '../contexts/LanguageContext';
 import { serviceCategories } from '../data/servicesData';
 import { useSiteContent } from '../content/ContentContext';
+import { contentClient } from '../content/contentClient';
 import type { NavItemRecord } from '../types';
+
+const ANALYTICS_VISITOR_KEY = 'hh-visitor-id';
+const ANALYTICS_SESSION_KEY = 'hh-session-id';
+
+const getOrCreateStorageId = (storage: Storage, key: string) => {
+  const existing = storage.getItem(key);
+  if (existing) return existing;
+  const next = crypto.randomUUID();
+  storage.setItem(key, next);
+  return next;
+};
 
 interface NavbarProps {
   currentView?: 'home' | 'about' | 'team' | 'contact' | 'articles' | 'article-detail' | 'service-detail' | 'cms-page' | 'admin';
@@ -105,8 +117,26 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
     setIsMegaOpen(false);
     setIsMobileMegaOpen(false);
     setMobileActiveSub(null);
-    
+
+    const track = (name: string, path: string) => {
+      if (typeof window === 'undefined') return;
+      const visitorId = getOrCreateStorageId(window.localStorage, ANALYTICS_VISITOR_KEY);
+      const sessionId = getOrCreateStorageId(window.sessionStorage, ANALYTICS_SESSION_KEY);
+      void contentClient.trackAnalyticsEvent({
+        visitorId,
+        sessionId,
+        type: 'cta_click',
+        name,
+        path,
+        locale: language,
+        referrer: document.referrer || '',
+        screenWidth: window.innerWidth,
+        screenHeight: window.innerHeight,
+      }).catch(() => undefined);
+    };
+
     if (id === 'about') {
+      track('Navbar About', '/about');
       if (onNavigate) {
         onNavigate('about', 'about-hero');
       }
@@ -114,6 +144,7 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
     }
 
     if (id === 'team') {
+      track('Navbar Team', '/team');
       if (onNavigate) {
         onNavigate('team');
       }
@@ -121,6 +152,7 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
     }
 
     if (id === 'articles') {
+      track('Navbar Insights', '/articles');
       if (onNavigate) {
         onNavigate('articles');
       }
@@ -128,10 +160,18 @@ export default function Navbar({ currentView = 'home', onNavigate }: NavbarProps
     }
 
     if (id === 'contact') {
+      track('Navbar Contact', '/contact');
       if (onNavigate) {
         onNavigate('contact');
       }
       return;
+    }
+
+    if (id === 'services') {
+      track('Navbar Practice Areas', '/practice-areas');
+    }
+    if (id === 'hero') {
+      track('Navbar Home', '/');
     }
 
     if (onNavigate) {

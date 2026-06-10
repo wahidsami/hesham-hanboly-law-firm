@@ -76,6 +76,13 @@ const ENDPOINT_GROUPS: EndpointGroup[] = [
     ],
   },
   {
+    title: 'Admin — Overview Analytics',
+    endpoints: [
+      { method: 'POST', path: '/api/analytics/events', description: 'Record a public website page view or CTA click. Public endpoint.', auth: false, params: [{ name: 'type', in: 'body', type: 'page_view | cta_click', required: false, description: 'Event type' }, { name: 'visitorId', in: 'body', type: 'string', required: false, description: 'Persistent visitor identifier from localStorage' }, { name: 'sessionId', in: 'body', type: 'string', required: false, description: 'Session identifier from sessionStorage' }, { name: 'path', in: 'body', type: 'string', required: true, description: 'Visited path or target path' }], response: '{ ok: true }' },
+      { method: 'GET', path: '/api/admin/analytics/overview', description: 'Return dashboard overview metrics, chart data, top pages, referrers, geo, and recent activity.', auth: true, params: [{ name: 'range', in: 'query', type: '7d | 30d | 90d | all', required: false, description: 'Time range for the report' }], response: '{ summary, timeline, topPages, topReferrers, topCountries, topDevices, topBrowsers, recentActivity, content }' },
+    ],
+  },
+  {
     title: 'Admin — Doctor Shield Requests',
     endpoints: [
       { method: 'POST', path: '/api/doctor-shield-requests', description: 'Store a new Doctor Shield request submitted from the public program form as multipart/form-data, including the license image upload.', auth: false, params: [{ name: 'fullName', in: 'body', type: 'string', required: true, description: 'Request holder name' }, { name: 'phone', in: 'body', type: 'string', required: true, description: 'Contact number' }, { name: 'email', in: 'body', type: 'string', required: true, description: 'Email address' }, { name: 'idNumber', in: 'body', type: 'string', required: true, description: 'Saudi ID or Iqama number' }, { name: 'specialty', in: 'body', type: 'string', required: true, description: 'Medical specialty' }, { name: 'licenseFile', in: 'body', type: 'File', required: true, description: 'Current SCFHS license image' }], response: '{ data: DoctorShieldRequest }' },

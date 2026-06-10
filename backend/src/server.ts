@@ -47,6 +47,7 @@ import {
   siteSettingsToRecord,
   toSiteContent,
 } from './content';
+import { getAnalyticsOverview, recordAnalyticsEvent } from './analytics';
 import { uploadBufferToS3 } from './uploads';
 import { seedDatabase } from './seed';
 
@@ -1022,6 +1023,48 @@ app.patch(
     }
 
     response.json(updated);
+  }),
+);
+
+app.post(
+  '/api/analytics/events',
+  asyncHandler(async (request, response) => {
+    const body = request.body as Record<string, unknown>;
+    const path = typeof body.path === 'string' && body.path.trim() ? body.path.trim() : '/';
+    const title = typeof body.title === 'string' ? body.title : '';
+    const type = body.type === 'cta_click' ? 'cta_click' : 'page_view';
+    const visitorId = typeof body.visitorId === 'string' && body.visitorId.trim() ? body.visitorId.trim() : undefined;
+    const sessionId = typeof body.sessionId === 'string' && body.sessionId.trim() ? body.sessionId.trim() : undefined;
+    const name = typeof body.name === 'string' ? body.name : '';
+    const locale = typeof body.locale === 'string' ? body.locale : '';
+    const referrer = typeof body.referrer === 'string' ? body.referrer : '';
+    const screenWidth = typeof body.screenWidth === 'number' ? body.screenWidth : typeof body.screenWidth === 'string' && body.screenWidth.trim() ? Number(body.screenWidth) : null;
+    const screenHeight = typeof body.screenHeight === 'number' ? body.screenHeight : typeof body.screenHeight === 'string' && body.screenHeight.trim() ? Number(body.screenHeight) : null;
+
+    await recordAnalyticsEvent({
+      visitorId,
+      sessionId,
+      type,
+      name,
+      path,
+      title,
+      locale,
+      referrer,
+      screenWidth: Number.isFinite(screenWidth as number) ? Number(screenWidth) : null,
+      screenHeight: Number.isFinite(screenHeight as number) ? Number(screenHeight) : null,
+    }, request.headers);
+
+    response.json({ ok: true });
+  }),
+);
+
+app.get(
+  '/api/admin/analytics/overview',
+  requireAdmin,
+  asyncHandler(async (request, response) => {
+    const rangeRaw = typeof request.query.range === 'string' ? request.query.range : '30d';
+    const range = ['7d', '30d', '90d', 'all'].includes(rangeRaw) ? rangeRaw : '30d';
+    response.json(await getAnalyticsOverview(range as '7d' | '30d' | '90d' | 'all'));
   }),
 );
 

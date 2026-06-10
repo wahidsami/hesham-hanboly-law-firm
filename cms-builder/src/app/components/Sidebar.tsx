@@ -1,4 +1,5 @@
 import {
+  LayoutDashboard,
   LayoutGrid,
   Navigation2,
   FileText,
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 
 export type SidebarSection =
+  | "overview"
   | "pages"
   | "navigation"
   | "articles"
@@ -32,6 +34,7 @@ interface SidebarProps {
 }
 
 const navItems: { id: SidebarSection; label: string; icon: React.ElementType; badge?: number | ((counts: { pages: number; articles: number; practiceAreas: number }) => number) }[] = [
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "pages", label: "Pages", icon: LayoutGrid, badge: (counts) => counts.pages },
   { id: "navigation", label: "Navigation", icon: Navigation2 },
   { id: "articles", label: "Articles", icon: FileText, badge: (counts) => counts.articles },

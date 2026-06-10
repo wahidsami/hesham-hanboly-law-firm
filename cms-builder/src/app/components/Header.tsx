@@ -11,6 +11,7 @@ interface HeaderProps {
 }
 
 const sectionLabels: Record<string, string> = {
+  overview: "Overview",
   pages: "Pages",
   navigation: "Navigation",
   articles: "Articles",

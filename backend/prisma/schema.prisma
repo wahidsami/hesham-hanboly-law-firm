@@ -322,3 +322,73 @@ model DoctorShieldRequest {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
+
+model AnalyticsVisitor {
+  id                String             @id
+  visitorId         String             @unique
+  firstSeenAt       DateTime           @default(now())
+  lastSeenAt        DateTime
+  firstReferrer     String             @default("")
+  firstReferrerHost String             @default("")
+  firstLocale       String             @default("")
+  country           String             @default("")
+  region            String             @default("")
+  city              String             @default("")
+  deviceType        String             @default("")
+  browserName       String             @default("")
+  osName            String             @default("")
+  userAgent         String             @default("")
+  visitsCount       Int                @default(0)
+  ctaClicksCount    Int                @default(0)
+  sessions          AnalyticsSession[]
+  events            AnalyticsEvent[]
+}
+
+model AnalyticsSession {
+  id                String            @id
+  sessionId         String            @unique
+  visitorId         String
+  startedAt         DateTime          @default(now())
+  lastSeenAt        DateTime
+  landingPath       String
+  landingTitle      String             @default("")
+  landingReferrer   String             @default("")
+  landingReferrerHost String           @default("")
+  locale            String             @default("")
+  country           String             @default("")
+  region            String             @default("")
+  city              String             @default("")
+  deviceType        String             @default("")
+  browserName       String             @default("")
+  osName            String             @default("")
+  userAgent         String             @default("")
+  pageViewsCount    Int                @default(0)
+  ctaClicksCount    Int                @default(0)
+  visitor           AnalyticsVisitor   @relation(fields: [visitorId], references: [visitorId], onDelete: Cascade)
+  events            AnalyticsEvent[]
+}
+
+model AnalyticsEvent {
+  id                String            @id
+  sessionId         String
+  visitorId         String
+  type              String
+  name              String             @default("")
+  path              String
+  title             String             @default("")
+  referrer          String             @default("")
+  referrerHost      String             @default("")
+  locale            String             @default("")
+  country           String             @default("")
+  region            String             @default("")
+  city              String             @default("")
+  deviceType        String             @default("")
+  browserName       String             @default("")
+  osName            String             @default("")
+  userAgent         String             @default("")
+  screenWidth       Int?
+  screenHeight      Int?
+  createdAt         DateTime           @default(now())
+  session           AnalyticsSession   @relation(fields: [sessionId], references: [sessionId], onDelete: Cascade)
+  visitor           AnalyticsVisitor   @relation(fields: [visitorId], references: [visitorId], onDelete: Cascade)
+}

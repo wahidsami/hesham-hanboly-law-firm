@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import About from './components/About';
@@ -18,6 +18,35 @@ import CmsPageRenderer from './components/CmsPageRenderer';
 import DoctorShieldAd from './components/DoctorShieldAd';
 import { useLanguage } from './contexts/LanguageContext';
 import AdminDashboard from './components/FigmaAdminDashboard';
+import { contentClient } from './content/contentClient';
+
+const ANALYTICS_VISITOR_KEY = 'hh-visitor-id';
+const ANALYTICS_SESSION_KEY = 'hh-session-id';
+
+const getAnalyticsPath = (
+  view: 'home' | 'about' | 'team' | 'contact' | 'articles' | 'article-detail' | 'service-detail' | 'cms-page' | 'admin',
+  articleSlug: string,
+  serviceSlug: string,
+  cmsSlug: string,
+) => {
+  if (view === 'home') return { path: '/', title: 'Home' };
+  if (view === 'about') return { path: '/about', title: 'About Us' };
+  if (view === 'team') return { path: '/team', title: 'Team' };
+  if (view === 'contact') return { path: '/contact', title: 'Contact' };
+  if (view === 'articles') return { path: '/articles', title: 'Articles' };
+  if (view === 'article-detail') return { path: `/articles/${articleSlug}`, title: articleSlug };
+  if (view === 'service-detail') return { path: serviceSlug === 'doctor-shield' ? '/doctor-shield' : `/practice-areas/${serviceSlug}`, title: serviceSlug };
+  if (view === 'cms-page') return { path: `/${cmsSlug.replace(/^\/+/, '')}`, title: cmsSlug };
+  return { path: '/admin', title: 'Admin' };
+};
+
+const getOrCreateStorageId = (storage: Storage, key: string) => {
+  const existing = storage.getItem(key);
+  if (existing) return existing;
+  const next = crypto.randomUUID();
+  storage.setItem(key, next);
+  return next;
+};
 
 export default function App() {
   type AppView = 'home' | 'about' | 'team' | 'contact' | 'articles' | 'article-detail' | 'service-detail' | 'cms-page' | 'admin';
@@ -42,6 +71,8 @@ export default function App() {
   const [selectedArticleId, setSelectedArticleId] = useState<string>(initialRoute.articleSlug);
   const [selectedServiceSlug, setSelectedServiceSlug] = useState<string>(initialRoute.serviceSlug);
   const [selectedCmsSlug, setSelectedCmsSlug] = useState<string>(initialRoute.cmsSlug);
+  const [analyticsVisitorId, setAnalyticsVisitorId] = useState('');
+  const [analyticsSessionId, setAnalyticsSessionId] = useState('');
   const { language } = useLanguage();
 
   useEffect(() => {
@@ -57,6 +88,32 @@ export default function App() {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setAnalyticsVisitorId(getOrCreateStorageId(window.localStorage, ANALYTICS_VISITOR_KEY));
+    setAnalyticsSessionId(getOrCreateStorageId(window.sessionStorage, ANALYTICS_SESSION_KEY));
+  }, []);
+
+  const analyticsRoute = useMemo(
+    () => getAnalyticsPath(currentView, selectedArticleId, selectedServiceSlug, selectedCmsSlug),
+    [currentView, selectedArticleId, selectedServiceSlug, selectedCmsSlug],
+  );
+
+  useEffect(() => {
+    if (!analyticsVisitorId || !analyticsSessionId || currentView === 'admin') return;
+    void contentClient.trackAnalyticsEvent({
+      visitorId: analyticsVisitorId,
+      sessionId: analyticsSessionId,
+      type: 'page_view',
+      path: analyticsRoute.path,
+      title: analyticsRoute.title,
+      locale: language,
+      referrer: document.referrer || '',
+      screenWidth: window.innerWidth,
+      screenHeight: window.innerHeight,
+    }).catch(() => undefined);
+  }, [analyticsVisitorId, analyticsSessionId, analyticsRoute.path, analyticsRoute.title, currentView]);
 
   // Handle centralized routing transitions
   const navigateTo = (

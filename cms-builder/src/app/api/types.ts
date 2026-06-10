@@ -148,6 +148,65 @@ export interface ApiDoctorShieldRequest {
   updatedAt: string;
 }
 
+export type AnalyticsRange = '7d' | '30d' | '90d' | 'all';
+
+export interface AnalyticsOverviewSummary {
+  visits: number;
+  uniqueVisitors: number;
+  sessions: number;
+  avgPagesPerSession: number;
+  topPage: { path: string; title: string; views: number } | null;
+  topReferrer: { referrer: string; visits: number } | null;
+}
+
+export interface AnalyticsOverviewChartPoint {
+  date: string;
+  visits: number;
+  uniqueVisitors: number;
+  sessions: number;
+}
+
+export interface AnalyticsOverviewItem {
+  label: string;
+  value: number;
+  subtitle?: string;
+}
+
+export interface AnalyticsOverviewRecentItem {
+  id: string;
+  type: 'page_view' | 'cta_click';
+  name: string;
+  path: string;
+  title: string;
+  referrer: string;
+  locale: string;
+  country: string;
+  region: string;
+  city: string;
+  deviceType: string;
+  browserName: string;
+  osName: string;
+  createdAt: string;
+}
+
+export interface AnalyticsOverviewResponse {
+  summary: AnalyticsOverviewSummary;
+  timeline: AnalyticsOverviewChartPoint[];
+  topPages: AnalyticsOverviewItem[];
+  topReferrers: AnalyticsOverviewItem[];
+  topCountries: AnalyticsOverviewItem[];
+  topDevices: AnalyticsOverviewItem[];
+  topBrowsers: AnalyticsOverviewItem[];
+  recentActivity: AnalyticsOverviewRecentItem[];
+  content: {
+    pages: number;
+    articles: number;
+    practiceAreas: number;
+    consultations: number;
+    doctorShieldRequests: number;
+  };
+}
+
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 export interface ApiUser {
