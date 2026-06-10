@@ -188,7 +188,6 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
 }) {
   const [preview, setPreview] = useState(false);
   const [selectionNotice, setSelectionNotice] = useState('');
-  const [scrollTop, setScrollTop] = useState(0);
 
   function insertMarkdown(before: string, after = '') {
     const ta = document.getElementById(rtl ? 'md-ar' : 'md-en') as HTMLTextAreaElement | null;
@@ -315,17 +314,6 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
 
   return (
     <div className="article-md-editor" style={{ border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
-      <style>{`
-        .article-md-editor textarea::selection {
-          background: rgba(196, 127, 23, 0.18);
-          color: transparent;
-          -webkit-text-fill-color: transparent;
-        }
-        .article-md-editor textarea::-moz-selection {
-          background: rgba(196, 127, 23, 0.18);
-          color: transparent;
-        }
-      `}</style>
       {/* Toolbar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '5px 8px', background: 'var(--muted)', borderBottom: '1px solid var(--border)', direction: rtl ? 'rtl' : 'ltr', flexDirection: rtl ? 'row-reverse' : 'row' }}>
         {toolbarBtns.map((btn, i) => (
@@ -366,27 +354,7 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
           dangerouslySetInnerHTML={{ __html: value ? renderMarkdown(value) : `<span style="color:var(--muted-foreground);font-style:italic">Nothing to preview yet.</span>` }}
         />
       ) : (
-        <div style={{ position: 'relative', minHeight: 280, background: 'var(--card)' }}>
-          <div
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              inset: 0,
-              padding: '14px 16px',
-              fontSize: 12,
-              lineHeight: 1.7,
-              color: 'var(--foreground)',
-              direction: rtl ? 'rtl' : 'ltr',
-              fontFamily: rtl ? 'serif' : 'DM Mono, monospace',
-              boxSizing: 'border-box',
-              overflow: 'hidden',
-              pointerEvents: 'none',
-              transform: `translateY(${-scrollTop}px)`,
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-            }}
-            dangerouslySetInnerHTML={{ __html: value ? renderMarkdown(value) : `<span style="color:var(--muted-foreground);font-style:italic">Nothing to preview yet.</span>` }}
-          />
+        <div style={{ minHeight: 280, background: 'var(--card)' }}>
           <textarea
             id={rtl ? 'md-ar' : 'md-en'}
             value={value || ''}
@@ -396,7 +364,6 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
               const pasted = e.clipboardData.getData('text/plain');
               insertPlainText(pasted);
             }}
-            onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
             placeholder={placeholder}
             style={{
               display: 'block',
@@ -404,21 +371,20 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
               minHeight: 280,
               padding: '14px 16px',
               border: 'none',
-              background: 'transparent',
+              background: 'var(--card)',
               outline: 'none',
               resize: 'vertical',
-              fontSize: 12,
-              fontFamily: rtl ? 'serif' : 'DM Mono, monospace',
-              color: 'transparent',
-              WebkitTextFillColor: 'transparent',
+              fontSize: 13,
+              fontFamily: rtl ? 'serif' : 'Inter, sans-serif',
+              color: 'var(--foreground)',
               caretColor: 'var(--foreground)',
               direction: rtl ? 'rtl' : 'ltr',
               lineHeight: 1.7,
               boxSizing: 'border-box',
               position: 'relative',
-              zIndex: 1,
               overflowY: 'auto',
-              textShadow: 'none',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
             }}
           />
         </div>
