@@ -72,7 +72,8 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
     employer: '',
     notes: '',
     hasBeenConvicted: 'no',
-    agreed: false
+    agreed: false,
+    termsAccepted: false,
   });
   
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -82,6 +83,7 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
   const [submissionLoading, setSubmissionLoading] = useState<boolean>(false);
   const [submissionError, setSubmissionError] = useState<string>('');
   const [lastVoucherId, setLastVoucherId] = useState<string>('');
+  const [showTermsModal, setShowTermsModal] = useState<boolean>(false);
 
   // Section 7: FAQ State
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -322,7 +324,8 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
     if (!formData.email.trim()) errors.email = t('يجب إدخال البريد الإلكتروني', 'Email is required');
     if (!formData.idNumber.trim()) errors.idNumber = t('يجب إدخال رقم الهوية أو الإقامة', 'National ID / Iqama is required');
     if (!formData.specialty.trim()) errors.specialty = t('يجب إدخال التخصص الطبي', 'Medical specialty is required');
-    if (!formData.agreed) errors.agreed = t('يجب الموافقة على الشروط والأحكام', 'You must agree to the terms');
+    if (!formData.agreed) errors.agreed = t('يجب تأكيد صحة البيانات', 'You must confirm the data is accurate');
+    if (!formData.termsAccepted) errors.termsAccepted = t('يجب قبول الشروط والأحكام', 'You must accept the terms of service');
 
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
@@ -367,6 +370,94 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
       setSubmissionLoading(false);
     }
   };
+
+  const serviceTermsArabic = [
+    {
+      title: '1. الخدمة',
+      items: [
+        'تقديم الدعم والتمثيل القانوني في قضايا الأخطاء الطبية أو الادعاء بها.',
+        'تشمل الخدمات: المرافعة، المدافعة، إعداد المذكرات، وحضور الجلسات أمام الجهات المختصة.',
+      ],
+    },
+    {
+      title: '2. فئات الاشتراك',
+      items: [
+        'الفئة الشاملة (11,500 ريال شامل الضريبة): تغطي القضايا الجديدة والقضايا السابقة لتاريخ الاشتراك.',
+        'الفئة الأساسية (2,300 ريال شامل الضريبة): تغطي القضايا والشكاوى التي تنشأ بعد تاريخ الاشتراك فقط.',
+        'تبدأ التغطية بعد سداد كامل قيمة الاشتراك.',
+      ],
+    },
+    {
+      title: '3. مدة ونطاق الخدمة',
+      items: [
+        'مدة الاشتراك: 12 شهراً من تاريخ السداد.',
+        'نطاق الخدمة: داخل مدينتي جدة والرياض.',
+      ],
+    },
+    {
+      title: '4. التزامات المشترك',
+      items: [
+        'سداد رسوم الاشتراك المختارة.',
+        'توفير جميع المستندات والتقارير المطلوبة عند الطلب.',
+      ],
+    },
+    {
+      title: '5. السرية والخصوصية',
+      items: ['يلتزم الطرفان بالحفاظ على سرية جميع المعلومات والبيانات المتبادلة.'],
+    },
+    {
+      title: '6. أحكام عامة',
+      items: [
+        'سداد الرسوم يعد موافقة على الشروط والفئة المختارة.',
+        'لا تشمل الخدمة الغرامات أو التعويضات المحكوم بها.',
+        'رسوم الاشتراك غير قابلة للاسترداد.',
+      ],
+    },
+  ];
+
+  const serviceTermsEnglish = [
+    {
+      title: '1. Service Scope',
+      items: [
+        'Legal support and representation for medical malpractice claims or allegations.',
+        'Services include legal defense, pleadings, document preparation, and court/committee attendance.',
+      ],
+    },
+    {
+      title: '2. Subscription Plans',
+      items: [
+        'Comprehensive Plan (SAR 11,500 incl. VAT): Covers both existing and new cases.',
+        'Basic Plan (SAR 2,300 incl. VAT): Covers only cases and complaints arising after the subscription date.',
+        'Coverage starts upon full payment.',
+      ],
+    },
+    {
+      title: '3. Term & Coverage Area',
+      items: [
+        'Subscription term: 12 months from the payment date.',
+        'Service area: Jeddah and Riyadh.',
+      ],
+    },
+    {
+      title: '4. Subscriber Obligations',
+      items: [
+        'Pay the selected subscription fee.',
+        'Provide all requested documents, medical records, and reports.',
+      ],
+    },
+    {
+      title: '5. Confidentiality',
+      items: ['Both parties must maintain the confidentiality of all shared information and data.'],
+    },
+    {
+      title: '6. General Terms',
+      items: [
+        'Payment constitutes acceptance of the selected plan and its terms.',
+        'The service covers legal representation only and excludes fines, penalties, or awarded compensation.',
+        'Subscription fees are non-refundable.',
+      ],
+    },
+  ];
 
   return (
     <div className="pt-24 bg-[#F1ECE3] min-h-screen text-[#121212] font-sans overflow-hidden" style={{ direction }}>
@@ -1158,6 +1249,7 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                           setSubmissionError('');
                           setSubmissionLoading(false);
                           setLastVoucherId('');
+                          setShowTermsModal(false);
                           setFormErrors({});
                           setFormData({
                             fullName: '',
@@ -1169,7 +1261,8 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                             employer: '',
                             notes: '',
                             hasBeenConvicted: 'no',
-                            agreed: false
+                            agreed: false,
+                            termsAccepted: false
                           });
                         }}
                         className="px-6 py-3 rounded-lg border border-[#7A563D] text-[#7A563D] text-xs font-bold hover:bg-[#7A563D]/5 transition-all"
@@ -1533,6 +1626,30 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                     </div>
                     {formErrors.agreed && <p className="text-[10px] text-red-500 mt-1">{formErrors.agreed}</p>}
 
+                    <div className="relative flex items-start gap-3 pt-2">
+                      <div className="flex items-center h-5">
+                        <input
+                          id="service-terms"
+                          type="checkbox"
+                          checked={formData.termsAccepted}
+                          readOnly
+                          onClick={() => setShowTermsModal(true)}
+                          className="w-4 h-4 text-[#A56A1E] border-[#D8D1C7] rounded-md focus:ring-[#A56A1E] cursor-pointer"
+                        />
+                      </div>
+                      <label
+                        htmlFor="service-terms"
+                        className="text-xs font-light text-[#5B5B5B] select-none text-start cursor-pointer"
+                        onClick={() => setShowTermsModal(true)}
+                      >
+                        {t(
+                          'أوافق على الشروط والأحكام الخاصة بخدمة سند الطبيب وأقر بقراءتها والموافقة عليها.',
+                          'I agree to the Doctor Shield service terms and confirm that I have read and accepted them.'
+                        )}
+                      </label>
+                    </div>
+                    {formErrors.termsAccepted && <p className="text-[10px] text-red-500 mt-1">{formErrors.termsAccepted}</p>}
+
                     {/* Step submit check triggers */}
                     <div className="pt-4 border-t border-[#D8D1C7]/40 text-start">
                       <button
@@ -1546,6 +1663,63 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                   </motion.form>
                 )}
               </AnimatePresence>
+
+              {showTermsModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 px-4 py-8">
+                  <div className="w-full max-w-4xl max-h-[85vh] overflow-y-auto rounded-3xl bg-[#FBF8F2] border border-[#D8D1C7] shadow-2xl">
+                    <div className="sticky top-0 flex items-center justify-between gap-4 border-b border-[#E4DBCF] bg-[#FBF8F2] px-6 py-4">
+                      <div>
+                        <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#A56A1E]">{t('الشروط والأحكام', 'Terms of Service')}</div>
+                        <div className="text-lg font-extrabold text-[#1E1E1E]">{t('يرجى المراجعة والموافقة قبل المتابعة', 'Please review and accept before proceeding')}</div>
+                      </div>
+                      <button type="button" onClick={() => setShowTermsModal(false)} className="rounded-full border border-[#D8D1C7] px-3 py-2 text-sm font-semibold text-[#7A5A42]">
+                        {t('إغلاق', 'Close')}
+                      </button>
+                    </div>
+                    <div className="grid gap-6 px-6 py-6 lg:grid-cols-2">
+                      {[serviceTermsArabic, serviceTermsEnglish].map((sections, index) => (
+                        <div key={index} className="rounded-2xl border border-[#E4DBCF] bg-white p-5">
+                          <div className="text-sm font-bold text-[#A56A1E] mb-4">{index === 0 ? 'الشروط والأحكام' : 'Terms of Service'}</div>
+                          <div className="space-y-5 text-sm leading-7 text-[#1E1E1E]">
+                            {sections.map((section) => (
+                              <div key={section.title} className="space-y-2">
+                                <div className="font-extrabold text-[#7A563D]">{section.title}</div>
+                                <ul className="list-disc pl-5 space-y-1 text-[#4B4B4B]">
+                                  {section.items.map((item) => (
+                                    <li key={item}>{item}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap items-center justify-end gap-3 border-t border-[#E4DBCF] bg-[#F7F2E9] px-6 py-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowTermsModal(false);
+                          setFormData((prev) => ({ ...prev, termsAccepted: false }));
+                        }}
+                        className="rounded-xl border border-[#D8D1C7] px-5 py-3 text-sm font-bold text-[#7B5A42]"
+                      >
+                        {t('عدم الموافقة', 'Decline')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData((prev) => ({ ...prev, termsAccepted: true }));
+                          setShowTermsModal(false);
+                        }}
+                        className="rounded-xl bg-[#7A563D] px-5 py-3 text-sm font-bold text-white"
+                      >
+                        {t('أوافق على الشروط', 'Accept terms')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
             </div>
 
@@ -1583,8 +1757,10 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                     <span className="text-[10px] text-emerald-600 block">{t('لا مبالغ مستترة أو رسوم دفاعية', 'No hidden filing fees')}</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-3xl font-black font-serif text-[#121212] tracking-tight">٢٣٠٠</span>
-                    <span className="text-xs font-bold text-[#7A563D] ml-1">{t('ريال درهم', 'SAR')}</span>
+                    <span className="text-3xl font-black font-serif text-[#121212] tracking-tight">
+                      {doctorShieldPaymentAmount.startsWith('11,500') ? '١١٥٠٠' : '٢٣٠٠'}
+                    </span>
+                    <span className="text-xs font-bold text-[#7A563D] ml-1">{t('ريال', 'SAR')}</span>
                   </div>
                 </div>
 

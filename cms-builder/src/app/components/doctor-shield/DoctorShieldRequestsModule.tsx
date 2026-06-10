@@ -311,6 +311,7 @@ export function DoctorShieldRequestsModule({ lang, onCountChange }: DoctorShield
                 { label: lang === 'ar' ? 'المدينة' : 'City', value: selected.city || '—', icon: User },
                 { label: lang === 'ar' ? 'جهة العمل' : 'Employer', value: selected.employer || '—', icon: Building },
                 { label: lang === 'ar' ? 'الاعتراف السابق' : 'Has prior conviction', value: selected.hasBeenConvicted === 'yes' ? (lang === 'ar' ? 'نعم' : 'Yes') : (lang === 'ar' ? 'لا' : 'No'), icon: ShieldCheck },
+                { label: lang === 'ar' ? 'فئة الاشتراك' : 'Subscription plan', value: selected.hasBeenConvicted === 'yes' ? (lang === 'ar' ? 'الفئة الشاملة' : 'Comprehensive Plan') : (lang === 'ar' ? 'الفئة الأساسية' : 'Basic Plan'), icon: ShieldCheck },
                 { label: lang === 'ar' ? 'المرجع / القسيمة' : 'Voucher / reference', value: selected.voucherId, icon: FileText },
                 { label: lang === 'ar' ? 'طريقة الدفع' : 'Payment method', value: selected.paymentMethod || selected.cardBrand || '—', icon: ShieldCheck },
                 { label: lang === 'ar' ? 'قيمة الاشتراك' : 'Payment amount', value: selected.paymentAmount, icon: FileText },
