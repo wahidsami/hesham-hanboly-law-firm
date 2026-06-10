@@ -1,6 +1,10 @@
 import React from 'react';
 import { slugify } from '../content/utils';
 
+const HEADLINE_MARKER = '<!--headline-->';
+
+const stripHeadlineMarker = (value: string) => value.replace(new RegExp(`\\s*${HEADLINE_MARKER}\\s*`, 'g'), '').trim();
+
 const parseInline = (text: string) => {
   const parts: React.ReactNode[] = [];
   let cursor = 0;
@@ -56,7 +60,7 @@ export const extractMarkdownHeadings = (value: string): MarkdownHeading[] =>
   value
     .replace(/\r\n/g, '\n')
     .split(/\n{2,}/)
-    .map((block) => block.trim())
+    .map((block) => stripHeadlineMarker(block.trim()))
     .filter(Boolean)
     .flatMap((block) => {
       if (block.startsWith('### ')) {
@@ -78,7 +82,7 @@ export default function MarkdownRenderer({ value }: { value: string }) {
   const blocks = value
     .replace(/\r\n/g, '\n')
     .split(/\n{2,}/)
-    .map((block) => block.trim())
+    .map((block) => stripHeadlineMarker(block.trim()))
     .filter(Boolean);
 
   return (
