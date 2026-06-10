@@ -3,7 +3,7 @@ import {
   ArrowLeft, Globe, Eye, Check, Send, FileText, EyeOff,
   AlertCircle, AlertTriangle, Upload, X, Bold, Italic,
   List, Hash, Quote, Link as LinkIcon, Image as ImageIcon,
-  Clock, Calendar, Save, ChevronDown, ChevronUp,
+  Clock, Calendar, Save, ChevronDown, ChevronUp, ArrowDown,
 } from 'lucide-react';
 import { backendApi } from '../../api/backend';
 import type { Article, ArticleStatus } from '../../api/types';
@@ -24,6 +24,24 @@ function readTimeFromBody(body: string): string {
   const words = body.trim().split(/\s+/).length;
   const minutes = Math.max(1, Math.round(words / 200));
   return `${minutes} min read`;
+}
+
+type MarkdownHeading = { level: number; text: string };
+
+function extractMarkdownHeadings(value: string): MarkdownHeading[] {
+  return value
+    .split('\n')
+    .map((line) => {
+      const match = /^(#{1,3})\s+(.+)$/.exec(line.trim());
+      if (!match) {
+        return null;
+      }
+      return {
+        level: match[1].length,
+        text: match[2].trim(),
+      };
+    })
+    .filter((heading): heading is MarkdownHeading => Boolean(heading));
 }
 
 function slugify(title: string): string {
@@ -139,6 +157,39 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
     }, 10);
   }
 
+  function assignAsHeadline() {
+    const ta = document.getElementById(rtl ? 'md-ar' : 'md-en') as HTMLTextAreaElement | null;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const hasSelection = end > start;
+
+    if (hasSelection) {
+      const selected = value.slice(start, end).trim().replace(/\s+/g, ' ');
+      const next = value.slice(0, start) + `## ${selected}` + value.slice(end);
+      onChange(next);
+      setTimeout(() => {
+        ta.selectionStart = start + 3;
+        ta.selectionEnd = start + 3 + selected.length;
+        ta.focus();
+      }, 10);
+      return;
+    }
+
+    const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+    const lineEndIndex = value.indexOf('\n', end);
+    const lineEnd = lineEndIndex === -1 ? value.length : lineEndIndex;
+    const line = value.slice(lineStart, lineEnd).trim();
+    if (!line) return;
+    const next = value.slice(0, lineStart) + `## ${line}` + value.slice(lineEnd);
+    onChange(next);
+    setTimeout(() => {
+      ta.selectionStart = lineStart + 3;
+      ta.selectionEnd = lineStart + 3 + line.length;
+      ta.focus();
+    }, 10);
+  }
+
   // Simple markdown to HTML for preview
   function renderMarkdown(md: string): string {
     return md
@@ -156,6 +207,7 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
 
   const toolbarBtns = [
     { icon: <Hash size={12} />, title: 'Heading', action: () => insertMarkdown('## ') },
+    { icon: <ArrowDown size={12} />, title: 'Assign as headline', action: assignAsHeadline },
     { icon: <Bold size={12} />, title: 'Bold', action: () => insertMarkdown('**', '**') },
     { icon: <Italic size={12} />, title: 'Italic', action: () => insertMarkdown('*', '*') },
     { icon: <List size={12} />, title: 'List', action: () => insertMarkdown('- ') },
@@ -411,8 +463,9 @@ function PublishChecklist({ article }: { article: Article }) {
 
 // ─── Sidebar right ────────────────────────────────────────────────────────────
 
-function EditorSidebar({ article, onChange, onSaveDraft, onPublish, onUnpublish, saved }: {
+function EditorSidebar({ article, lang, onChange, onSaveDraft, onPublish, onUnpublish, saved }: {
   article: Article;
+  lang: Lang;
   onChange: (patch: Partial<Article>) => void;
   onSaveDraft: () => void;
   onPublish: () => void;
@@ -432,6 +485,7 @@ function EditorSidebar({ article, onChange, onSaveDraft, onPublish, onUnpublish,
     archived:  { label: 'Archived',  bg: '#FFF4E5', color: '#8C4A00', dot: '#D4860A' },
   };
   const cfg = STATUS_CFG[article.status];
+  const currentHeadings = extractMarkdownHeadings(lang === 'ar' ? article.bodyAr : article.bodyEn);
 
   const btnBase: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '8px', borderRadius: 5, cursor: 'pointer', fontSize: 12, fontFamily: 'Inter, sans-serif' };
 
@@ -490,6 +544,41 @@ function EditorSidebar({ article, onChange, onSaveDraft, onPublish, onUnpublish,
 
         {/* Checklist */}
         <PublishChecklist article={article} />
+
+        {/* Headings outline */}
+        <SectionLabel label="Headings" />
+        <div style={{ border: '1px solid var(--border)', borderRadius: 6, background: 'var(--input-background)', marginBottom: 14, overflow: 'hidden' }}>
+          {currentHeadings.length > 0 ? (
+            currentHeadings.map((heading, index) => (
+              <div
+                key={`${heading.text}-${index}`}
+                style={{
+                  display: 'flex',
+                  gap: 8,
+                  padding: '8px 10px',
+                  borderBottom: index < currentHeadings.length - 1 ? '1px solid var(--border)' : 'none',
+                  alignItems: 'flex-start',
+                }}
+              >
+                <span style={{ fontSize: 9, fontFamily: 'DM Mono, monospace', color: '#A56A1E', paddingTop: 2 }}>
+                  H{heading.level}
+                </span>
+                <span style={{
+                  fontSize: 11,
+                  color: 'var(--foreground)',
+                  lineHeight: 1.5,
+                  wordBreak: 'break-word',
+                }}>
+                  {heading.text}
+                </span>
+              </div>
+            ))
+          ) : (
+            <div style={{ padding: '10px 12px', fontSize: 11, color: 'var(--muted-foreground)', lineHeight: 1.6 }}>
+              No headlines were assigned yet. Select a sentence in the editor and click the arrow button to turn it into a headline.
+            </div>
+          )}
+        </div>
 
         {/* Metadata */}
         <SectionLabel label="Details" />
@@ -757,6 +846,7 @@ export function ArticleEditor({ article: initialArticle, onBack, onSave, onPubli
         {/* Sidebar */}
         <EditorSidebar
           article={article}
+          lang={lang}
           onChange={patch}
           onSaveDraft={handleSaveDraft}
           onPublish={handlePublish}
