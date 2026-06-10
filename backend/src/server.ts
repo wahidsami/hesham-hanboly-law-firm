@@ -924,6 +924,7 @@ app.patch(
 
 app.post(
   '/api/doctor-shield-requests',
+  consultationUpload.single('licenseFile'),
   asyncHandler(async (request, response) => {
     const body = request.body as Record<string, unknown>;
     const fullName = typeof body.fullName === 'string' ? body.fullName.trim() : '';
@@ -941,11 +942,19 @@ app.post(
     const paymentMethod = typeof body.paymentMethod === 'string' && body.paymentMethod.trim() ? body.paymentMethod.trim() : 'card';
     const cardBrand = typeof body.cardBrand === 'string' && body.cardBrand.trim() ? body.cardBrand.trim() : paymentMethod;
     const cardLast4 = typeof body.cardLast4 === 'string' && body.cardLast4.trim() ? body.cardLast4.trim() : '';
+    const licenseFile = request.file;
 
-    if (!fullName || !phone || !email || !idNumber || !specialty) {
-      response.status(400).json({ error: 'Full name, phone, email, ID number, and specialty are required.' });
+    if (!fullName || !phone || !email || !idNumber || !specialty || !licenseFile) {
+      response.status(400).json({ error: 'Full name, phone, email, ID number, specialty, and the SCFHS license image are required.' });
       return;
     }
+
+    const licenseAsset = await uploadBufferToS3({
+      buffer: licenseFile.buffer,
+      originalName: licenseFile.originalname,
+      mimeType: licenseFile.mimetype,
+      size: licenseFile.size,
+    });
 
     const requestRecord = await createDoctorShieldRequest({
       id: `doctor-shield-${Date.now()}`,
@@ -965,6 +974,10 @@ app.post(
       paymentMethod,
       cardBrand,
       cardLast4,
+      licenseFileUrl: licenseAsset.url,
+      licenseFileName: licenseAsset.originalName,
+      licenseFileMimeType: licenseAsset.mimeType,
+      licenseFileSize: licenseAsset.size,
       adminNotes: '',
     });
 

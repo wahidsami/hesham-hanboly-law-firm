@@ -314,6 +314,10 @@ export const ensureDatabaseSchema = async () => {
       "paymentMethod" TEXT NOT NULL,
       "cardBrand" TEXT NOT NULL,
       "cardLast4" TEXT NOT NULL,
+      "licenseFileUrl" TEXT NOT NULL DEFAULT '',
+      "licenseFileName" TEXT NOT NULL DEFAULT '',
+      "licenseFileMimeType" TEXT NOT NULL DEFAULT '',
+      "licenseFileSize" INTEGER,
       "adminNotes" TEXT NOT NULL DEFAULT '',
       "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -424,6 +428,14 @@ export const ensureDatabaseSchema = async () => {
       ADD COLUMN IF NOT EXISTS "doctorShieldCirclePriceEn" TEXT,
       ADD COLUMN IF NOT EXISTS "doctorShieldCircleNoteAr" TEXT,
       ADD COLUMN IF NOT EXISTS "doctorShieldCircleNoteEn" TEXT;
+  `);
+
+  statements.push(`
+    ALTER TABLE "DoctorShieldRequest"
+      ADD COLUMN IF NOT EXISTS "licenseFileUrl" TEXT NOT NULL DEFAULT '',
+      ADD COLUMN IF NOT EXISTS "licenseFileName" TEXT NOT NULL DEFAULT '',
+      ADD COLUMN IF NOT EXISTS "licenseFileMimeType" TEXT NOT NULL DEFAULT '',
+      ADD COLUMN IF NOT EXISTS "licenseFileSize" INTEGER;
   `);
 
   statements.push(`

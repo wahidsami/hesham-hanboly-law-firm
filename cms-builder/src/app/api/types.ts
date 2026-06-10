@@ -139,6 +139,10 @@ export interface ApiDoctorShieldRequest {
   paymentMethod: string;
   cardBrand: string;
   cardLast4: string;
+  licenseFileUrl: string;
+  licenseFileName: string;
+  licenseFileMimeType: string;
+  licenseFileSize: number | null;
   adminNotes: string;
   createdAt: string;
   updatedAt: string;

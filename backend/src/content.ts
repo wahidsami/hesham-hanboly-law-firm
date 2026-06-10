@@ -239,6 +239,10 @@ type DoctorShieldRequestRowRecord = {
   paymentMethod: string;
   cardBrand: string;
   cardLast4: string;
+  licenseFileUrl: string;
+  licenseFileName: string;
+  licenseFileMimeType: string;
+  licenseFileSize: number | null;
   adminNotes: string;
   createdAt: string;
   updatedAt: string;
@@ -453,6 +457,15 @@ const doctorShieldRowToRecord = (row: Record<string, unknown>): DoctorShieldRequ
   paymentMethod: String(row.paymentMethod || ''),
   cardBrand: String(row.cardBrand || ''),
   cardLast4: String(row.cardLast4 || ''),
+  licenseFileUrl: String(row.licenseFileUrl || ''),
+  licenseFileName: String(row.licenseFileName || ''),
+  licenseFileMimeType: String(row.licenseFileMimeType || ''),
+  licenseFileSize:
+    typeof row.licenseFileSize === 'number'
+      ? row.licenseFileSize
+      : typeof row.licenseFileSize === 'string' && row.licenseFileSize.trim()
+        ? Number(row.licenseFileSize)
+        : null,
   adminNotes: String(row.adminNotes || ''),
   createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt || new Date().toISOString()),
   updatedAt: row.updatedAt instanceof Date ? row.updatedAt.toISOString() : String(row.updatedAt || new Date().toISOString()),
@@ -1350,6 +1363,10 @@ export const createDoctorShieldRequest = async (payload: {
   paymentMethod: string;
   cardBrand: string;
   cardLast4: string;
+  licenseFileUrl?: string;
+  licenseFileName?: string;
+  licenseFileMimeType?: string;
+  licenseFileSize?: number | null;
   adminNotes?: string;
 }) => {
   await prisma.$executeRawUnsafe(
@@ -1357,11 +1374,13 @@ export const createDoctorShieldRequest = async (payload: {
       INSERT INTO "DoctorShieldRequest" (
         "id", "fullName", "phone", "email", "idNumber", "specialty", "city", "employer", "notes",
         "hasBeenConvicted", "status", "paymentStatus", "paymentAmount", "voucherId", "paymentMethod", "cardBrand", "cardLast4",
+        "licenseFileUrl", "licenseFileName", "licenseFileMimeType", "licenseFileSize",
         "adminNotes", "createdAt", "updatedAt"
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9,
         $10, $11, $12, $13, $14, $15, $16, $17,
-        $18, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+        $18, $19, $20, $21,
+        $22, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
       )
     `,
     payload.id,
@@ -1381,6 +1400,10 @@ export const createDoctorShieldRequest = async (payload: {
     payload.paymentMethod,
     payload.cardBrand,
     payload.cardLast4,
+    payload.licenseFileUrl || '',
+    payload.licenseFileName || '',
+    payload.licenseFileMimeType || '',
+    payload.licenseFileSize ?? null,
     payload.adminNotes || '',
   );
 

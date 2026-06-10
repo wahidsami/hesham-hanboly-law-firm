@@ -153,9 +153,26 @@ export const contentClient = {
     paymentMethod: string;
     cardBrand: string;
     cardLast4: string;
+    licenseFile: File;
   }) =>
-    requestJson<{ doctorShieldRequest: DoctorShieldRequestRecord }>('/api/doctor-shield-requests', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }),
+    requestFormData<{ doctorShieldRequest: DoctorShieldRequestRecord }>('/api/doctor-shield-requests', (() => {
+      const formData = new FormData();
+      formData.append('fullName', payload.fullName);
+      formData.append('phone', payload.phone);
+      formData.append('email', payload.email);
+      formData.append('idNumber', payload.idNumber);
+      formData.append('specialty', payload.specialty);
+      formData.append('city', payload.city);
+      formData.append('employer', payload.employer);
+      formData.append('notes', payload.notes);
+      formData.append('hasBeenConvicted', payload.hasBeenConvicted);
+      formData.append('voucherId', payload.voucherId);
+      formData.append('paymentAmount', payload.paymentAmount);
+      formData.append('paymentStatus', payload.paymentStatus);
+      formData.append('paymentMethod', payload.paymentMethod);
+      formData.append('cardBrand', payload.cardBrand);
+      formData.append('cardLast4', payload.cardLast4);
+      formData.append('licenseFile', payload.licenseFile);
+      return formData;
+    })()),
 };

@@ -145,6 +145,10 @@ type BackendDoctorShieldRequest = {
   paymentMethod: string;
   cardBrand: string;
   cardLast4: string;
+  licenseFileUrl: string;
+  licenseFileName: string;
+  licenseFileMimeType: string;
+  licenseFileSize: number | null;
   adminNotes: string;
   createdAt: string;
   updatedAt: string;
@@ -419,6 +423,10 @@ function mapDoctorShieldRequest(request: BackendDoctorShieldRequest): ApiDoctorS
     paymentMethod: request.paymentMethod,
     cardBrand: request.cardBrand,
     cardLast4: request.cardLast4,
+    licenseFileUrl: request.licenseFileUrl,
+    licenseFileName: request.licenseFileName,
+    licenseFileMimeType: request.licenseFileMimeType,
+    licenseFileSize: request.licenseFileSize,
     adminNotes: request.adminNotes,
     createdAt: request.createdAt,
     updatedAt: request.updatedAt,

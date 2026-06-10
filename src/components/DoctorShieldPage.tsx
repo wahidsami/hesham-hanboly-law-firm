@@ -23,7 +23,9 @@ import {
   ShieldCheck,
   CreditCard,
   CheckCircle,
-  FileText
+  FileText,
+  Upload,
+  X,
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSiteContent } from '../content/ContentContext';
@@ -72,6 +74,7 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
     employer: '',
     notes: '',
     hasBeenConvicted: 'no',
+    licenseFile: null as File | null,
     agreed: false,
     termsAccepted: false,
   });
@@ -84,6 +87,7 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
   const [submissionError, setSubmissionError] = useState<string>('');
   const [lastVoucherId, setLastVoucherId] = useState<string>('');
   const [showTermsModal, setShowTermsModal] = useState<boolean>(false);
+  const [licensePreviewUrl, setLicensePreviewUrl] = useState<string>('');
 
   // Section 7: FAQ State
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -113,6 +117,17 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!formData.licenseFile) {
+      setLicensePreviewUrl('');
+      return undefined;
+    }
+
+    const objectUrl = URL.createObjectURL(formData.licenseFile);
+    setLicensePreviewUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [formData.licenseFile]);
 
   const doctorShieldBlocks = useMemo(() => doctorShieldCmsPage?.blocks ?? [], [doctorShieldCmsPage]);
   const doctorShieldHeroBlock = useMemo(() => doctorShieldBlocks.find((block) => block.type === 'hero') ?? null, [doctorShieldBlocks]);
@@ -324,6 +339,7 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
     if (!formData.email.trim()) errors.email = t('يجب إدخال البريد الإلكتروني', 'Email is required');
     if (!formData.idNumber.trim()) errors.idNumber = t('يجب إدخال رقم الهوية أو الإقامة', 'National ID / Iqama is required');
     if (!formData.specialty.trim()) errors.specialty = t('يجب إدخال التخصص الطبي', 'Medical specialty is required');
+    if (!formData.licenseFile) errors.licenseFile = t('يجب إرفاق صورة سارية المفعول من رخصة هيئة التخصصات الصحية', 'Please attach a valid image of your SCFHS license');
     if (!formData.agreed) errors.agreed = t('يجب تأكيد صحة البيانات', 'You must confirm the data is accurate');
     if (!formData.termsAccepted) errors.termsAccepted = t('يجب قبول الشروط والأحكام', 'You must accept the terms of service');
 
@@ -355,6 +371,7 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
         employer: formData.employer.trim(),
         notes: formData.notes.trim(),
         hasBeenConvicted: formData.hasBeenConvicted,
+        licenseFile: formData.licenseFile!,
         voucherId,
         paymentAmount: doctorShieldPaymentAmount,
         paymentStatus: 'paid',
@@ -1261,6 +1278,7 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                             employer: '',
                             notes: '',
                             hasBeenConvicted: 'no',
+                            licenseFile: null,
                             agreed: false,
                             termsAccepted: false
                           });
@@ -1555,6 +1573,71 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                           placeholder={t('مستشفى الملك فيصل التخصصي الخ', 'King Faisal Hospital & Research Centre')}
                           className="w-full px-4 py-3 text-xs bg-white border border-[#D8D1C7] rounded-xl focus:border-[#A56A1E] focus:outline-none transition-colors placeholder-[#121212]/30"
                         />
+                      </div>
+
+                      {/* SCFHS license upload */}
+                      <div className="space-y-2 md:col-span-2">
+                        <label className="text-xs font-extrabold text-[#7A563D] flex items-center gap-1.5">
+                          <Upload className="w-3.5 h-3.5 text-[#A56A1E]" />
+                          <span>{t('ارفاق صورة من رخصة هيئة التخصصات الصحية سارية المفعول *', 'Upload a valid image of your current SCFHS license *')}</span>
+                        </label>
+                        <div className="rounded-2xl border border-dashed border-[#D8D1C7] bg-white p-4 space-y-3">
+                          {formData.licenseFile ? (
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                              <div className="w-full sm:w-44 h-32 rounded-xl overflow-hidden border border-[#D8D1C7] bg-[#FBF8F2] flex items-center justify-center">
+                                {licensePreviewUrl ? (
+                                  <img src={licensePreviewUrl} alt={formData.licenseFile.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="text-xs text-[#5B5B5B] px-3 text-center break-all">
+                                    {formData.licenseFile.name}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0 space-y-2">
+                                <div className="text-sm font-semibold text-[#1E1E1E] break-all">{formData.licenseFile.name}</div>
+                                <div className="text-xs text-[#5B5B5B]">
+                                  {Math.max(1, Math.round(formData.licenseFile.size / 1024))} KB
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setFormData(prev => ({ ...prev, licenseFile: null }))}
+                                  className="inline-flex items-center gap-2 rounded-lg border border-[#D8D1C7] px-3 py-2 text-xs font-semibold text-[#7B5A42]"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                  <span>{t('إزالة الملف', 'Remove file')}</span>
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-start gap-3">
+                              <div className="text-sm text-[#5B5B5B]">
+                                {t('اسحب صورة الرخصة هنا أو اخترها من جهازك.', 'Drop the license image here or choose it from your device.')}
+                              </div>
+                              <label className="inline-flex items-center gap-2 rounded-xl bg-[#7A563D] px-4 py-2 text-xs font-bold text-white cursor-pointer">
+                                <Upload className="w-4 h-4" />
+                                <span>{t('اختيار ملف', 'Choose file')}</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(event) => {
+                                    const file = event.target.files?.[0] || null;
+                                    setFormData(prev => ({ ...prev, licenseFile: file }));
+                                    if (file) {
+                                      setFormErrors(prev => {
+                                        const next = { ...prev };
+                                        delete next.licenseFile;
+                                        return next;
+                                      });
+                                    }
+                                    event.target.value = '';
+                                  }}
+                                />
+                              </label>
+                            </div>
+                          )}
+                        </div>
+                        {formErrors.licenseFile && <p className="text-[10px] text-red-500">{formErrors.licenseFile}</p>}
                       </div>
 
                       {/* Convicted before query (Yes or No) */}

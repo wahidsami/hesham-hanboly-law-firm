@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Clock3, Filter, FileText, Building, Phone, Search, ShieldCheck, User, Users } from 'lucide-react';
+import { Clock3, ExternalLink, FileText, Building, Phone, Search, ShieldCheck, User, Users } from 'lucide-react';
 import { backendApi } from '../../api/backend';
 import type { ApiDoctorShieldRequest, ConsultationPaymentStatus, ConsultationStatus } from '../../api/types';
 
@@ -327,6 +327,42 @@ export function DoctorShieldRequestsModule({ lang, onCountChange }: DoctorShield
                   </div>
                 );
               })}
+            </div>
+
+            <div className="rounded-2xl border border-[#E4DBCF] bg-white p-4 space-y-3">
+              <div className="text-xs uppercase tracking-[0.16em] text-[#7B5A42]">{lang === 'ar' ? 'رخصة هيئة التخصصات الصحية' : 'SCFHS license file'}</div>
+              {selected.licenseFileUrl ? (
+                <div className="space-y-3">
+                  {selected.licenseFileMimeType.startsWith('image/') ? (
+                    <div className="overflow-hidden rounded-xl border border-[#D8D1C7] bg-[#FBF8F2]">
+                      <img src={selected.licenseFileUrl} alt={selected.licenseFileName || selected.fullName} className="h-56 w-full object-contain" />
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-[#D8D1C7] bg-[#FBF8F2] p-4 text-sm text-[#5B5B5B]">
+                      {selected.licenseFileName || selected.licenseFileUrl}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="text-xs text-[#5B5B5B]">
+                      <div className="font-semibold text-[#1E1E1E] break-all">{selected.licenseFileName || (lang === 'ar' ? 'ملف مرخص' : 'Uploaded file')}</div>
+                      <div className="mt-1">{selected.licenseFileSize ? `${Math.max(1, Math.round(selected.licenseFileSize / 1024))} KB` : '—'}</div>
+                    </div>
+                    <a
+                      href={selected.licenseFileUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 rounded-xl border border-[#D8D1C7] bg-[#FBF8F2] px-3 py-2 text-xs font-semibold text-[#1E1E1E]"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      <span>{lang === 'ar' ? 'فتح الملف' : 'Open file'}</span>
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-[#5B5B5B]">
+                  {lang === 'ar' ? 'لم يتم إرفاق ملف رخصة بعد.' : 'No license file has been attached yet.'}
+                </div>
+              )}
             </div>
 
             <div className="rounded-2xl border border-[#E4DBCF] p-4">

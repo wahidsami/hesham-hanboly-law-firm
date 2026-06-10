@@ -314,6 +314,10 @@ model DoctorShieldRequest {
   paymentMethod     String
   cardBrand         String
   cardLast4         String
+  licenseFileUrl    String   @default("")
+  licenseFileName   String   @default("")
+  licenseFileMimeType String @default("")
+  licenseFileSize   Int?
   adminNotes        String   @default("")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
