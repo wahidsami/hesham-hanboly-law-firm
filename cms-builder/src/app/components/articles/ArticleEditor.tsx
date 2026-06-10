@@ -188,6 +188,7 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
 }) {
   const [preview, setPreview] = useState(false);
   const [selectionNotice, setSelectionNotice] = useState('');
+  const [scrollTop, setScrollTop] = useState(0);
 
   function insertMarkdown(before: string, after = '') {
     const ta = document.getElementById(rtl ? 'md-ar' : 'md-en') as HTMLTextAreaElement | null;
@@ -271,9 +272,9 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
   function renderMarkdown(md: string): string {
     return md
       .replace(/\s*<!--headline-->\s*$/gm, '')
-      .replace(/^### (.+)$/gm, '<h3 style="font-size:14px;font-weight:700;margin:16px 0 6px;color:var(--foreground)">$1</h3>')
-      .replace(/^## (.+)$/gm, '<h2 style="font-size:16px;font-weight:700;margin:20px 0 8px;color:var(--foreground)">$1</h2>')
-      .replace(/^# (.+)$/gm, '<h1 style="font-size:20px;font-weight:700;margin:24px 0 10px;color:var(--foreground)">$1</h1>')
+      .replace(/^### (.+)$/gm, '<h3 style="font-size:14px;font-weight:700;margin:16px 0 6px;color:#B91C1C">$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2 style="font-size:16px;font-weight:700;margin:20px 0 8px;color:#B91C1C">$1</h2>')
+      .replace(/^# (.+)$/gm, '<h1 style="font-size:20px;font-weight:700;margin:24px 0 10px;color:#B91C1C">$1</h1>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .replace(/^> (.+)$/gm, '<blockquote style="border-left:3px solid var(--primary);margin:10px 0;padding:6px 12px;color:var(--muted-foreground);font-style:italic">$1</blockquote>')
@@ -338,19 +339,57 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
           dangerouslySetInnerHTML={{ __html: value ? renderMarkdown(value) : `<span style="color:var(--muted-foreground);font-style:italic">Nothing to preview yet.</span>` }}
         />
       ) : (
-        <textarea
-          id={rtl ? 'md-ar' : 'md-en'}
-          value={value || ''}
-          onChange={e => onChange(e.target.value)}
-          placeholder={placeholder}
-          style={{
-            display: 'block', width: '100%', minHeight: 280, padding: '14px 16px',
-            border: 'none', background: 'var(--card)', outline: 'none', resize: 'vertical',
-            fontSize: 12, fontFamily: rtl ? 'serif' : 'DM Mono, monospace',
-            color: 'var(--foreground)', direction: rtl ? 'rtl' : 'ltr',
-            lineHeight: 1.7, boxSizing: 'border-box',
-          }}
-        />
+        <div style={{ position: 'relative', minHeight: 280, background: 'var(--card)' }}>
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              padding: '14px 16px',
+              fontSize: 12,
+              lineHeight: 1.7,
+              color: 'var(--foreground)',
+              direction: rtl ? 'rtl' : 'ltr',
+              fontFamily: rtl ? 'serif' : 'DM Mono, monospace',
+              boxSizing: 'border-box',
+              overflow: 'hidden',
+              pointerEvents: 'none',
+              transform: `translateY(${-scrollTop}px)`,
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+            }}
+            dangerouslySetInnerHTML={{ __html: value ? renderMarkdown(value) : `<span style="color:var(--muted-foreground);font-style:italic">Nothing to preview yet.</span>` }}
+          />
+          <textarea
+            id={rtl ? 'md-ar' : 'md-en'}
+            value={value || ''}
+            onChange={e => onChange(e.target.value)}
+            onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+            placeholder={placeholder}
+            style={{
+              display: 'block',
+              width: '100%',
+              minHeight: 280,
+              padding: '14px 16px',
+              border: 'none',
+              background: 'transparent',
+              outline: 'none',
+              resize: 'vertical',
+              fontSize: 12,
+              fontFamily: rtl ? 'serif' : 'DM Mono, monospace',
+              color: 'transparent',
+              WebkitTextFillColor: 'transparent',
+              caretColor: 'var(--foreground)',
+              direction: rtl ? 'rtl' : 'ltr',
+              lineHeight: 1.7,
+              boxSizing: 'border-box',
+              position: 'relative',
+              zIndex: 1,
+              overflowY: 'auto',
+              textShadow: 'none',
+            }}
+          />
+        </div>
       )}
     </div>
   );
