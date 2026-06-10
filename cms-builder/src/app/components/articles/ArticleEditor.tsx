@@ -298,7 +298,18 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
   const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;
 
   return (
-    <div style={{ border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
+    <div className="article-md-editor" style={{ border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
+      <style>{`
+        .article-md-editor textarea::selection {
+          background: rgba(196, 127, 23, 0.18);
+          color: transparent;
+          -webkit-text-fill-color: transparent;
+        }
+        .article-md-editor textarea::-moz-selection {
+          background: rgba(196, 127, 23, 0.18);
+          color: transparent;
+        }
+      `}</style>
       {/* Toolbar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '5px 8px', background: 'var(--muted)', borderBottom: '1px solid var(--border)', direction: rtl ? 'rtl' : 'ltr', flexDirection: rtl ? 'row-reverse' : 'row' }}>
         {toolbarBtns.map((btn, i) => (
