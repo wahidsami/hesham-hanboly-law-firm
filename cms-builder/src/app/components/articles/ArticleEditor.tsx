@@ -3,7 +3,7 @@ import {
   ArrowLeft, Globe, Eye, Check, Send, FileText, EyeOff,
   AlertCircle, AlertTriangle, Upload, X, Bold, Italic,
   List, Hash, Quote, Link as LinkIcon, Image as ImageIcon,
-  Clock, Calendar, Save, ChevronDown, ChevronUp, ArrowDown,
+  Clock, Calendar, Save, ChevronDown, ChevronUp, ArrowDown, Eraser,
 } from 'lucide-react';
 import { backendApi } from '../../api/backend';
 import type { Article, ArticleStatus } from '../../api/types';
@@ -70,6 +70,24 @@ function extractSingleSentence(text: string): string {
   const normalized = text.trim().replace(/\s+/g, ' ');
   const match = normalized.match(/^(.+?[.!?؟。])(?:\s|$)/);
   return (match?.[1] ?? normalized).trim();
+}
+
+function stripMarkdownFormatting(text: string): string {
+  return text
+    .replace(/\s*<!--headline-->\s*/g, '')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^>\s+/gm, '')
+    .replace(/^[-*+]\s+/gm, '')
+    .replace(/^\d+\.\s+/gm, '')
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/__([^_]+)__/g, '$1')
+    .replace(/_([^_]+)_/g, '$1')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\r\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 function slugify(title: string): string {
@@ -224,6 +242,24 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
     }, 10);
   }
 
+  function clearFormatting() {
+    const ta = document.getElementById(rtl ? 'md-ar' : 'md-en') as HTMLTextAreaElement | null;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    if (start !== 0 || end !== value.length) {
+      return;
+    }
+
+    const cleaned = stripMarkdownFormatting(value);
+    onChange(cleaned);
+    setTimeout(() => {
+      ta.selectionStart = 0;
+      ta.selectionEnd = 0;
+      ta.focus();
+    }, 10);
+  }
+
   // Simple markdown to HTML for preview
   function renderMarkdown(md: string): string {
     return md
@@ -243,6 +279,7 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
   const toolbarBtns = [
     { icon: <Hash size={12} />, title: 'Heading', action: () => insertMarkdown('## ') },
     { icon: <ArrowDown size={12} />, title: 'Assign as headline', action: assignAsHeadline },
+    { icon: <Eraser size={12} />, title: 'Clear formatting', action: clearFormatting },
     { icon: <Bold size={12} />, title: 'Bold', action: () => insertMarkdown('**', '**') },
     { icon: <Italic size={12} />, title: 'Italic', action: () => insertMarkdown('*', '*') },
     { icon: <List size={12} />, title: 'List', action: () => insertMarkdown('- ') },
