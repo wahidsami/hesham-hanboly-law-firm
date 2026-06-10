@@ -61,6 +61,12 @@ function findHeadingPosition(value: string, headingText: string): { lineStart: n
   return null;
 }
 
+function extractSingleSentence(text: string): string {
+  const normalized = text.trim().replace(/\s+/g, ' ');
+  const match = normalized.match(/^(.+?[.!?؟。])(?:\s|$)/);
+  return (match?.[1] ?? normalized).trim();
+}
+
 function slugify(title: string): string {
   return '/' + title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
 }
@@ -182,7 +188,7 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
     const hasSelection = end > start;
 
     if (hasSelection) {
-      const selected = value.slice(start, end).trim().replace(/\s+/g, ' ');
+      const selected = extractSingleSentence(value.slice(start, end));
       const before = value.slice(0, start).replace(/\s+$/, '');
       const after = value.slice(end).replace(/^\s+/, '');
       const next = `${before ? `${before}\n\n` : ''}## ${selected}${after ? `\n\n${after}` : ''}`;
@@ -199,7 +205,7 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
     const lineStart = value.lastIndexOf('\n', start - 1) + 1;
     const lineEndIndex = value.indexOf('\n', end);
     const lineEnd = lineEndIndex === -1 ? value.length : lineEndIndex;
-    const line = value.slice(lineStart, lineEnd).trim();
+    const line = extractSingleSentence(value.slice(lineStart, lineEnd));
     if (!line) return;
     const before = value.slice(0, lineStart).replace(/\s+$/, '');
     const after = value.slice(lineEnd).replace(/^\s+/, '');
