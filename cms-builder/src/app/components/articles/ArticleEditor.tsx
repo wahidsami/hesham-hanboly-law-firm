@@ -593,9 +593,27 @@ function EditorSidebar({ article, lang, onChange, onSaveDraft, onPublish, onUnpu
                   onClick={() => onJumpToHeading(heading.text)}
                   title={lang === 'ar' ? 'الانتقال إلى هذا العنوان' : 'Jump to this headline'}
                 >
-                  <span style={{ fontSize: 9, fontFamily: 'DM Mono, monospace', color: '#A56A1E', paddingTop: 2 }}>
-                    H{heading.level}
-                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0, alignItems: 'center' }}>
+                    <span style={{ fontSize: 9, fontFamily: 'DM Mono, monospace', color: '#A56A1E', paddingTop: 2 }}>
+                      H{heading.level}
+                    </span>
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      borderRadius: 999,
+                      padding: '2px 6px',
+                      background: 'rgba(196,127,23,0.12)',
+                      color: '#A56A1E',
+                      fontSize: 8,
+                      fontFamily: 'DM Mono, monospace',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                    }}>
+                      <ArrowDown size={8} />
+                      {lang === 'ar' ? 'عنوان' : 'Headline'}
+                    </span>
+                  </div>
                 <span style={{
                   fontSize: 11,
                   color: 'var(--foreground)',
