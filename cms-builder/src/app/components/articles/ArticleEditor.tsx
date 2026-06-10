@@ -198,8 +198,9 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
     const next = value.slice(0, start) + before + selected + after + value.slice(end);
     onChange(next);
     setTimeout(() => {
-      ta.selectionStart = start + before.length;
-      ta.selectionEnd = start + before.length + selected.length;
+      const caret = start + before.length + selected.length + after.length;
+      ta.selectionStart = caret;
+      ta.selectionEnd = caret;
       ta.focus();
     }, 10);
   }
@@ -234,9 +235,9 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
       const next = `${before ? `${before}\n\n` : ''}## ${selected} ${HEADLINE_MARKER}${after ? `\n\n${after}` : ''}`;
       onChange(next);
       setTimeout(() => {
-        const headingStart = before ? before.length + 2 : 0;
-        ta.selectionStart = headingStart + 3;
-        ta.selectionEnd = headingStart + 3 + selected.length;
+        const caret = before ? before.length + 2 + 3 + selected.length : 3 + selected.length;
+        ta.selectionStart = caret;
+        ta.selectionEnd = caret;
         ta.focus();
       }, 10);
       return;
@@ -252,9 +253,9 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
     const next = `${before ? `${before}\n\n` : ''}## ${line} ${HEADLINE_MARKER}${after ? `\n\n${after}` : ''}`;
     onChange(next);
     setTimeout(() => {
-      const headingStart = before ? before.length + 2 : 0;
-      ta.selectionStart = headingStart + 3;
-      ta.selectionEnd = headingStart + 3 + line.length;
+      const caret = before ? before.length + 2 + 3 + line.length : 3 + line.length;
+      ta.selectionStart = caret;
+      ta.selectionEnd = caret;
       ta.focus();
     }, 10);
   }
@@ -277,8 +278,8 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
     setSelectionNotice(rtl ? 'تمت إزالة التنسيقات.' : 'Formatting cleared.');
     window.setTimeout(() => setSelectionNotice(''), 2200);
     setTimeout(() => {
-      ta.selectionStart = 0;
-      ta.selectionEnd = 0;
+      ta.selectionStart = cleaned.length;
+      ta.selectionEnd = cleaned.length;
       ta.focus();
     }, 10);
   }
@@ -314,10 +315,21 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
 
   return (
     <div className="article-md-editor" style={{ border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
+      <style>{`
+        .article-md-editor textarea::selection {
+          background: rgba(196, 127, 23, 0.18);
+          color: inherit;
+          -webkit-text-fill-color: currentColor;
+        }
+        .article-md-editor textarea::-moz-selection {
+          background: rgba(196, 127, 23, 0.18);
+          color: inherit;
+        }
+      `}</style>
       {/* Toolbar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '5px 8px', background: 'var(--muted)', borderBottom: '1px solid var(--border)', direction: rtl ? 'rtl' : 'ltr', flexDirection: rtl ? 'row-reverse' : 'row' }}>
         {toolbarBtns.map((btn, i) => (
-          <button key={i} onClick={btn.action} title={btn.title}
+          <button key={i} onMouseDown={e => e.preventDefault()} onClick={btn.action} title={btn.title}
             style={{ display: 'flex', alignItems: 'center', padding: '4px 7px', borderRadius: 4, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--muted-foreground)' }}
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--card)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--foreground)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--muted-foreground)'; }}
@@ -329,7 +341,7 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
         <span style={{ fontSize: 9, fontFamily: 'DM Mono, monospace', color: 'var(--muted-foreground)' }}>
           {wordCount} words
         </span>
-        <button onClick={() => setPreview(v => !v)}
+        <button onMouseDown={e => e.preventDefault()} onClick={() => setPreview(v => !v)}
           style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 4, border: '1px solid var(--border)', background: preview ? 'var(--card)' : 'transparent', cursor: 'pointer', fontSize: 10, color: preview ? 'var(--foreground)' : 'var(--muted-foreground)', fontFamily: 'Inter, sans-serif' }}>
           <Eye size={10} /> {preview ? 'Edit' : 'Preview'}
         </button>
