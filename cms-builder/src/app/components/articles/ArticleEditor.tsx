@@ -44,6 +44,23 @@ function extractMarkdownHeadings(value: string): MarkdownHeading[] {
     .filter((heading): heading is MarkdownHeading => Boolean(heading));
 }
 
+function findHeadingPosition(value: string, headingText: string): { lineStart: number; lineEnd: number } | null {
+  const lines = value.split('\n');
+  let offset = 0;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const match = /^(#{1,3})\s+(.+)$/.exec(trimmed);
+    const cleanText = match ? match[2].trim() : trimmed;
+    if (cleanText === headingText.trim()) {
+      return { lineStart: offset, lineEnd: offset + line.length };
+    }
+    offset += line.length + 1;
+  }
+
+  return null;
+}
+
 function slugify(title: string): string {
   return '/' + title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
 }
@@ -463,7 +480,7 @@ function PublishChecklist({ article }: { article: Article }) {
 
 // ─── Sidebar right ────────────────────────────────────────────────────────────
 
-function EditorSidebar({ article, lang, onChange, onSaveDraft, onPublish, onUnpublish, saved }: {
+function EditorSidebar({ article, lang, onChange, onSaveDraft, onPublish, onUnpublish, saved, onJumpToHeading }: {
   article: Article;
   lang: Lang;
   onChange: (patch: Partial<Article>) => void;
@@ -471,6 +488,7 @@ function EditorSidebar({ article, lang, onChange, onSaveDraft, onPublish, onUnpu
   onPublish: () => void;
   onUnpublish: () => void;
   saved: boolean;
+  onJumpToHeading: (headingText: string) => void;
 }) {
   const allChecksPass = !!(
     article.titleEn.trim() && article.titleAr.trim() && article.slug.startsWith('/') &&
@@ -549,20 +567,23 @@ function EditorSidebar({ article, lang, onChange, onSaveDraft, onPublish, onUnpu
         <SectionLabel label="Headings" />
         <div style={{ border: '1px solid var(--border)', borderRadius: 6, background: 'var(--input-background)', marginBottom: 14, overflow: 'hidden' }}>
           {currentHeadings.length > 0 ? (
-            currentHeadings.map((heading, index) => (
-              <div
-                key={`${heading.text}-${index}`}
-                style={{
-                  display: 'flex',
-                  gap: 8,
-                  padding: '8px 10px',
-                  borderBottom: index < currentHeadings.length - 1 ? '1px solid var(--border)' : 'none',
-                  alignItems: 'flex-start',
-                }}
-              >
-                <span style={{ fontSize: 9, fontFamily: 'DM Mono, monospace', color: '#A56A1E', paddingTop: 2 }}>
-                  H{heading.level}
-                </span>
+              currentHeadings.map((heading, index) => (
+                <div
+                  key={`${heading.text}-${index}`}
+                  style={{
+                    display: 'flex',
+                    gap: 8,
+                    padding: '8px 10px',
+                    borderBottom: index < currentHeadings.length - 1 ? '1px solid var(--border)' : 'none',
+                    alignItems: 'flex-start',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => onJumpToHeading(heading.text)}
+                  title={lang === 'ar' ? 'الانتقال إلى هذا العنوان' : 'Jump to this headline'}
+                >
+                  <span style={{ fontSize: 9, fontFamily: 'DM Mono, monospace', color: '#A56A1E', paddingTop: 2 }}>
+                    H{heading.level}
+                  </span>
                 <span style={{
                   fontSize: 11,
                   color: 'var(--foreground)',
@@ -670,6 +691,19 @@ export function ArticleEditor({ article: initialArticle, onBack, onSave, onPubli
     setArticle(updated);
     onSave(updated);
     onUnpublish(article.slug);
+  }
+
+  function jumpToHeadingInEditor(headingText: string) {
+    const body = lang === 'ar' ? article.bodyAr : article.bodyEn;
+    const textareaId = lang === 'ar' ? 'md-ar' : 'md-en';
+    const ta = document.getElementById(textareaId) as HTMLTextAreaElement | null;
+    if (!ta) return;
+    const position = findHeadingPosition(body, headingText);
+    if (!position) return;
+    ta.focus();
+    ta.selectionStart = position.lineStart;
+    ta.selectionEnd = position.lineEnd;
+    ta.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   // Auto-calculate read time when body changes
@@ -852,6 +886,7 @@ export function ArticleEditor({ article: initialArticle, onBack, onSave, onPubli
           onPublish={handlePublish}
           onUnpublish={handleUnpublish}
           saved={saved}
+          onJumpToHeading={jumpToHeadingInEditor}
         />
       </div>
     </div>
