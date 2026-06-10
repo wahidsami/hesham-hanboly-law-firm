@@ -296,6 +296,8 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
     }));
   }, [doctorShieldFaqBlock, t]);
 
+  const doctorShieldPaymentAmount = formData.hasBeenConvicted === 'yes' ? '11,500 SAR' : '2,300 SAR';
+
   const scrollToRef = (ref: React.RefObject<HTMLDivElement | null>) => {
     if (ref.current) {
       const offset = 90;
@@ -351,7 +353,7 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
         notes: formData.notes.trim(),
         hasBeenConvicted: formData.hasBeenConvicted,
         voucherId,
-        paymentAmount: '2,300 SAR',
+        paymentAmount: doctorShieldPaymentAmount,
         paymentStatus: 'paid',
         paymentMethod: selectedPaymentMethod,
         cardBrand: selectedPaymentMethod,
@@ -1134,8 +1136,8 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                     
                     <p className="text-sm text-[#4B4B4B] font-light max-w-lg mx-auto leading-relaxed">
                       {t(
-                        'لقد تم تفعيل وحجز ملف اشتراكك بنجاح! تم استلام رسوم الاشتراك ٢٣٠٠ ريال وتفويض الفريق المختص. سيتواصل معك أحد مستشارينا القانونيين البارزين خلال الساعات القادمة لاستخراج الوكالة وحيازة المستندات.',
-                        'Your corporate protection has been successfully initiated! We have secured your onboarding profile and the 2,300 SAR subscription investment. An executive legal representative from Hesham Hanboly International will contact you within the next hours.'
+                        `لقد تم تفعيل وحجز ملف اشتراكك بنجاح! تم استلام رسوم الاشتراك ${doctorShieldPaymentAmount} وتفويض الفريق المختص. سيتواصل معك أحد مستشارينا القانونيين البارزين خلال الساعات القادمة لاستخراج الوكالة وحيازة المستندات.`,
+                        `Your corporate protection has been successfully initiated! We have secured your onboarding profile and the ${doctorShieldPaymentAmount} subscription investment. An executive legal representative from Hesham Hanboly International will contact you within the next hours.`
                       )}
                     </p>
                     {lastVoucherId && (
@@ -1202,8 +1204,8 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                       <h3 className="text-lg font-bold text-[#7A563D]">{t('اختر وسيلة الدفع المفضلة', 'Select Payment Channel')}</h3>
                       <p className="text-xs text-[#5B5B5B] font-light leading-relaxed">
                         {t(
-                          'تتم المعاملة عبر بنية سداد مرموقة ومتوافقة مع المعايير المصرفية الوطنية لقضاء العمليات بموثوقية تامة.',
-                          'Transactions are governed layout only underneath regulatory safe sandboxes and financial models.'
+                          `تتم المعاملة عبر بنية سداد مرموقة بقيمة ${doctorShieldPaymentAmount} ومتوافقة مع المعايير المصرفية الوطنية.`,
+                          `Transactions are processed for ${doctorShieldPaymentAmount} through a secure payment gateway aligned with national banking standards.`
                         )}
                       </p>
                     </div>
@@ -1314,7 +1316,11 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                         className="px-8 py-3.5 rounded-xl bg-[#7A563D] text-white text-xs font-bold hover:bg-[#946B4B] transition-colors cursor-pointer shadow-md flex items-center justify-center gap-2"
                       >
                         <CreditCard className="w-4 h-4" />
-                        <span>{submissionLoading ? t('جارٍ الإرسال…', 'Submitting…') : t('ادفع الآن ٢٣٠٠ ريال', 'Pay 2,300 SAR Now')}</span>
+                        <span>
+                          {submissionLoading
+                            ? t('جارٍ الإرسال…', 'Submitting…')
+                            : t(`ادفع الآن ${doctorShieldPaymentAmount}`, `Pay ${doctorShieldPaymentAmount} Now`)}
+                        </span>
                       </button>
                     </div>
                     {submissionError && (
@@ -1462,7 +1468,7 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                       <div className="space-y-2 md:col-span-2">
                         <label className="text-xs font-extrabold text-[#7A563D] flex items-center gap-1.5">
                           <HelpCircle className="w-3.5 h-3.5 text-[#A56A1E]" />
-                          <span>{t('هل تم الحكم عليك في قضية طبية قبل الان؟ *', 'Have you been convicted in a medical case before? *')}</span>
+                          <span>{t('هل هناك أي قضايا ضدك قبل تاريخ الاشتراك؟ *', 'Have there been any cases against you before the subscription date? *')}</span>
                         </label>
                         <div className="flex gap-4">
                           <button
