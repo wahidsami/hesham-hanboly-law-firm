@@ -28,6 +28,11 @@ function readTimeFromBody(body: string): string {
 
 type MarkdownHeading = { level: number; text: string };
 const HEADLINE_MARKER = '<!--headline-->';
+const BOLD_MARKER = '\u2063';
+
+function stripBoldMarkers(value: string): string {
+  return value.replace(new RegExp(BOLD_MARKER, 'g'), '');
+}
 
 function extractMarkdownHeadings(value: string): MarkdownHeading[] {
   return value
@@ -43,7 +48,7 @@ function extractMarkdownHeadings(value: string): MarkdownHeading[] {
       }
       return {
         level: match[1].length,
-        text: match[2].trim(),
+        text: stripBoldMarkers(match[2].trim()),
       };
     })
     .filter((heading): heading is MarkdownHeading => Boolean(heading));
@@ -56,7 +61,7 @@ function findHeadingPosition(value: string, headingText: string): { lineStart: n
   for (const line of lines) {
     const trimmed = line.trim();
     const match = /^(#{1,3})\s+(.+?)(?:\s*<!--headline-->)?$/.exec(trimmed);
-    const cleanText = match ? match[2].trim() : trimmed.replace(HEADLINE_MARKER, '').trim();
+    const cleanText = match ? stripBoldMarkers(match[2].trim()) : stripBoldMarkers(trimmed.replace(HEADLINE_MARKER, '').trim());
     if (cleanText === headingText.trim()) {
       return { lineStart: offset, lineEnd: offset + line.length };
     }
@@ -75,6 +80,7 @@ function extractSingleSentence(text: string): string {
 function stripMarkdownFormatting(text: string): string {
   return text
     .replace(/\s*<!--headline-->\s*/g, '')
+    .replace(new RegExp(BOLD_MARKER, 'g'), '')
     .replace(/^#{1,6}\s+/gm, '')
     .replace(/^>\s+/gm, '')
     .replace(/^[-*+]\s+/gm, '')
@@ -210,11 +216,32 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
     if (!ta) return;
     const start = ta.selectionStart;
     const end = ta.selectionEnd;
-    const cleaned = text.replace(/\r\n/g, '\n').replace(/\u2028|\u2029/g, '\n').replace(/\s*<!--headline-->\s*/g, '');
+    const cleaned = text
+      .replace(/\r\n/g, '\n')
+      .replace(/\u2028|\u2029/g, '\n')
+      .replace(/\s*<!--headline-->\s*/g, '')
+      .replace(new RegExp(BOLD_MARKER, 'g'), '');
     const next = value.slice(0, start) + cleaned + value.slice(end);
     onChange(next);
     setTimeout(() => {
       const caret = start + cleaned.length;
+      ta.selectionStart = caret;
+      ta.selectionEnd = caret;
+      ta.focus();
+    }, 10);
+  }
+
+  function applyBold() {
+    const ta = document.getElementById(rtl ? 'md-ar' : 'md-en') as HTMLTextAreaElement | null;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    if (end <= start) return;
+    const selected = value.slice(start, end);
+    const next = value.slice(0, start) + BOLD_MARKER + selected + BOLD_MARKER + value.slice(end);
+    onChange(next);
+    setTimeout(() => {
+      const caret = start + selected.length + 2;
       ta.selectionStart = caret;
       ta.selectionEnd = caret;
       ta.focus();
@@ -287,6 +314,7 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
   // Simple markdown to HTML for preview
   function renderMarkdown(md: string): string {
     return md
+      .replace(new RegExp(`${BOLD_MARKER}(.+?)${BOLD_MARKER}`, 'g'), '<strong>$1</strong>')
       .replace(/\s*<!--headline-->\s*$/gm, '')
       .replace(/^### (.+)$/gm, '<h3 style="font-size:14px;font-weight:700;margin:16px 0 6px;color:#B91C1C">$1</h3>')
       .replace(/^## (.+)$/gm, '<h2 style="font-size:16px;font-weight:700;margin:20px 0 8px;color:#B91C1C">$1</h2>')
@@ -304,7 +332,7 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
     { icon: <Hash size={12} />, title: 'Heading', action: () => insertMarkdown('## ') },
     { icon: <ArrowDown size={12} />, title: 'Assign as headline', action: assignAsHeadline },
     { icon: <Eraser size={12} />, title: 'Clear formatting', action: clearFormatting },
-    { icon: <Bold size={12} />, title: 'Bold', action: () => insertMarkdown('**', '**') },
+    { icon: <Bold size={12} />, title: 'Bold', action: applyBold },
     { icon: <Italic size={12} />, title: 'Italic', action: () => insertMarkdown('*', '*') },
     { icon: <List size={12} />, title: 'List', action: () => insertMarkdown('- ') },
     { icon: <Quote size={12} />, title: 'Quote', action: () => insertMarkdown('> ') },

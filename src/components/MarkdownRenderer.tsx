@@ -2,13 +2,15 @@ import React from 'react';
 import { slugify } from '../content/utils';
 
 const HEADLINE_MARKER = '<!--headline-->';
+const BOLD_MARKER = '\u2063';
 
 const stripHeadlineMarker = (value: string) => value.replace(new RegExp(`\\s*${HEADLINE_MARKER}\\s*`, 'g'), '').trim();
+const stripBoldMarker = (value: string) => value.replace(new RegExp(BOLD_MARKER, 'g'), '');
 
 const parseInline = (text: string) => {
   const parts: React.ReactNode[] = [];
   let cursor = 0;
-  const pattern = /(\*\*[^*]+\*\*|\*[^*]+\*|\[[^\]]+\]\([^)]+\)|`[^`]+`)/g;
+  const pattern = /(\u2063[^\u2063]+\u2063|\*\*[^*]+\*\*|\*[^*]+\*|\[[^\]]+\]\([^)]+\)|`[^`]+`)/g;
   let match: RegExpExecArray | null;
 
   while ((match = pattern.exec(text)) !== null) {
@@ -17,7 +19,9 @@ const parseInline = (text: string) => {
     }
 
     const token = match[0];
-    if (token.startsWith('**')) {
+    if (token.startsWith(BOLD_MARKER)) {
+      parts.push(<strong key={`${match.index}-strong`}>{token.slice(1, -1)}</strong>);
+    } else if (token.startsWith('**')) {
       parts.push(<strong key={`${match.index}-strong`}>{token.slice(2, -2)}</strong>);
     } else if (token.startsWith('*')) {
       parts.push(<em key={`${match.index}-em`}>{token.slice(1, -1)}</em>);
@@ -64,15 +68,18 @@ export const extractMarkdownHeadings = (value: string): MarkdownHeading[] =>
     .filter(Boolean)
     .flatMap((block) => {
       if (block.startsWith('### ')) {
-        return [{ id: slugify(block.slice(4)), level: 3 as const, text: block.slice(4) }];
+        const text = stripBoldMarker(block.slice(4));
+        return [{ id: slugify(text), level: 3 as const, text }];
       }
 
       if (block.startsWith('## ')) {
-        return [{ id: slugify(block.slice(3)), level: 2 as const, text: block.slice(3) }];
+        const text = stripBoldMarker(block.slice(3));
+        return [{ id: slugify(text), level: 2 as const, text }];
       }
 
       if (block.startsWith('# ')) {
-        return [{ id: slugify(block.slice(2)), level: 1 as const, text: block.slice(2) }];
+        const text = stripBoldMarker(block.slice(2));
+        return [{ id: slugify(text), level: 1 as const, text }];
       }
 
       return [];
@@ -90,7 +97,7 @@ export default function MarkdownRenderer({ value }: { value: string }) {
       {blocks.map((block, index) => {
         if (block.startsWith('### ')) {
           return (
-            <h3 key={index} id={slugify(block.slice(4))} className="scroll-mt-28 text-xl font-bold text-[#1E1E1E]">
+            <h3 key={index} id={slugify(stripBoldMarker(block.slice(4)))} className="scroll-mt-28 text-xl font-bold text-[#1E1E1E]">
               {parseInline(block.slice(4))}
             </h3>
           );
@@ -98,7 +105,7 @@ export default function MarkdownRenderer({ value }: { value: string }) {
 
         if (block.startsWith('## ')) {
           return (
-            <h2 key={index} id={slugify(block.slice(3))} className="scroll-mt-28 text-2xl font-extrabold text-[#1E1E1E]">
+            <h2 key={index} id={slugify(stripBoldMarker(block.slice(3)))} className="scroll-mt-28 text-2xl font-extrabold text-[#1E1E1E]">
               {parseInline(block.slice(3))}
             </h2>
           );
@@ -106,7 +113,7 @@ export default function MarkdownRenderer({ value }: { value: string }) {
 
         if (block.startsWith('# ')) {
           return (
-            <h1 key={index} id={slugify(block.slice(2))} className="scroll-mt-28 text-3xl font-extrabold text-[#1E1E1E]">
+            <h1 key={index} id={slugify(stripBoldMarker(block.slice(2)))} className="scroll-mt-28 text-3xl font-extrabold text-[#1E1E1E]">
               {parseInline(block.slice(2))}
             </h1>
           );
