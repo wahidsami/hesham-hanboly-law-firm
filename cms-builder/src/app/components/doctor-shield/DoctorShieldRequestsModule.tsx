@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Clock3, ExternalLink, FileText, Building, Phone, Search, ShieldCheck, User, Users } from 'lucide-react';
+import { Clock3, ExternalLink, FileText, Building, Phone, Search, ShieldCheck, User, Users, Filter } from 'lucide-react';
 import { backendApi } from '../../api/backend';
 import type { ApiDoctorShieldRequest, ConsultationPaymentStatus, ConsultationStatus } from '../../api/types';
 
