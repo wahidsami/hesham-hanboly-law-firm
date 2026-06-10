@@ -183,11 +183,14 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
 
     if (hasSelection) {
       const selected = value.slice(start, end).trim().replace(/\s+/g, ' ');
-      const next = value.slice(0, start) + `## ${selected}` + value.slice(end);
+      const before = value.slice(0, start).replace(/\s+$/, '');
+      const after = value.slice(end).replace(/^\s+/, '');
+      const next = `${before ? `${before}\n\n` : ''}## ${selected}${after ? `\n\n${after}` : ''}`;
       onChange(next);
       setTimeout(() => {
-        ta.selectionStart = start + 3;
-        ta.selectionEnd = start + 3 + selected.length;
+        const headingStart = before ? before.length + 2 : 0;
+        ta.selectionStart = headingStart + 3;
+        ta.selectionEnd = headingStart + 3 + selected.length;
         ta.focus();
       }, 10);
       return;
@@ -198,11 +201,14 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
     const lineEnd = lineEndIndex === -1 ? value.length : lineEndIndex;
     const line = value.slice(lineStart, lineEnd).trim();
     if (!line) return;
-    const next = value.slice(0, lineStart) + `## ${line}` + value.slice(lineEnd);
+    const before = value.slice(0, lineStart).replace(/\s+$/, '');
+    const after = value.slice(lineEnd).replace(/^\s+/, '');
+    const next = `${before ? `${before}\n\n` : ''}## ${line}${after ? `\n\n${after}` : ''}`;
     onChange(next);
     setTimeout(() => {
-      ta.selectionStart = lineStart + 3;
-      ta.selectionEnd = lineStart + 3 + line.length;
+      const headingStart = before ? before.length + 2 : 0;
+      ta.selectionStart = headingStart + 3;
+      ta.selectionEnd = headingStart + 3 + line.length;
       ta.focus();
     }, 10);
   }
