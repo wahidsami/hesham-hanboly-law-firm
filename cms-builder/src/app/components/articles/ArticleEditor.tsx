@@ -27,12 +27,17 @@ function readTimeFromBody(body: string): string {
 }
 
 type MarkdownHeading = { level: number; text: string };
+const HEADLINE_MARKER = '<!--headline-->';
 
 function extractMarkdownHeadings(value: string): MarkdownHeading[] {
   return value
     .split('\n')
     .map((line) => {
-      const match = /^(#{1,3})\s+(.+)$/.exec(line.trim());
+      const trimmed = line.trim();
+      if (!trimmed.includes(HEADLINE_MARKER)) {
+        return null;
+      }
+      const match = /^(#{1,3})\s+(.+?)(?:\s*<!--headline-->)?$/.exec(trimmed);
       if (!match) {
         return null;
       }
@@ -50,8 +55,8 @@ function findHeadingPosition(value: string, headingText: string): { lineStart: n
 
   for (const line of lines) {
     const trimmed = line.trim();
-    const match = /^(#{1,3})\s+(.+)$/.exec(trimmed);
-    const cleanText = match ? match[2].trim() : trimmed;
+    const match = /^(#{1,3})\s+(.+?)(?:\s*<!--headline-->)?$/.exec(trimmed);
+    const cleanText = match ? match[2].trim() : trimmed.replace(HEADLINE_MARKER, '').trim();
     if (cleanText === headingText.trim()) {
       return { lineStart: offset, lineEnd: offset + line.length };
     }
@@ -191,7 +196,7 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
       const selected = extractSingleSentence(value.slice(start, end));
       const before = value.slice(0, start).replace(/\s+$/, '');
       const after = value.slice(end).replace(/^\s+/, '');
-      const next = `${before ? `${before}\n\n` : ''}## ${selected}${after ? `\n\n${after}` : ''}`;
+      const next = `${before ? `${before}\n\n` : ''}## ${selected} ${HEADLINE_MARKER}${after ? `\n\n${after}` : ''}`;
       onChange(next);
       setTimeout(() => {
         const headingStart = before ? before.length + 2 : 0;
@@ -209,7 +214,7 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
     if (!line) return;
     const before = value.slice(0, lineStart).replace(/\s+$/, '');
     const after = value.slice(lineEnd).replace(/^\s+/, '');
-    const next = `${before ? `${before}\n\n` : ''}## ${line}${after ? `\n\n${after}` : ''}`;
+    const next = `${before ? `${before}\n\n` : ''}## ${line} ${HEADLINE_MARKER}${after ? `\n\n${after}` : ''}`;
     onChange(next);
     setTimeout(() => {
       const headingStart = before ? before.length + 2 : 0;
@@ -222,6 +227,7 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
   // Simple markdown to HTML for preview
   function renderMarkdown(md: string): string {
     return md
+      .replace(/\s*<!--headline-->\s*$/gm, '')
       .replace(/^### (.+)$/gm, '<h3 style="font-size:14px;font-weight:700;margin:16px 0 6px;color:var(--foreground)">$1</h3>')
       .replace(/^## (.+)$/gm, '<h2 style="font-size:16px;font-weight:700;margin:20px 0 8px;color:var(--foreground)">$1</h2>')
       .replace(/^# (.+)$/gm, '<h1 style="font-size:20px;font-weight:700;margin:24px 0 10px;color:var(--foreground)">$1</h1>')
