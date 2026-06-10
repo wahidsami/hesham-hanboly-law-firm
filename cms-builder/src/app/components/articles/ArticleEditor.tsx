@@ -205,6 +205,22 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
     }, 10);
   }
 
+  function insertPlainText(text: string) {
+    const ta = document.getElementById(rtl ? 'md-ar' : 'md-en') as HTMLTextAreaElement | null;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const cleaned = text.replace(/\r\n/g, '\n').replace(/\u2028|\u2029/g, '\n').replace(/\s*<!--headline-->\s*/g, '');
+    const next = value.slice(0, start) + cleaned + value.slice(end);
+    onChange(next);
+    setTimeout(() => {
+      const caret = start + cleaned.length;
+      ta.selectionStart = caret;
+      ta.selectionEnd = caret;
+      ta.focus();
+    }, 10);
+  }
+
   function assignAsHeadline() {
     const ta = document.getElementById(rtl ? 'md-ar' : 'md-en') as HTMLTextAreaElement | null;
     if (!ta) return;
@@ -375,6 +391,11 @@ function MarkdownEditor({ value, onChange, rtl, placeholder }: {
             id={rtl ? 'md-ar' : 'md-en'}
             value={value || ''}
             onChange={e => onChange(e.target.value)}
+            onPaste={(e) => {
+              e.preventDefault();
+              const pasted = e.clipboardData.getData('text/plain');
+              insertPlainText(pasted);
+            }}
             onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
             placeholder={placeholder}
             style={{
