@@ -121,10 +121,10 @@ export default function Contact() {
 
                 {/* Global Contact Info */}
                 <div className="space-y-3 pt-6 border-t border-[#D8D1C7]/60">
-                  <a href="tel:920004713" className="flex items-center gap-3 text-sm text-[#1E1E1E] hover:text-[#A56A1E] justify-start transition-colors select-all">
+                  <a href="tel:0126630692" className="flex items-center gap-3 text-sm text-[#1E1E1E] hover:text-[#A56A1E] justify-start transition-colors select-all">
                     <Phone className="w-4.5 h-4.5 text-[#A56A1E]" />
                     <span className="font-mono">
-                      920004713 • {t(
+                      0126630692 • {t(
                         siteSettings?.contactSectionPhoneLabelAr || 'الهاتف الموحد',
                         siteSettings?.contactSectionPhoneLabelEn || 'Unified Number'
                       )}

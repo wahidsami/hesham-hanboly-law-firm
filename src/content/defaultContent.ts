@@ -175,7 +175,7 @@ const seedSiteSettings = (): SiteSettingsRecord => ({
   addressAr: 'جدة - الروضة، شارع نهضة العلم',
   addressEn: 'Jeddah - Al-Rawdah, Nahdat Al-Elm Street',
   email: 'mec_law@hotmail.com',
-  phone: '920004713',
+  phone: '0126630692',
   copyrightAr: '© ٢٠٢٦ شركة هشام حسن حنبولي الدولية للاستشارات القانونية والمحاماة. جميع الحقوق محفوظة.',
   copyrightEn: '© 2026 Hesham H. Hanboly International Law Co. All Rights Reserved.',
   footerBadgeAr: 'مكتب مرخص لمزاولة المحاماة بوزارة العدل بالمملكة العربية السعودية',

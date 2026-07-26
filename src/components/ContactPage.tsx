@@ -416,7 +416,7 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
         toStringValue(block.data?.officeNameAr ?? block.data?.headingAr, index === 0 ? 'مكتب جدة الرئيسي' : 'فرع الرياض'),
         toStringValue(block.data?.officeNameEn ?? block.data?.headingEn, index === 0 ? 'Jeddah Main Office (HQ)' : 'Riyadh Branch')
       ),
-      phone: toStringValue(block.data?.phone, index === 0 ? '012 6636716 / 920004713' : '0112101333 / 0112101555'),
+      phone: toStringValue(block.data?.phone, index === 0 ? '012 6636716 / 0126630692' : '0112101333 / 0112101555'),
       address: t(
         toStringValue(block.data?.addressAr, index === 0
           ? 'حي الروضة ١، شارع نهضة التعليم، متفرع من شارع التحلية، مجمع صفوة الأعمال، فيلا رقم ٦'
@@ -440,7 +440,7 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
       {
         key: 'fallback-jeddah',
         name: t('مكتب جدة الرئيسي', 'Jeddah Main Office (HQ)'),
-        phone: '012 6636716 / 920004713',
+        phone: '012 6636716 / 0126630692',
         address: t(
           'حي الروضة ١، شارع نهضة التعليم، متفرع من شارع التحلية، مجمع صفوة الأعمال، فيلا رقم ٦',
           'Al-Rawdah 1 District, Nahdat Al-Taleem St, off Tahlia St, Safwah Business Center, Villa No. 6'
@@ -608,7 +608,7 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
                     <div className="pt-2 border-t border-[#D8D1C7]/30">
                       <span className="font-semibold text-[#1E1E1E] text-xs block text-[#A56A1E]">{t('جدة والهاتف الموحد:', 'Jeddah & Unified Line:')}</span>
                       <a href="tel:0126636716" className="font-mono text-xs sm:text-sm hover:text-[#A56A1E] block">012 6636716</a>
-                      <a href="tel:920004713" className="font-mono text-xs sm:text-sm hover:text-[#A56A1E] block">920004713</a>
+                      <a href="tel:0126630692" className="font-mono text-xs sm:text-sm hover:text-[#A56A1E] block">0126630692</a>
                     </div>
                   </div>
                 </div>

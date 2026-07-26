@@ -232,8 +232,8 @@ export default function Footer({ currentView = 'home', onNavigate }: FooterProps
 
               <li className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-[#A56A1E] shrink-0" />
-                <a href={`tel:${footerSettings?.phone || '920004713'}`} className="hover:text-white transition-colors font-mono" style={{ direction: 'ltr' }}>
-                  {footerSettings?.phone || '920004713'}
+                <a href={`tel:${footerSettings?.phone || '0126630692'}`} className="hover:text-white transition-colors font-mono" style={{ direction: 'ltr' }}>
+                  {footerSettings?.phone || '0126630692'}
                 </a>
               </li>
             </ul>
