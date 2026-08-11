@@ -323,6 +323,28 @@ export const ensureDatabaseSchema = async () => {
       "updatedAt" TIMESTAMP(3) NOT NULL,
       CONSTRAINT "DoctorShieldRequest_pkey" PRIMARY KEY ("id")
     )`,
+    `CREATE TABLE IF NOT EXISTS "PaymentTransaction" (
+      "id" TEXT NOT NULL,
+      "doctorShieldRequestId" TEXT NOT NULL,
+      "merchantTransactionId" TEXT NOT NULL,
+      "checkoutId" TEXT,
+      "integrity" TEXT,
+      "resourcePath" TEXT,
+      "gatewayTransactionId" TEXT,
+      "amount" INTEGER NOT NULL,
+      "currency" TEXT NOT NULL,
+      "paymentType" TEXT NOT NULL,
+      "paymentBrand" TEXT NOT NULL DEFAULT '',
+      "paymentStatus" TEXT NOT NULL,
+      "resultCode" TEXT,
+      "failureReason" TEXT,
+      "paidAt" TIMESTAMP(3),
+      "attemptNumber" INTEGER NOT NULL DEFAULT 1,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL,
+      CONSTRAINT "PaymentTransaction_pkey" PRIMARY KEY ("id"),
+      CONSTRAINT "PaymentTransaction_doctorShieldRequestId_fkey" FOREIGN KEY ("doctorShieldRequestId") REFERENCES "DoctorShieldRequest"("id") ON DELETE RESTRICT
+    )`,
     `CREATE TABLE IF NOT EXISTS "AnalyticsVisitor" (
       "id" TEXT NOT NULL,
       "visitorId" TEXT NOT NULL,
@@ -342,6 +364,7 @@ export const ensureDatabaseSchema = async () => {
       "ctaClicksCount" INTEGER NOT NULL DEFAULT 0,
       CONSTRAINT "AnalyticsVisitor_pkey" PRIMARY KEY ("id")
     )`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "AnalyticsVisitor_visitorId_key" ON "AnalyticsVisitor"("visitorId")`,
     `CREATE TABLE IF NOT EXISTS "AnalyticsSession" (
       "id" TEXT NOT NULL,
       "sessionId" TEXT NOT NULL,
@@ -365,6 +388,7 @@ export const ensureDatabaseSchema = async () => {
       CONSTRAINT "AnalyticsSession_visitorId_fkey" FOREIGN KEY ("visitorId") REFERENCES "AnalyticsVisitor"("visitorId") ON DELETE CASCADE,
       CONSTRAINT "AnalyticsSession_pkey" PRIMARY KEY ("id")
     )`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "AnalyticsSession_sessionId_key" ON "AnalyticsSession"("sessionId")`,
     `CREATE TABLE IF NOT EXISTS "AnalyticsEvent" (
       "id" TEXT NOT NULL,
       "sessionId" TEXT NOT NULL,
@@ -404,8 +428,13 @@ export const ensureDatabaseSchema = async () => {
     `CREATE INDEX IF NOT EXISTS "ConsultationRequest_createdAt_idx" ON "ConsultationRequest"("createdAt")`,
     `CREATE INDEX IF NOT EXISTS "DoctorShieldRequest_status_idx" ON "DoctorShieldRequest"("status")`,
     `CREATE INDEX IF NOT EXISTS "DoctorShieldRequest_createdAt_idx" ON "DoctorShieldRequest"("createdAt")`,
-    `CREATE UNIQUE INDEX IF NOT EXISTS "AnalyticsVisitor_visitorId_key" ON "AnalyticsVisitor"("visitorId")`,
-    `CREATE UNIQUE INDEX IF NOT EXISTS "AnalyticsSession_sessionId_key" ON "AnalyticsSession"("sessionId")`,
+    `CREATE INDEX IF NOT EXISTS "PaymentTransaction_doctorShieldRequestId_idx" ON "PaymentTransaction"("doctorShieldRequestId")`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "PaymentTransaction_merchantTransactionId_key" ON "PaymentTransaction"("merchantTransactionId")`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "PaymentTransaction_checkoutId_key" ON "PaymentTransaction"("checkoutId")`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "PaymentTransaction_gatewayTransactionId_key" ON "PaymentTransaction"("gatewayTransactionId")`,
+    `CREATE INDEX IF NOT EXISTS "PaymentTransaction_resourcePath_idx" ON "PaymentTransaction"("resourcePath")`,
+    `CREATE INDEX IF NOT EXISTS "PaymentTransaction_paymentStatus_idx" ON "PaymentTransaction"("paymentStatus")`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "PaymentTransaction_request_attempt_key" ON "PaymentTransaction"("doctorShieldRequestId", "attemptNumber")`,
     `CREATE INDEX IF NOT EXISTS "AnalyticsSession_visitorId_idx" ON "AnalyticsSession"("visitorId")`,
     `CREATE INDEX IF NOT EXISTS "AnalyticsSession_startedAt_idx" ON "AnalyticsSession"("startedAt")`,
     `CREATE INDEX IF NOT EXISTS "AnalyticsEvent_sessionId_idx" ON "AnalyticsEvent"("sessionId")`,
@@ -511,6 +540,11 @@ export const ensureDatabaseSchema = async () => {
       ADD COLUMN IF NOT EXISTS "licenseFileName" TEXT NOT NULL DEFAULT '',
       ADD COLUMN IF NOT EXISTS "licenseFileMimeType" TEXT NOT NULL DEFAULT '',
       ADD COLUMN IF NOT EXISTS "licenseFileSize" INTEGER;
+  `);
+
+  statements.push(`
+    ALTER TABLE "PaymentTransaction"
+      ADD COLUMN IF NOT EXISTS "integrity" TEXT;
   `);
 
   statements.push(`

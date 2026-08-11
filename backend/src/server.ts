@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import express from 'express';
@@ -47,6 +48,22 @@ import {
   siteSettingsToRecord,
   toSiteContent,
 } from './content';
+import { getDoctorShieldCharge, formatSarAmount } from './doctorShieldPricing';
+import {
+  createPaymentTransactionAttempt,
+  getLatestPaymentTransactionForRequest,
+  getNextAttemptNumber,
+  getPaymentTransactionByCheckoutId,
+  getSuccessfulPaymentTransactionForRequest,
+  hasSuccessfulPaymentForRequest,
+  paymentTransactionToRecord,
+  setPaymentTransactionFailed,
+  setPaymentTransactionInitiated,
+  setPaymentTransactionSucceeded,
+  updateDoctorShieldPaymentSummary,
+  updatePaymentTransaction,
+} from './doctorShieldPayments';
+import { HyperPayError, hyperpayService } from './hyperpay';
 import { getAnalyticsOverview, recordAnalyticsEvent } from './analytics';
 import { uploadBufferToS3 } from './uploads';
 import { seedDatabase } from './seed';
@@ -60,6 +77,27 @@ const localUploadsPath = path.resolve(process.cwd(), 'backend', 'uploads');
 app.use(express.json({ limit: '8mb' }));
 app.use('/uploads', express.static(localUploadsPath));
 
+app.use((request, response, next) => {
+  const devScriptSources = config.isDev ? ["'unsafe-eval'"] : [];
+  const devConnectSources = config.isDev ? ['ws:', 'wss:', 'http://localhost:*', 'https://localhost:*', 'http://127.0.0.1:*', 'https://127.0.0.1:*'] : [];
+  const csp = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "frame-ancestors 'self'",
+    "img-src 'self' data: blob: https://eu-test.oppwa.com",
+    "style-src 'self' 'unsafe-inline'",
+    `script-src 'self' ${devScriptSources.join(' ')} https://eu-test.oppwa.com`.trim(),
+    `connect-src 'self' https://eu-test.oppwa.com ${devConnectSources.join(' ')}`.trim(),
+    "frame-src 'self' https://eu-test.oppwa.com",
+    "font-src 'self' data:",
+    "form-action 'self' https://eu-test.oppwa.com",
+  ].join('; ');
+
+  response.setHeader('Content-Security-Policy', csp);
+  next();
+});
+
 const asyncHandler =
   (handler: express.RequestHandler): express.RequestHandler =>
   (request, response, next) =>
@@ -67,14 +105,73 @@ const asyncHandler =
 
 const sendError = (response: express.Response, error: unknown) => {
   const message = error instanceof Error ? error.message : 'Unknown error';
-  const status =
+  const statusFromError = error && typeof error === 'object' && 'status' in error && typeof (error as { status?: unknown }).status === 'number'
+    ? (error as { status: number }).status
+    : null;
+  const status = statusFromError ?? (
     message.includes('required') ||
     message.includes('must') ||
     message.includes('exists') ||
     message.includes('Invalid')
       ? 400
-      : 500;
+      : 500
+  );
   response.status(status).json({ error: message });
+};
+
+const readString = (...values: unknown[]) => {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+  return '';
+};
+
+const normalizeHyperPayBrand = (value: string) => {
+  const normalized = value.trim().toUpperCase();
+  if (normalized === 'MASTERCARD') return 'MASTER';
+  if (normalized === 'MASTER' || normalized === 'VISA' || normalized === 'MADA') return normalized;
+  return '';
+};
+
+const splitDoctorFullName = (fullName: string) => {
+  const normalized = fullName.trim().replace(/\s+/g, ' ');
+  if (!normalized) {
+    return { givenName: '', surname: '' };
+  }
+
+  const parts = normalized.split(' ');
+  if (parts.length === 1) {
+    return { givenName: parts[0], surname: parts[0] };
+  }
+
+  return {
+    givenName: parts[0],
+    surname: parts.slice(1).join(' '),
+  };
+};
+
+const extractCardLast4 = (value: unknown) => {
+  if (typeof value === 'string' && value.trim()) {
+    const digits = value.replace(/\D/g, '');
+    if (digits.length >= 4) {
+      return digits.slice(-4);
+    }
+  }
+
+  if (value && typeof value === 'object') {
+    const card = value as Record<string, unknown>;
+    const raw = readString(card.last4Digits, card.last4, card.maskedPan);
+    if (raw) {
+      const digits = raw.replace(/\D/g, '');
+      if (digits.length >= 4) {
+        return digits.slice(-4);
+      }
+    }
+  }
+
+  return '';
 };
 
 const loadArticleBySlug = async (slug: string) =>
@@ -938,11 +1035,7 @@ app.post(
     const notes = typeof body.notes === 'string' ? body.notes.trim() : '';
     const hasBeenConvicted = typeof body.hasBeenConvicted === 'string' && body.hasBeenConvicted.trim() === 'yes' ? 'yes' : 'no';
     const voucherId = typeof body.voucherId === 'string' && body.voucherId.trim() ? body.voucherId.trim() : `DS-${Date.now()}`;
-    const paymentAmount = typeof body.paymentAmount === 'string' && body.paymentAmount.trim() ? body.paymentAmount.trim() : '2,300 SAR';
-    const paymentStatus = typeof body.paymentStatus === 'string' && body.paymentStatus.trim() ? body.paymentStatus.trim() : 'paid';
-    const paymentMethod = typeof body.paymentMethod === 'string' && body.paymentMethod.trim() ? body.paymentMethod.trim() : 'card';
-    const cardBrand = typeof body.cardBrand === 'string' && body.cardBrand.trim() ? body.cardBrand.trim() : paymentMethod;
-    const cardLast4 = typeof body.cardLast4 === 'string' && body.cardLast4.trim() ? body.cardLast4.trim() : '';
+    const paymentSummary = getDoctorShieldCharge(hasBeenConvicted);
     const licenseFile = request.file;
 
     if (!fullName || !phone || !email || !idNumber || !specialty || !licenseFile) {
@@ -969,12 +1062,12 @@ app.post(
       notes,
       hasBeenConvicted,
       status: 'new',
-      paymentStatus: paymentStatus as 'pending' | 'paid' | 'refunded',
-      paymentAmount,
+      paymentStatus: 'pending',
+      paymentAmount: paymentSummary.amountLabel,
       voucherId,
-      paymentMethod,
-      cardBrand,
-      cardLast4,
+      paymentMethod: '',
+      cardBrand: '',
+      cardLast4: '',
       licenseFileUrl: licenseAsset.url,
       licenseFileName: licenseAsset.originalName,
       licenseFileMimeType: licenseAsset.mimeType,
@@ -983,6 +1076,327 @@ app.post(
     });
 
     response.status(201).json({ doctorShieldRequest: requestRecord });
+  }),
+);
+
+app.post(
+  '/api/doctor-shield-requests/:id/payment',
+  asyncHandler(async (request, response) => {
+    const doctorShieldRequest = await getDoctorShieldRequestById(request.params.id);
+    if (!doctorShieldRequest) {
+      response.status(404).json({ error: 'Doctor Shield request not found.' });
+      return;
+    }
+
+    const legacyPaidSummary = String(doctorShieldRequest.paymentStatus || '').toLowerCase() === 'paid';
+    if (legacyPaidSummary) {
+      response.status(409).json({ error: 'This Doctor Shield request is already marked as paid and cannot create a new payment attempt.' });
+      return;
+    }
+
+    if (await hasSuccessfulPaymentForRequest(doctorShieldRequest.id)) {
+      const successful = await getSuccessfulPaymentTransactionForRequest(doctorShieldRequest.id);
+      response.json({
+        doctorShieldRequest,
+        paymentTransaction: successful ? paymentTransactionToRecord(successful) : null,
+        alreadyPaid: true,
+      });
+      return;
+    }
+
+    const body = request.body as Record<string, unknown>;
+    const customerSource = typeof body.customer === 'object' && body.customer ? (body.customer as Record<string, unknown>) : {};
+    const billingSource = typeof body.billing === 'object' && body.billing ? (body.billing as Record<string, unknown>) : {};
+
+    const email = readString(customerSource.email, body.customerEmail, doctorShieldRequest.email);
+    const givenName = readString(customerSource.givenName, body.customerGivenName);
+    const surname = readString(customerSource.surname, body.customerSurname);
+    const street1 = readString(billingSource.street1, body.billingStreet1);
+    const city = readString(billingSource.city, body.billingCity);
+    const state = readString(billingSource.state, body.billingState);
+    const country = readString(billingSource.country, body.billingCountry);
+    const postcode = readString(billingSource.postcode, body.billingPostcode);
+    const paymentBrand = normalizeHyperPayBrand(readString(body.paymentBrand, body.paymentMethod));
+
+    const missingFields = [
+      !email && 'customer.email',
+      !givenName && 'customer.givenName',
+      !surname && 'customer.surname',
+      !street1 && 'billing.street1',
+      !city && 'billing.city',
+      !state && 'billing.state',
+      !country && 'billing.country',
+      !postcode && 'billing.postcode',
+    ].filter(Boolean) as string[];
+
+    if (missingFields.length > 0) {
+      response.status(400).json({
+        error: `Missing HyperPay billing data: ${missingFields.join(', ')}.`,
+      });
+      return;
+    }
+
+    const currentCharge = getDoctorShieldCharge(doctorShieldRequest.hasBeenConvicted as 'yes' | 'no');
+    const clientAmount = readString(body.paymentAmount);
+    if (clientAmount && clientAmount !== currentCharge.amountLabel) {
+      response.status(400).json({
+        error: `Payment amount is determined server-side and must match ${currentCharge.amountLabel}.`,
+      });
+      return;
+    }
+
+    const activeTransaction = await getLatestPaymentTransactionForRequest(doctorShieldRequest.id);
+    if (activeTransaction && ['pending', 'initiated'].includes(activeTransaction.paymentStatus)) {
+      if (!activeTransaction.checkoutId || !activeTransaction.integrity) {
+        response.status(409).json({
+          error: 'Existing payment transaction is missing secure checkout data. Please create a new Doctor Shield request.',
+          doctorShieldRequest,
+          paymentTransaction: paymentTransactionToRecord(activeTransaction),
+          alreadyInProgress: true,
+        });
+        return;
+      }
+
+      response.json({
+        doctorShieldRequest,
+        checkout: {
+          checkoutId: activeTransaction.checkoutId,
+          resourcePath: activeTransaction.resourcePath || null,
+          integrity: activeTransaction.integrity,
+          paymentBrand: activeTransaction.paymentBrand || null,
+          amount: activeTransaction.amount,
+          currency: activeTransaction.currency,
+          paymentType: activeTransaction.paymentType,
+        },
+        paymentTransaction: paymentTransactionToRecord(activeTransaction),
+        alreadyInProgress: true,
+      });
+      return;
+    }
+
+    const attemptNumber = await getNextAttemptNumber(doctorShieldRequest.id);
+    const merchantTransactionId = `DS-${doctorShieldRequest.id}-${attemptNumber}-${Date.now()}`;
+
+    const createdTransaction = await createPaymentTransactionAttempt({
+      doctorShieldRequestId: doctorShieldRequest.id,
+      merchantTransactionId,
+      amount: currentCharge.amount,
+      currency: config.hyperpay.currency,
+      paymentType: config.hyperpay.paymentType,
+      paymentBrand,
+      paymentStatus: 'pending',
+      attemptNumber,
+    });
+
+    try {
+      const checkout = await hyperpayService.createCheckout({
+        amount: currentCharge.amount,
+        merchantTransactionId,
+        customer: {
+          email,
+          givenName,
+          surname,
+        },
+        billing: {
+          street1,
+          city,
+          state,
+          country,
+          postcode,
+        },
+        paymentBrand: paymentBrand || undefined,
+      });
+
+      const initiated = await setPaymentTransactionInitiated(createdTransaction.id, {
+        checkoutId: checkout.id,
+        integrity: checkout.integrity || null,
+        resourcePath: checkout.resourcePath || null,
+        paymentBrand: paymentBrand || undefined,
+      });
+
+      response.status(201).json({
+        doctorShieldRequest,
+        paymentTransaction: paymentTransactionToRecord(initiated),
+        checkout: {
+          checkoutId: checkout.id,
+          resourcePath: checkout.resourcePath || null,
+          integrity: checkout.integrity || null,
+          paymentBrand: paymentBrand || null,
+          amount: currentCharge.amount,
+          currency: config.hyperpay.currency,
+          paymentType: config.hyperpay.paymentType,
+        },
+      });
+      return;
+    } catch (error) {
+      const failureReason = error instanceof HyperPayError ? error.message : error instanceof Error ? error.message : 'HyperPay checkout creation failed.';
+      const failed = await setPaymentTransactionFailed(createdTransaction.id, {
+        failureReason,
+      });
+
+      response.status(error instanceof HyperPayError ? error.status : 502).json({
+        error: failureReason,
+        paymentTransaction: paymentTransactionToRecord(failed),
+      });
+    }
+  }),
+);
+
+app.get(
+  '/api/doctor-shield-requests/:id/payment/verify',
+  asyncHandler(async (request, response) => {
+    const doctorShieldRequest = await getDoctorShieldRequestById(request.params.id);
+    if (!doctorShieldRequest) {
+      response.status(404).json({ error: 'Doctor Shield request not found.' });
+      return;
+    }
+
+    const checkoutIdFromQuery = typeof request.query.checkoutId === 'string' ? request.query.checkoutId.trim() : '';
+    const latestTransaction = checkoutIdFromQuery
+      ? await getPaymentTransactionByCheckoutId(checkoutIdFromQuery)
+      : await getLatestPaymentTransactionForRequest(doctorShieldRequest.id);
+
+    if (!latestTransaction) {
+      response.status(404).json({ error: 'Payment transaction not found.' });
+      return;
+    }
+
+    if (latestTransaction.paymentStatus === 'succeeded') {
+      response.json({
+        doctorShieldRequest,
+        paymentTransaction: paymentTransactionToRecord(latestTransaction),
+        verified: true,
+      });
+      return;
+    }
+
+    if (!latestTransaction.checkoutId && !latestTransaction.resourcePath) {
+      response.status(400).json({ error: 'No checkout information is available for this payment attempt.' });
+      return;
+    }
+
+    const paymentResult = await hyperpayService.getPaymentStatus(latestTransaction.resourcePath || latestTransaction.checkoutId || '');
+    const authoritativeCharge = getDoctorShieldCharge(doctorShieldRequest.hasBeenConvicted as 'yes' | 'no');
+
+    const verifiedAmount = Number.parseInt(String(paymentResult.amount || authoritativeCharge.amount), 10);
+    const verifiedCurrency = String(paymentResult.currency || config.hyperpay.currency).toUpperCase();
+    const verifiedPaymentType = String(paymentResult.paymentType || config.hyperpay.paymentType).toUpperCase();
+    const verifiedMerchantTransactionId = paymentResult.merchantTransactionId || latestTransaction.merchantTransactionId;
+    const verifiedPaymentBrand = normalizeHyperPayBrand(paymentResult.paymentBrand || latestTransaction.paymentBrand);
+
+    if (verifiedMerchantTransactionId !== latestTransaction.merchantTransactionId) {
+      const failed = await setPaymentTransactionFailed(latestTransaction.id, {
+        resultCode: paymentResult.resultCode,
+        failureReason: 'Merchant transaction ID mismatch.',
+        resourcePath: paymentResult.resourcePath || latestTransaction.resourcePath,
+        gatewayTransactionId: paymentResult.id || latestTransaction.gatewayTransactionId,
+        paymentBrand: verifiedPaymentBrand || latestTransaction.paymentBrand,
+      });
+      response.status(400).json({
+        error: 'Merchant transaction ID mismatch.',
+        paymentTransaction: paymentTransactionToRecord(failed),
+      });
+      return;
+    }
+
+    if (verifiedAmount !== authoritativeCharge.amount) {
+      const failed = await setPaymentTransactionFailed(latestTransaction.id, {
+        resultCode: paymentResult.resultCode,
+        failureReason: `Amount mismatch: expected ${authoritativeCharge.amount}, received ${verifiedAmount}.`,
+        resourcePath: paymentResult.resourcePath || latestTransaction.resourcePath,
+        gatewayTransactionId: paymentResult.id || latestTransaction.gatewayTransactionId,
+        paymentBrand: verifiedPaymentBrand || latestTransaction.paymentBrand,
+      });
+      response.status(400).json({
+        error: 'Payment amount mismatch.',
+        paymentTransaction: paymentTransactionToRecord(failed),
+      });
+      return;
+    }
+
+    if (verifiedCurrency !== config.hyperpay.currency.toUpperCase()) {
+      const failed = await setPaymentTransactionFailed(latestTransaction.id, {
+        resultCode: paymentResult.resultCode,
+        failureReason: `Currency mismatch: expected ${config.hyperpay.currency}, received ${verifiedCurrency}.`,
+        resourcePath: paymentResult.resourcePath || latestTransaction.resourcePath,
+        gatewayTransactionId: paymentResult.id || latestTransaction.gatewayTransactionId,
+        paymentBrand: verifiedPaymentBrand || latestTransaction.paymentBrand,
+      });
+      response.status(400).json({
+        error: 'Payment currency mismatch.',
+        paymentTransaction: paymentTransactionToRecord(failed),
+      });
+      return;
+    }
+
+    if (verifiedPaymentType !== config.hyperpay.paymentType.toUpperCase()) {
+      const failed = await setPaymentTransactionFailed(latestTransaction.id, {
+        resultCode: paymentResult.resultCode,
+        failureReason: `Payment type mismatch: expected ${config.hyperpay.paymentType}, received ${verifiedPaymentType}.`,
+        resourcePath: paymentResult.resourcePath || latestTransaction.resourcePath,
+        gatewayTransactionId: paymentResult.id || latestTransaction.gatewayTransactionId,
+        paymentBrand: verifiedPaymentBrand || latestTransaction.paymentBrand,
+      });
+      response.status(400).json({
+        error: 'Payment type mismatch.',
+        paymentTransaction: paymentTransactionToRecord(failed),
+      });
+      return;
+    }
+
+    const successCode = paymentResult.resultCode === '000.000.000';
+    const pendingCode = paymentResult.resultCode.startsWith('000.200');
+    const now = new Date();
+
+    if (successCode) {
+      const succeeded = await setPaymentTransactionSucceeded(latestTransaction.id, {
+        resourcePath: paymentResult.resourcePath || latestTransaction.resourcePath,
+        gatewayTransactionId: paymentResult.id || latestTransaction.gatewayTransactionId,
+        paymentBrand: verifiedPaymentBrand || latestTransaction.paymentBrand,
+        resultCode: paymentResult.resultCode,
+        failureReason: null,
+        paidAt: now,
+      });
+
+      const cardLast4 = extractCardLast4((paymentResult.raw as Record<string, unknown>).card);
+      await updateDoctorShieldPaymentSummary(doctorShieldRequest.id, {
+        paymentStatus: 'paid',
+        paymentAmount: authoritativeCharge.amountLabel,
+        paymentMethod: verifiedPaymentBrand || latestTransaction.paymentBrand || '',
+        cardBrand: verifiedPaymentBrand || latestTransaction.paymentBrand || '',
+        cardLast4,
+      });
+
+      response.json({
+        doctorShieldRequest: await getDoctorShieldRequestById(doctorShieldRequest.id),
+        paymentTransaction: paymentTransactionToRecord(succeeded),
+        verified: true,
+      });
+      return;
+    }
+
+    const updated = pendingCode
+      ? await updatePaymentTransaction(latestTransaction.id, {
+        checkoutId: latestTransaction.checkoutId,
+        resourcePath: paymentResult.resourcePath || latestTransaction.resourcePath,
+        gatewayTransactionId: paymentResult.id || latestTransaction.gatewayTransactionId,
+        paymentBrand: verifiedPaymentBrand || latestTransaction.paymentBrand,
+        paymentStatus: 'pending',
+        resultCode: paymentResult.resultCode,
+        failureReason: paymentResult.resultDescription || null,
+      })
+      : await setPaymentTransactionFailed(latestTransaction.id, {
+        resultCode: paymentResult.resultCode,
+        failureReason: paymentResult.resultDescription || 'Payment verification failed.',
+        resourcePath: paymentResult.resourcePath || latestTransaction.resourcePath,
+        gatewayTransactionId: paymentResult.id || latestTransaction.gatewayTransactionId,
+        paymentBrand: verifiedPaymentBrand || latestTransaction.paymentBrand,
+      });
+
+    response.status(400).json({
+      error: pendingCode ? 'Payment is still pending.' : 'Payment verification failed.',
+      paymentTransaction: paymentTransactionToRecord(updated),
+    });
   }),
 );
 
@@ -1064,7 +1478,8 @@ app.get(
   asyncHandler(async (request, response) => {
     const rangeRaw = typeof request.query.range === 'string' ? request.query.range : '30d';
     const range = ['7d', '30d', '90d', 'all'].includes(rangeRaw) ? rangeRaw : '30d';
-    response.json(await getAnalyticsOverview(range as '7d' | '30d' | '90d' | 'all'));
+    const country = typeof request.query.country === 'string' ? request.query.country.trim() : '';
+    response.json(await getAnalyticsOverview(range as '7d' | '30d' | '90d' | 'all', country));
   }),
 );
 

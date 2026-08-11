@@ -10,6 +10,16 @@ export const config = {
   adminUsername: process.env.ADMIN_USERNAME || 'admin',
   adminPassword: process.env.ADMIN_PASSWORD || 'admin123',
   sessionDays: Number(process.env.ADMIN_SESSION_DAYS || 7),
+  hyperpay: {
+    baseUrl: process.env.HYPERPAY_BASE_URL || '',
+    accessToken: process.env.HYPERPAY_ACCESS_TOKEN || '',
+    entityId: process.env.HYPERPAY_ENTITY_ID || '',
+    currency: process.env.HYPERPAY_CURRENCY || 'SAR',
+    paymentType: process.env.HYPERPAY_PAYMENT_TYPE || 'DB',
+    testMode: process.env.HYPERPAY_TEST_MODE || 'EXTERNAL',
+    integrity: process.env.HYPERPAY_INTEGRITY !== 'false',
+    threeDs2Enrolled: process.env.HYPERPAY_THREEDS2_ENROLLED !== 'false',
+  },
   s3: {
     region: process.env.S3_REGION || '',
     bucket: process.env.S3_BUCKET || '',

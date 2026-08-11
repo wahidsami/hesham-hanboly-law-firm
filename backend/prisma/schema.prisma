@@ -297,30 +297,58 @@ model ConsultationRequest {
 }
 
 model DoctorShieldRequest {
-  id                String   @id
-  fullName          String
-  phone             String
-  email             String
-  idNumber          String
-  specialty         String
-  city              String
-  employer          String
-  notes             String
-  hasBeenConvicted  String
-  status            String
-  paymentStatus     String
-  paymentAmount     String
-  voucherId         String
-  paymentMethod     String
-  cardBrand         String
-  cardLast4         String
-  licenseFileUrl    String   @default("")
-  licenseFileName   String   @default("")
-  licenseFileMimeType String @default("")
-  licenseFileSize   Int?
-  adminNotes        String   @default("")
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                  String                 @id
+  fullName            String
+  phone               String
+  email               String
+  idNumber            String
+  specialty           String
+  city                String
+  employer            String
+  notes               String
+  hasBeenConvicted    String
+  status              String
+  paymentStatus       String
+  paymentAmount       String
+  voucherId           String
+  paymentMethod       String
+  cardBrand           String
+  cardLast4           String
+  licenseFileUrl      String                 @default("")
+  licenseFileName     String                 @default("")
+  licenseFileMimeType String                 @default("")
+  licenseFileSize     Int?
+  adminNotes          String                 @default("")
+  paymentTransactions PaymentTransaction[]
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+}
+
+model PaymentTransaction {
+  id                   String               @id @default(cuid())
+  doctorShieldRequestId String
+  merchantTransactionId String               @unique
+  checkoutId            String?              @unique
+  integrity             String?
+  resourcePath          String?
+  gatewayTransactionId  String?              @unique
+  amount                Int
+  currency              String
+  paymentType           String
+  paymentBrand          String               @default("")
+  paymentStatus         String
+  resultCode            String?
+  failureReason         String?
+  paidAt                DateTime?
+  attemptNumber         Int                  @default(1)
+  doctorShieldRequest    DoctorShieldRequest  @relation(fields: [doctorShieldRequestId], references: [id], onDelete: Restrict)
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
+  @@index([doctorShieldRequestId])
+  @@index([resourcePath])
+  @@index([paymentStatus])
+  @@unique([doctorShieldRequestId, attemptNumber])
 }
 
 model AnalyticsVisitor {

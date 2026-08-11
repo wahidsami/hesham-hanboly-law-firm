@@ -147,12 +147,6 @@ export const contentClient = {
     employer: string;
     notes: string;
     hasBeenConvicted: 'yes' | 'no';
-    voucherId: string;
-    paymentAmount: string;
-    paymentStatus: string;
-    paymentMethod: string;
-    cardBrand: string;
-    cardLast4: string;
     licenseFile: File;
   }) =>
     requestFormData<{ doctorShieldRequest: DoctorShieldRequestRecord }>('/api/doctor-shield-requests', (() => {
@@ -166,15 +160,49 @@ export const contentClient = {
       formData.append('employer', payload.employer);
       formData.append('notes', payload.notes);
       formData.append('hasBeenConvicted', payload.hasBeenConvicted);
-      formData.append('voucherId', payload.voucherId);
-      formData.append('paymentAmount', payload.paymentAmount);
-      formData.append('paymentStatus', payload.paymentStatus);
-      formData.append('paymentMethod', payload.paymentMethod);
-      formData.append('cardBrand', payload.cardBrand);
-      formData.append('cardLast4', payload.cardLast4);
       formData.append('licenseFile', payload.licenseFile);
       return formData;
     })()),
+  createDoctorShieldCheckout: (
+    doctorShieldRequestId: string,
+    payload: {
+      customer: {
+        email: string;
+        givenName: string;
+        surname: string;
+      };
+      billing: {
+        street1: string;
+        city: string;
+        state: string;
+        country: string;
+        postcode: string;
+      };
+    },
+  ) =>
+    requestJson<{
+      doctorShieldRequest: DoctorShieldRequestRecord;
+      paymentTransaction: {
+        id: string;
+        paymentStatus: string;
+        checkoutId: string | null;
+        integrity: string | null;
+        resourcePath: string | null;
+      };
+      checkout?: {
+        checkoutId: string;
+        resourcePath: string | null;
+        integrity: string | null;
+        paymentBrand: string | null;
+        amount: number;
+        currency: string;
+        paymentType: string;
+      };
+      alreadyInProgress?: boolean;
+    }>(`/api/doctor-shield-requests/${encodeURIComponent(doctorShieldRequestId)}/payment`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
   trackAnalyticsEvent: (payload: {
     visitorId?: string;
     sessionId?: string;

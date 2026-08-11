@@ -26,11 +26,14 @@ import {
   FileText,
   Upload,
   X,
+  RefreshCcw,
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSiteContent } from '../content/ContentContext';
 import { contentClient } from '../content/contentClient';
 import type { CMSPublishedPageRecord } from '../types';
+import type { DoctorShieldRequestRecord } from '../types';
+import HyperPayCopyAndPayWidget from './HyperPayCopyAndPayWidget';
 
 interface DoctorShieldPageProps {
   onScrollToContact?: () => void;
@@ -46,6 +49,23 @@ function toStringList(value: unknown): string[] {
     return [];
   }
   return value.map((item) => (typeof item === 'string' ? item.trim() : '')).filter(Boolean);
+}
+
+function splitDoctorFullName(fullName: string) {
+  const normalized = fullName.trim().replace(/\s+/g, ' ');
+  if (!normalized) {
+    return { givenName: '', surname: '' };
+  }
+
+  const parts = normalized.split(' ');
+  if (parts.length === 1) {
+    return { givenName: parts[0], surname: parts[0] };
+  }
+
+  return {
+    givenName: parts[0],
+    surname: parts.slice(1).join(' '),
+  };
 }
 
 export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: DoctorShieldPageProps) {
@@ -78,16 +98,34 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
     agreed: false,
     termsAccepted: false,
   });
+  const [doctorShieldRequestRecord, setDoctorShieldRequestRecord] = useState<DoctorShieldRequestRecord | null>(null);
   
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [paymentStep, setPaymentStep] = useState<boolean>(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('applepay');
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
-  const [submissionLoading, setSubmissionLoading] = useState<boolean>(false);
+  const [requestLoading, setRequestLoading] = useState<boolean>(false);
   const [submissionError, setSubmissionError] = useState<string>('');
   const [lastVoucherId, setLastVoucherId] = useState<string>('');
   const [showTermsModal, setShowTermsModal] = useState<boolean>(false);
   const [licensePreviewUrl, setLicensePreviewUrl] = useState<string>('');
+  const [billingData, setBillingData] = useState({
+    street1: '',
+    state: '',
+    country: 'SA',
+    postcode: '',
+  });
+  const [billingErrors, setBillingErrors] = useState<Record<string, string>>({});
+  const [checkoutInfo, setCheckoutInfo] = useState<{
+    checkoutId: string;
+    resourcePath: string | null;
+    integrity: string | null;
+    amount: number;
+    currency: string;
+    paymentType: string;
+  } | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState<boolean>(false);
+  const [checkoutError, setCheckoutError] = useState<string>('');
+  const [widgetRetryToken, setWidgetRetryToken] = useState<number>(0);
 
   // Section 7: FAQ State
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -331,7 +369,7 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
   };
 
   // Handle Form Verification
-  const handleProceedToPayment = (e: React.FormEvent) => {
+  const handleProceedToPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     const errors: Record<string, string> = {};
     if (!formData.fullName.trim()) errors.fullName = t('يجب إدخال الاسم الكامل', 'Full name is required');
@@ -339,6 +377,7 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
     if (!formData.email.trim()) errors.email = t('يجب إدخال البريد الإلكتروني', 'Email is required');
     if (!formData.idNumber.trim()) errors.idNumber = t('يجب إدخال رقم الهوية أو الإقامة', 'National ID / Iqama is required');
     if (!formData.specialty.trim()) errors.specialty = t('يجب إدخال التخصص الطبي', 'Medical specialty is required');
+    if (!formData.city.trim()) errors.city = t('يجب إدخال المدينة', 'City is required');
     if (!formData.licenseFile) errors.licenseFile = t('يجب إرفاق صورة سارية المفعول من رخصة هيئة التخصصات الصحية', 'Please attach a valid image of your SCFHS license');
     if (!formData.agreed) errors.agreed = t('يجب تأكيد صحة البيانات', 'You must confirm the data is accurate');
     if (!formData.termsAccepted) errors.termsAccepted = t('يجب قبول الشروط والأحكام', 'You must accept the terms of service');
@@ -348,20 +387,14 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
       return;
     }
     setFormErrors({});
-    setPaymentStep(true);
-  };
-
-  const handleFinalPaymentSubmit = async () => {
-    if (submissionLoading) {
-      return;
-    }
-
-    const voucherId = `DS-${Date.now()}`;
-    setSubmissionLoading(true);
+    setRequestLoading(true);
     setSubmissionError('');
+    setCheckoutError('');
+    setCheckoutInfo(null);
+    setBillingErrors({});
 
     try {
-      await contentClient.submitDoctorShieldRequest({
+      const response = await contentClient.submitDoctorShieldRequest({
         fullName: formData.fullName.trim(),
         phone: formData.phone.trim(),
         email: formData.email.trim(),
@@ -372,19 +405,73 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
         notes: formData.notes.trim(),
         hasBeenConvicted: formData.hasBeenConvicted,
         licenseFile: formData.licenseFile!,
-        voucherId,
-        paymentAmount: doctorShieldPaymentAmount,
-        paymentStatus: 'paid',
-        paymentMethod: selectedPaymentMethod,
-        cardBrand: selectedPaymentMethod,
-        cardLast4: '0000',
       });
-      setLastVoucherId(voucherId);
-      setIsSubmitted(true);
+      setDoctorShieldRequestRecord(response.doctorShieldRequest);
+      setLastVoucherId(response.doctorShieldRequest.voucherId);
+      setBillingData((prev) => ({
+        ...prev,
+        city: formData.city.trim() || prev.city,
+      }));
+      setPaymentStep(true);
+      setTimeout(() => scrollToRef(paymentSectionRef), 80);
     } catch (error) {
       setSubmissionError(error instanceof Error ? error.message : t('فشل إرسال الطلب.', 'Failed to submit request.'));
     } finally {
-      setSubmissionLoading(false);
+      setRequestLoading(false);
+    }
+  };
+
+  const handleCreateCheckout = async () => {
+    if (!doctorShieldRequestRecord) {
+      setCheckoutError(t('يجب إنشاء طلب الاشتراك أولاً قبل فتح بوابة الدفع.', 'The request must be created before loading payment.'));
+      return;
+    }
+
+    const errors: Record<string, string> = {};
+    if (!billingData.street1.trim()) errors.street1 = t('يجب إدخال العنوان', 'Street address is required');
+    if (!formData.city.trim()) errors.city = t('يجب إدخال المدينة أولاً', 'City is required first');
+    if (!billingData.state.trim()) errors.state = t('يجب إدخال المنطقة أو المحافظة', 'State / Province is required');
+    if (!billingData.country.trim()) errors.country = t('يجب إدخال الدولة', 'Country is required');
+    if (!billingData.postcode.trim()) errors.postcode = t('يجب إدخال الرمز البريدي', 'Postal code is required');
+
+    if (Object.keys(errors).length > 0) {
+      setBillingErrors(errors);
+      return;
+    }
+
+    setBillingErrors({});
+    setCheckoutLoading(true);
+    setCheckoutError('');
+    setCheckoutInfo(null);
+
+    try {
+      const { givenName, surname } = splitDoctorFullName(formData.fullName.trim());
+      const checkoutResponse = await contentClient.createDoctorShieldCheckout(doctorShieldRequestRecord.id, {
+        customer: {
+          email: formData.email.trim(),
+          givenName,
+          surname,
+        },
+        billing: {
+          street1: billingData.street1.trim(),
+          city: formData.city.trim(),
+          state: billingData.state.trim(),
+          country: billingData.country.trim() || 'SA',
+          postcode: billingData.postcode.trim(),
+        },
+      });
+
+      const checkoutPayload = checkoutResponse.checkout;
+      if (!checkoutPayload?.checkoutId || !checkoutPayload.integrity) {
+        throw new Error(t('لم يتم استلام بيانات الشحنة الآمنة من HyperPay.', 'HyperPay did not return secure checkout data.'));
+      }
+
+      setCheckoutInfo(checkoutPayload);
+      setWidgetRetryToken((value) => value + 1);
+    } catch (error) {
+      setCheckoutError(error instanceof Error ? error.message : t('فشل إنشاء بوابة الدفع الآمنة.', 'Failed to initialize secure payment.'));
+    } finally {
+      setCheckoutLoading(false);
     }
   };
 
@@ -475,6 +562,20 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
       ],
     },
   ];
+
+  const shopperResultUrl = useMemo(() => {
+    if (typeof window === 'undefined' || !doctorShieldRequestRecord?.id) {
+      return '';
+    }
+
+    const url = new URL('/doctor-shield/payment-result', window.location.origin);
+    url.searchParams.set('requestId', doctorShieldRequestRecord.id);
+    if (checkoutInfo?.checkoutId) {
+      url.searchParams.set('checkoutId', checkoutInfo.checkoutId);
+    }
+
+    return url.toString();
+  }, [checkoutInfo?.checkoutId, doctorShieldRequestRecord?.id]);
 
   return (
     <div className="pt-24 bg-[#F1ECE3] min-h-screen text-[#121212] font-sans overflow-hidden" style={{ direction }}>
@@ -1262,12 +1363,23 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                         onClick={() => {
                           setIsSubmitted(false);
                           setPaymentStep(false);
-                          setSelectedPaymentMethod('applepay');
+                          setDoctorShieldRequestRecord(null);
+                          setRequestLoading(false);
+                          setCheckoutLoading(false);
+                          setCheckoutError('');
+                          setCheckoutInfo(null);
+                          setWidgetRetryToken(0);
                           setSubmissionError('');
-                          setSubmissionLoading(false);
                           setLastVoucherId('');
                           setShowTermsModal(false);
                           setFormErrors({});
+                          setBillingErrors({});
+                          setBillingData({
+                            street1: '',
+                            state: '',
+                            country: 'SA',
+                            postcode: '',
+                          });
                           setFormData({
                             fullName: '',
                             phone: '',
@@ -1297,7 +1409,6 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                     </div>
                   </motion.div>
                 ) : paymentStep ? (
-                  // Step 2: PAYMENT METHOD CHOICE UI only
                   <motion.div
                     key="payment"
                     initial={{ opacity: 0, x: direction === 'rtl' ? -30 : 30 }}
@@ -1308,137 +1419,221 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                   >
                     <div className="flex items-center gap-2 pb-4 border-b border-[#D8D1C7]/30">
                       <Lock className="w-4 h-4 text-[#A56A1E]" />
-                      <span className="text-xs font-bold text-[#A56A1E] uppercase tracking-wider">{t('بوابة دفع غشيمة محصنة', 'SECURE SYSTEM CHANNELS')}</span>
+                      <span className="text-xs font-bold text-[#A56A1E] uppercase tracking-wider">
+                        {t('بوابة دفع HyperPay الآمنة', 'HyperPay secure payment channel')}
+                      </span>
                     </div>
 
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-bold text-[#7A563D]">{t('اختر وسيلة الدفع المفضلة', 'Select Payment Channel')}</h3>
-                      <p className="text-xs text-[#5B5B5B] font-light leading-relaxed">
-                        {t(
-                          `تتم المعاملة عبر بنية سداد مرموقة بقيمة ${doctorShieldPaymentAmount} ومتوافقة مع المعايير المصرفية الوطنية.`,
-                          `Transactions are processed for ${doctorShieldPaymentAmount} through a secure payment gateway aligned with national banking standards.`
+                    <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+                      <div className="space-y-6">
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-bold text-[#7A563D]">
+                            {t('أكمل بيانات الفوترة ثم افتح بوابة الدفع', 'Complete billing details, then load the payment gateway')}
+                          </h3>
+                          <p className="text-xs text-[#5B5B5B] font-light leading-relaxed">
+                            {t(
+                              `سيتم إنشاء بوابة آمنة للمبلغ ${doctorShieldPaymentAmount} وفق بيانات الفوترة المدخلة وإظهار MADA وVISA وMASTER داخل HyperPay فقط.`,
+                              `We will create a secure checkout for ${doctorShieldPaymentAmount} using the billing details below and show MADA, VISA, and MASTER inside HyperPay only.`
+                            )}
+                          </p>
+                        </div>
+
+                        <div className="rounded-3xl border border-[#D8D1C7] bg-white p-5 space-y-4 shadow-sm">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                              <label className="text-xs font-extrabold text-[#7A563D]">{t('العنوان الأول *', 'Street Address *')}</label>
+                              <input
+                                type="text"
+                                value={billingData.street1}
+                                onChange={(event) => setBillingData((prev) => ({ ...prev, street1: event.target.value }))}
+                                placeholder={t('الشارع، رقم المبنى، اسم الحي', 'Street, building number, neighborhood')}
+                                className="w-full px-4 py-3 text-xs bg-[#FBF8F2] border border-[#D8D1C7] rounded-xl focus:border-[#A56A1E] focus:outline-none transition-colors placeholder-[#121212]/30"
+                              />
+                              {billingErrors.street1 && <p className="text-[10px] text-red-500">{billingErrors.street1}</p>}
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="text-xs font-extrabold text-[#7A563D]">{t('المنطقة / المحافظة *', 'State / Province *')}</label>
+                              <input
+                                type="text"
+                                value={billingData.state}
+                                onChange={(event) => setBillingData((prev) => ({ ...prev, state: event.target.value }))}
+                                placeholder={t('المنطقة الإدارية', 'Administrative region')}
+                                className="w-full px-4 py-3 text-xs bg-[#FBF8F2] border border-[#D8D1C7] rounded-xl focus:border-[#A56A1E] focus:outline-none transition-colors placeholder-[#121212]/30"
+                              />
+                              {billingErrors.state && <p className="text-[10px] text-red-500">{billingErrors.state}</p>}
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="text-xs font-extrabold text-[#7A563D]">{t('المدينة', 'City')}</label>
+                              <input
+                                type="text"
+                                value={formData.city}
+                                readOnly
+                                className="w-full px-4 py-3 text-xs bg-[#F4EFE6] border border-[#D8D1C7] rounded-xl text-[#1E1E1E] focus:outline-none"
+                              />
+                              {billingErrors.city && <p className="text-[10px] text-red-500">{billingErrors.city}</p>}
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="text-xs font-extrabold text-[#7A563D]">{t('الرمز البريدي *', 'Postal Code *')}</label>
+                              <input
+                                type="text"
+                                value={billingData.postcode}
+                                onChange={(event) => setBillingData((prev) => ({ ...prev, postcode: event.target.value }))}
+                                placeholder="12345"
+                                className="w-full px-4 py-3 text-xs bg-[#FBF8F2] border border-[#D8D1C7] rounded-xl focus:border-[#A56A1E] focus:outline-none transition-colors placeholder-[#121212]/30"
+                              />
+                              {billingErrors.postcode && <p className="text-[10px] text-red-500">{billingErrors.postcode}</p>}
+                            </div>
+
+                            <div className="space-y-1 sm:col-span-2">
+                              <label className="text-xs font-extrabold text-[#7A563D]">{t('الدولة *', 'Country *')}</label>
+                              <input
+                                type="text"
+                                value={billingData.country}
+                                readOnly
+                                className="w-full px-4 py-3 text-xs bg-[#F4EFE6] border border-[#D8D1C7] rounded-xl text-[#1E1E1E] focus:outline-none"
+                              />
+                              {billingErrors.country && <p className="text-[10px] text-red-500">{billingErrors.country}</p>}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="rounded-3xl border border-[#D8D1C7] bg-[#FBF8F2] p-5 space-y-4 shadow-sm">
+                          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#A56A1E]">
+                            {t('طرق الدفع المتاحة', 'Available payment methods')}
+                          </div>
+                          <div className="flex flex-wrap gap-3">
+                            {['MADA', 'VISA', 'MASTER'].map((brand) => (
+                              <span
+                                key={brand}
+                                className="inline-flex items-center rounded-full border border-[#D8D1C7] bg-white px-3 py-2 text-[11px] font-bold text-[#7A563D] tracking-[0.15em]"
+                              >
+                                {brand}
+                              </span>
+                            ))}
+                          </div>
+                          <p className="text-[11px] leading-6 text-[#5B5B5B] font-light">
+                            {t(
+                              'سيعرض HyperPay الأزرار المعتمدة بشكل آمن داخل الواجهة الرسمية بعد تحميل الشحنة.',
+                              'HyperPay will render the approved brand buttons securely inside its official widget once the checkout is ready.'
+                            )}
+                          </p>
+                        </div>
+
+                        <div className="pt-6 border-t border-[#D8D1C7]/45 flex flex-wrap gap-4 items-center justify-between">
+                          <button
+                            type="button"
+                            onClick={() => setPaymentStep(false)}
+                            className="px-6 py-3.5 rounded-xl border border-[#7A563D] text-[#7A563D] text-xs font-bold hover:bg-[#7A563D]/5 transition-colors cursor-pointer"
+                          >
+                            {t('رجوع للبيانات', 'Back to Profile')}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={checkoutInfo?.checkoutId ? () => setWidgetRetryToken((value) => value + 1) : handleCreateCheckout}
+                            disabled={checkoutLoading || requestLoading}
+                            className="px-8 py-3.5 rounded-xl bg-[#7A563D] text-white text-xs font-bold hover:bg-[#946B4B] transition-colors cursor-pointer shadow-md flex items-center justify-center gap-2 disabled:opacity-70"
+                          >
+                            <CreditCard className="w-4 h-4" />
+                            <span>
+                              {checkoutLoading
+                                ? t('جارٍ تحميل الدفع الآمن…', 'Loading secure payment...')
+                                : checkoutInfo?.checkoutId
+                                  ? t('إعادة تحميل البوابة الآمنة', 'Reload secure widget')
+                                  : t(`فتح بوابة دفع ${doctorShieldPaymentAmount}`, `Open ${doctorShieldPaymentAmount} secure checkout`)}
+                            </span>
+                          </button>
+                        </div>
+
+                        {checkoutError && (
+                          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            {checkoutError}
+                          </div>
                         )}
-                      </p>
-                    </div>
-
-                    {/* Integrated Payment Methods Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      
-                      {/* Apple Pay card logic */}
-                      <button
-                        type="button"
-                        onClick={() => setSelectedPaymentMethod('applepay')}
-                        className={`p-5 rounded-2xl border-2 transition-all flex justify-between items-center bg-white ${
-                          selectedPaymentMethod === 'applepay' ? 'border-[#A56A1E]' : 'border-[#D8D1C7]/50 hover:border-[#7A563D]'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-black rounded-lg text-white flex items-center justify-center font-bold text-xs">
-                            
-                          </div>
-                          <span className="text-xs font-bold text-[#121212]">{t('Apple Pay', 'Apple Pay')}</span>
-                        </div>
-                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                          selectedPaymentMethod === 'applepay' ? 'border-[#A56A1E] bg-[#A56A1E]' : 'border-[#D8D1C7]'
-                        }`}>
-                          {selectedPaymentMethod === 'applepay' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
-                        </div>
-                      </button>
-
-                      {/* Mada credit card logic */}
-                      <button
-                        type="button"
-                        onClick={() => setSelectedPaymentMethod('mada')}
-                        className={`p-5 rounded-2xl border-2 transition-all flex justify-between items-center bg-white ${
-                          selectedPaymentMethod === 'mada' ? 'border-[#A56A1E]' : 'border-[#D8D1C7]/50 hover:border-[#7A563D]'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-13 bg-blue-100 rounded-lg flex items-center justify-center text-[10px] font-extrabold text-blue-900 border border-blue-200">
-                            mada
-                          </div>
-                          <span className="text-xs font-bold text-[#121212]">{t('مدى (البطاقة الوطنية)', 'Mada Portal')}</span>
-                        </div>
-                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                          selectedPaymentMethod === 'mada' ? 'border-[#A56A1E] bg-[#A56A1E]' : 'border-[#D8D1C7]'
-                        }`}>
-                          {selectedPaymentMethod === 'mada' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
-                        </div>
-                      </button>
-
-                      {/* Visa card type */}
-                      <button
-                        type="button"
-                        onClick={() => setSelectedPaymentMethod('visa')}
-                        className={`p-5 rounded-2xl border-2 transition-all flex justify-between items-center bg-white ${
-                          selectedPaymentMethod === 'visa' ? 'border-[#A56A1E]' : 'border-[#D8D1C7]/50 hover:border-[#7A563D]'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-blue-900/10 rounded-lg flex items-center justify-center font-bold text-xs text-blue-900">
-                            VISA
-                          </div>
-                          <span className="text-xs font-bold text-[#121212]">{t('فيزا كارد', 'Visa')}</span>
-                        </div>
-                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                          selectedPaymentMethod === 'visa' ? 'border-[#A56A1E] bg-[#A56A1E]' : 'border-[#D8D1C7]'
-                        }`}>
-                          {selectedPaymentMethod === 'visa' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
-                        </div>
-                      </button>
-
-                      {/* Mastercard choice */}
-                      <button
-                        type="button"
-                        onClick={() => setSelectedPaymentMethod('mastercard')}
-                        className={`p-5 rounded-2xl border-2 transition-all flex justify-between items-center bg-white ${
-                          selectedPaymentMethod === 'mastercard' ? 'border-[#A56A1E]' : 'border-[#D8D1C7]/50 hover:border-[#7A563D]'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center font-bold text-xs text-orange-600">
-                            MC
-                          </div>
-                          <span className="text-xs font-bold text-[#121212]">{t('ماستر كارد', 'Mastercard')}</span>
-                        </div>
-                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                          selectedPaymentMethod === 'mastercard' ? 'border-[#A56A1E] bg-[#A56A1E]' : 'border-[#D8D1C7]'
-                        }`}>
-                          {selectedPaymentMethod === 'mastercard' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
-                        </div>
-                      </button>
-
-                    </div>
-
-                    {/* Return back buttons and pay actions combo */}
-                    <div className="pt-6 border-t border-[#D8D1C7]/45 flex flex-wrap gap-4 items-center justify-between">
-                      <button
-                        type="button"
-                        onClick={() => setPaymentStep(false)}
-                        className="px-6 py-3.5 rounded-xl border border-[#7A563D] text-[#7A563D] text-xs font-bold hover:bg-[#7A563D]/5 transition-colors cursor-pointer"
-                      >
-                        {t('رجوع للبيانات', 'Back to Profile')}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleFinalPaymentSubmit}
-                        disabled={submissionLoading}
-                        className="px-8 py-3.5 rounded-xl bg-[#7A563D] text-white text-xs font-bold hover:bg-[#946B4B] transition-colors cursor-pointer shadow-md flex items-center justify-center gap-2"
-                      >
-                        <CreditCard className="w-4 h-4" />
-                        <span>
-                          {submissionLoading
-                            ? t('جارٍ الإرسال…', 'Submitting…')
-                            : t(`ادفع الآن ${doctorShieldPaymentAmount}`, `Pay ${doctorShieldPaymentAmount} Now`)}
-                        </span>
-                      </button>
-                    </div>
-                    {submissionError && (
-                      <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                        {submissionError}
                       </div>
-                    )}
+
+                      <div className="space-y-4">
+                        <div className="rounded-3xl border border-[#D8D1C7] bg-[#F8F5EF] p-5 space-y-4 shadow-sm">
+                          <h3 className="text-md sm:text-lg font-bold text-[#7A563D] pb-2 border-b border-[#D8D1C7]/40 font-serif">
+                            {t('ملخص الطلب', 'Order Details Summary')}
+                          </h3>
+
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center text-xs gap-3">
+                              <span className="text-[#5B5B5B] font-light">{t('البرنامج المعتمد:', 'Selected Program:')}</span>
+                              <span className="font-bold text-[#7A563D] text-end">{t('سند الطبيب المتكامل', 'Integrated Doctor Shield')}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs gap-3">
+                              <span className="text-[#5B5B5B] font-light">{t('مدة العقد للرعاية:', 'Active Shield Term:')}</span>
+                              <span className="font-bold text-[#7A563D] text-end">{t('سنة واحدة (١٢ شهراً)', '1 Year (12 Months)')}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs gap-3">
+                              <span className="text-[#5B5B5B] font-light">{t('الضريبة المحلية (ZATCA):', 'Local VAT Tax:')}</span>
+                              <span className="font-light text-[#A56A1E] font-mono text-end">{t('مشمولة مسبقاً (١٥٪)', '15% Included')}</span>
+                            </div>
+                            <div className="flex justify-between items-end gap-4 pt-2 border-t border-[#D8D1C7]/35">
+                              <div className="space-y-0.5">
+                                <span className="text-xs font-extrabold text-[#7A563D]">{t('المبلغ الإجمالي السنوي:', 'Total Annual Cost:')}</span>
+                                <span className="text-[10px] text-emerald-600 block">{t('لا مبالغ مستترة أو رسوم دفاعية', 'No hidden filing fees')}</span>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-3xl font-black font-serif text-[#121212] tracking-tight">
+                                  {doctorShieldPaymentAmount.startsWith('11,500') ? '١١٥٠٠' : '٢٣٠٠'}
+                                </span>
+                                <span className="text-xs font-bold text-[#7A563D] ml-1">{t('ريال', 'SAR')}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="p-4 rounded-xl bg-white border border-[#D8D1C7]/40 space-y-2.5">
+                            <div className="flex items-center gap-2 text-[10px] text-[#5B5B5B] font-light">
+                              <Lock className="w-3.5 h-3.5 text-[#A56A1E] shrink-0" />
+                              <span>{t('تشفير المعاملات الرقمية بالكامل SSL', 'Airtight Transaction Protection SSL')}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-[10px] text-[#5B5B5B] font-light">
+                              <ShieldCheck className="w-3.5 h-3.5 text-[#7A563D] shrink-0" />
+                              <span>{t('مضمون من حنبولي الدولية للمحاماة', 'Backed by Hesham Hanboly International')}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {checkoutLoading && (
+                          <div className="rounded-3xl border border-dashed border-[#D8D1C7] bg-white px-5 py-6 text-sm text-[#5B5B5B]">
+                            {t('Loading secure payment...', 'Loading secure payment...')}
+                          </div>
+                        )}
+
+                        {checkoutInfo?.checkoutId && checkoutInfo.integrity && shopperResultUrl ? (
+                          <div className="space-y-3">
+                            <HyperPayCopyAndPayWidget
+                              checkoutId={checkoutInfo.checkoutId}
+                              integrity={checkoutInfo.integrity}
+                              shopperResultUrl={shopperResultUrl}
+                              locale={language}
+                              retryToken={widgetRetryToken}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setWidgetRetryToken((value) => value + 1)}
+                              className="inline-flex items-center gap-2 rounded-xl border border-[#D8D1C7] bg-white px-4 py-2 text-xs font-bold text-[#7A563D] transition-colors hover:bg-[#FBF8F2]"
+                            >
+                              <RefreshCcw className="w-3.5 h-3.5" />
+                              <span>{t('إعادة تحميل البوابة', 'Reload secure widget')}</span>
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="rounded-3xl border border-dashed border-[#D8D1C7] bg-white p-5 text-sm text-[#5B5B5B] leading-7">
+                            {t(
+                              'أكمل بيانات الفوترة ثم افتح بوابة الدفع الآمنة لعرض HyperPay COPYandPAY.',
+                              'Complete the billing details, then open the secure payment gateway to render HyperPay COPYandPAY.'
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </motion.div>
                 ) : (
                   // Step 1: PROFILE / SUBSCRIPTION FORM fields
@@ -1558,6 +1753,7 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                           placeholder={t('جدة، الرياض، الخبر الخ', 'Jeddah, Riyadh, etc.')}
                           className="w-full px-4 py-3 text-xs bg-white border border-[#D8D1C7] rounded-xl focus:border-[#A56A1E] focus:outline-none transition-colors placeholder-[#121212]/30"
                         />
+                        {formErrors.city && <p className="text-[10px] text-red-500">{formErrors.city}</p>}
                       </div>
 
                       {/* Workplace / Employer */}
@@ -1737,9 +1933,12 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                     <div className="pt-4 border-t border-[#D8D1C7]/40 text-start">
                       <button
                         type="submit"
+                        disabled={requestLoading}
                         className="px-8 py-3.5 rounded-xl bg-[#7A563D] hover:bg-[#946B4B] text-white text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-sm cursor-pointer"
                       >
-                        {t('انتقل للدفع', 'Proceed to Payment')}
+                        {requestLoading
+                          ? t('جارٍ تجهيز الطلب…', 'Preparing request...')
+                          : t('انتقل للدفع', 'Proceed to Payment')}
                       </button>
                     </div>
 
