@@ -1608,6 +1608,7 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                               integrity={checkoutInfo.integrity}
                               shopperResultUrl={shopperResultUrl}
                               locale={language}
+                              amountLabel={doctorShieldPaymentAmount}
                               retryToken={widgetRetryToken}
                             />
                             <button

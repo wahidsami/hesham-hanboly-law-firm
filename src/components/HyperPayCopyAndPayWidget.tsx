@@ -19,6 +19,7 @@ interface HyperPayCopyAndPayWidgetProps {
   integrity: string;
   shopperResultUrl: string;
   locale: string;
+  amountLabel: string;
   retryToken?: number;
 }
 
@@ -27,6 +28,7 @@ export default function HyperPayCopyAndPayWidget({
   integrity,
   shopperResultUrl,
   locale,
+  amountLabel,
   retryToken = 0,
 }: HyperPayCopyAndPayWidgetProps) {
   const [loaded, setLoaded] = useState(false);
@@ -42,11 +44,16 @@ export default function HyperPayCopyAndPayWidget({
     setLoaded(false);
     setError('');
 
+    const isAr = locale === 'ar';
+
     window.wpwlOptions = {
-      locale: locale === 'ar' ? 'ar' : 'en',
+      locale: isAr ? 'ar' : 'en',
       paymentTarget: '_top',
       numberFormatting: false,
       style: 'plain',
+      labels: {
+        submit: isAr ? `ادفع ${amountLabel}` : `Pay ${amountLabel}`
+      },
       iframeStyles: {
         'padding': '0',
         'font-family': 'sans-serif',
@@ -55,7 +62,7 @@ export default function HyperPayCopyAndPayWidget({
         'background-color': 'transparent',
         'border': 'none',
         'outline': 'none',
-        'height': '46px',
+        'height': '48px', /* Matches the .wpwl-control height */
       },
     };
 
@@ -91,21 +98,19 @@ export default function HyperPayCopyAndPayWidget({
     return () => {
       script.remove();
     };
-  }, [checkoutId, integrity, locale, retryToken, scriptId, shopperResultUrl]);
+  }, [checkoutId, integrity, locale, amountLabel, retryToken, scriptId, shopperResultUrl]);
 
   return (
     <div className="rounded-3xl border border-[#D8D1C7] bg-white/95 p-5 sm:p-6 shadow-sm space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <div>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2">
           <div className="text-xs font-bold uppercase tracking-[0.2em] text-[#A56A1E]">
-            Secure COPYandPAY
+            Secure Payment
           </div>
-          <div className="text-sm font-semibold text-[#121212]">
-            HyperPay TEST payment widget
-          </div>
+          <div className="flex h-1.5 w-1.5 rounded-full bg-emerald-500" title={loaded ? 'Secure connection active' : 'Connecting...'} />
         </div>
-        <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#7A563D]">
-          {loaded ? 'Widget ready' : 'Loading secure payment...'}
+        <div className="text-sm font-semibold text-[#121212]">
+          HyperPay TEST
         </div>
       </div>
 
@@ -123,7 +128,7 @@ export default function HyperPayCopyAndPayWidget({
 
       <form
         action={shopperResultUrl}
-        className="paymentWidgets min-h-[260px]"
+        className="paymentWidgets"
         data-brands="MADA VISA MASTER"
         key={`${checkoutId}-${retryToken}`}
       />
