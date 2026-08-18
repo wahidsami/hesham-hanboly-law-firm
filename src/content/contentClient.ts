@@ -203,6 +203,46 @@ export const contentClient = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+  verifyDoctorShieldPayment: (
+    payload: {
+      resourcePath: string;
+    },
+  ) =>
+    requestJson<{
+      verified: boolean;
+      state: 'paid' | 'pending' | 'failed';
+      doctorShieldRequest: DoctorShieldRequestRecord;
+      paymentTransaction?: {
+        id: string;
+        merchantTransactionId: string;
+        paymentStatus: string;
+        checkoutId: string | null;
+        integrity: string | null;
+        resourcePath: string | null;
+        amount: number;
+        currency: string;
+        paymentType: string;
+        paymentBrand: string;
+      };
+      verificationSummary?: {
+        verificationSuccess: boolean;
+        resultCode: string | null;
+        resultDescription: string | null;
+        checkoutId: string | null;
+        gatewayTransactionId: string | null;
+        merchantTransactionId: string;
+        amount: number;
+        currency: string;
+        paymentType: string;
+        paymentBrand: string;
+        paymentTransactionId: string;
+        paymentStatus: string;
+        paidAt: string | null;
+        verificationSource: string;
+      };
+    }>(`/api/doctor-shield-requests/payment/verify?resourcePath=${encodeURIComponent(payload.resourcePath)}`, {
+      method: 'GET',
+    }),
   trackAnalyticsEvent: (payload: {
     visitorId?: string;
     sessionId?: string;

@@ -569,13 +569,8 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
     }
 
     const url = new URL('/doctor-shield/payment-result', window.location.origin);
-    url.searchParams.set('requestId', doctorShieldRequestRecord.id);
-    if (checkoutInfo?.checkoutId) {
-      url.searchParams.set('checkoutId', checkoutInfo.checkoutId);
-    }
-
     return url.toString();
-  }, [checkoutInfo?.checkoutId, doctorShieldRequestRecord?.id]);
+  }, [doctorShieldRequestRecord?.id]);
 
   return (
     <div className="pt-24 bg-[#F1ECE3] min-h-screen text-[#121212] font-sans overflow-hidden" style={{ direction }}>

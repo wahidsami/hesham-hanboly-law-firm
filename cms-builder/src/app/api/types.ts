@@ -159,6 +159,11 @@ export interface AnalyticsOverviewSummary {
   topReferrer: { referrer: string; visits: number } | null;
 }
 
+export interface AnalyticsOverviewGeoSummary {
+  worldwideVisits: number;
+  saudiArabiaVisits: number;
+}
+
 export interface AnalyticsOverviewChartPoint {
   date: string;
   visits: number;
@@ -191,6 +196,7 @@ export interface AnalyticsOverviewRecentItem {
 
 export interface AnalyticsOverviewResponse {
   summary: AnalyticsOverviewSummary;
+  geo: AnalyticsOverviewGeoSummary;
   timeline: AnalyticsOverviewChartPoint[];
   topPages: AnalyticsOverviewItem[];
   topReferrers: AnalyticsOverviewItem[];

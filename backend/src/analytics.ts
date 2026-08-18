@@ -96,6 +96,11 @@ export interface AnalyticsOverviewSummary {
   topReferrer: { referrer: string; visits: number } | null;
 }
 
+export interface AnalyticsOverviewGeoSummary {
+  worldwideVisits: number;
+  saudiArabiaVisits: number;
+}
+
 export interface AnalyticsOverviewRow {
   label: string;
   value: number;
@@ -133,6 +138,7 @@ export interface AnalyticsOverviewRecentItem {
 
 export interface AnalyticsOverviewResponse {
   summary: AnalyticsOverviewSummary;
+  geo: AnalyticsOverviewGeoSummary;
   timeline: AnalyticsOverviewTimelinePoint[];
   topPages: AnalyticsOverviewItem[];
   topReferrers: AnalyticsOverviewItem[];
@@ -208,6 +214,20 @@ const getGeoFromHeaders = (headers: IncomingHttpHeaders) => ({
   city: getHeaderValue(headers, ['cf-ipcity', 'x-vercel-ip-city', 'x-city']) || 'Unknown',
 });
 
+const normalizeCountryLabel = (value: string) => {
+  const trimmed = normalizeText(value).toLowerCase();
+  if (!trimmed || trimmed === 'unknown') return 'Unknown';
+  if (['sa', 'ksa', 'sau', 'saudi arabia', 'kingdom of saudi arabia'].includes(trimmed)) return 'Saudi Arabia';
+  return value.trim();
+};
+
+const isSaudiCountry = (value: string) => normalizeCountryLabel(value) === 'Saudi Arabia';
+const isCountryMatch = (rowCountry: string, filterCountry: string) => {
+  const normalizedFilter = normalizeCountryLabel(filterCountry);
+  if (normalizedFilter === 'Unknown') return normalizeCountryLabel(rowCountry) === 'Unknown';
+  return normalizeCountryLabel(rowCountry) === normalizedFilter;
+};
+
 const getLocale = (value: string | undefined, headers: IncomingHttpHeaders) => {
   const headerLocale = getHeaderValue(headers, ['accept-language']);
   return normalizeText(value) || headerLocale.split(',')[0]?.trim() || 'en';
@@ -223,7 +243,7 @@ const rangeToStart = (range: AnalyticsRange) => {
 
 const safeDateLabel = (date: Date) => date.toISOString().slice(0, 10);
 
-const getAnalyticsRows = async (range: AnalyticsRange) => {
+const getAnalyticsRows = async (range: AnalyticsRange, countryFilter?: string) => {
   const start = rangeToStart(range);
   const pageViewWhere = start ? Prisma.sql`WHERE "createdAt" >= ${start}` : Prisma.empty;
   const sessionWhere = start ? Prisma.sql`WHERE "lastSeenAt" >= ${start}` : Prisma.empty;
@@ -246,7 +266,13 @@ const getAnalyticsRows = async (range: AnalyticsRange) => {
     ${visitorWhere}
     ORDER BY "lastSeenAt" DESC
   `);
-  return { events, sessions, visitors };
+  if (!countryFilter || normalizeCountryLabel(countryFilter) === '') {
+    return { events, sessions, visitors };
+  }
+  const filteredEvents = events.filter((event) => isCountryMatch(event.country, countryFilter));
+  const filteredSessions = sessions.filter((session) => isCountryMatch(session.country, countryFilter));
+  const filteredVisitors = visitors.filter((visitor) => isCountryMatch(visitor.country, countryFilter));
+  return { events: filteredEvents, sessions: filteredSessions, visitors: filteredVisitors };
 };
 
 export const recordAnalyticsEvent = async (input: AnalyticsEventInput, headers: IncomingHttpHeaders) => {
@@ -369,8 +395,8 @@ export const recordAnalyticsEvent = async (input: AnalyticsEventInput, headers: 
   return { ok: true as const };
 };
 
-export const getAnalyticsOverview = async (range: AnalyticsRange = '30d'): Promise<AnalyticsOverviewResponse> => {
-  const { events, sessions, visitors } = await getAnalyticsRows(range);
+export const getAnalyticsOverview = async (range: AnalyticsRange = '30d', countryFilter?: string): Promise<AnalyticsOverviewResponse> => {
+  const { events, sessions, visitors } = await getAnalyticsRows(range, countryFilter);
   const pageViews = events.filter((event) => event.type === 'page_view');
   const ctaClicks = events.filter((event) => event.type === 'cta_click');
   const totalVisits = pageViews.length;
@@ -446,9 +472,10 @@ export const getAnalyticsOverview = async (range: AnalyticsRange = '30d'): Promi
     .map(([label, value]) => ({ label, value }))
     .sort((left, right) => right.value - left.value)
     .slice(0, 8);
-  const topCountries = buildTopList((row) => row.country, pageViews, 'Unknown');
+  const topCountries = buildTopList((row) => normalizeCountryLabel(row.country), pageViews, 'Unknown');
   const topDevices = buildTopList((row) => row.deviceType, pageViews, 'Unknown');
   const topBrowsers = buildTopList((row) => row.browserName, pageViews, 'Unknown');
+  const saudiArabiaVisits = pageViews.filter((event) => isSaudiCountry(event.country)).length;
 
   const recentActivity = events
     .slice(0, 12)
@@ -460,7 +487,7 @@ export const getAnalyticsOverview = async (range: AnalyticsRange = '30d'): Promi
       title: event.title,
       referrer: event.referrerHost || event.referrer || 'Direct',
       locale: event.locale,
-      country: event.country || 'Unknown',
+      country: normalizeCountryLabel(event.country || 'Unknown'),
       region: event.region || 'Unknown',
       city: event.city || 'Unknown',
       deviceType: event.deviceType || 'Unknown',
@@ -489,6 +516,10 @@ export const getAnalyticsOverview = async (range: AnalyticsRange = '30d'): Promi
       topReferrer: topReferrers[0]
         ? { referrer: topReferrers[0].label, visits: topReferrers[0].value }
         : null,
+    },
+    geo: {
+      worldwideVisits: totalVisits,
+      saudiArabiaVisits,
     },
     timeline,
     topPages,

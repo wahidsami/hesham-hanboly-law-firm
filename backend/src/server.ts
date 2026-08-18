@@ -174,6 +174,421 @@ const extractCardLast4 = (value: unknown) => {
   return '';
 };
 
+const HYPERPAY_PAYMENT_RESOURCE_PATH_PATTERN = /^\/v1\/checkouts\/([A-Za-z0-9._-]+)\/payment$/;
+const HYPERPAY_VERIFY_WINDOW_MS = 60_000;
+const HYPERPAY_VERIFY_MAX_REQUESTS = 2;
+const hyperPayVerificationAttempts = new Map<string, number[]>();
+
+const validateHyperPayResourcePath = (value: unknown) => {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return null;
+  }
+
+  const match = trimmed.match(HYPERPAY_PAYMENT_RESOURCE_PATH_PATTERN);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    resourcePath: trimmed,
+    checkoutId: match[1],
+  };
+};
+
+type SafeHyperPayVerificationSummary = {
+  verificationSuccess: boolean;
+  resultCode: string | null;
+  resultDescription: string | null;
+  checkoutId: string | null;
+  gatewayTransactionId: string | null;
+  merchantTransactionId: string;
+  amount: number;
+  currency: string;
+  paymentType: string;
+  paymentBrand: string;
+  paymentTransactionId: string;
+  paymentStatus: string;
+  paidAt: string | null;
+  verificationSource: string;
+};
+
+const buildSafeHyperPayVerificationSummary = (
+  paymentTransaction: {
+    id: string;
+    merchantTransactionId: string;
+    checkoutId: string | null;
+    gatewayTransactionId: string | null;
+    amount: number;
+    currency: string;
+    paymentType: string;
+    paymentBrand: string;
+    paymentStatus: string;
+    resultCode: string | null;
+    failureReason: string | null;
+    paidAt: Date | null;
+  },
+  options: {
+    verificationSuccess: boolean;
+    resultDescription: string | null;
+    verificationSource: string;
+    fallbackCheckoutId?: string | null;
+    fallbackGatewayTransactionId?: string | null;
+  },
+): SafeHyperPayVerificationSummary => ({
+  verificationSuccess: options.verificationSuccess,
+  resultCode: paymentTransaction.resultCode,
+  resultDescription: options.resultDescription,
+  checkoutId: paymentTransaction.checkoutId || options.fallbackCheckoutId || null,
+  gatewayTransactionId: paymentTransaction.gatewayTransactionId || options.fallbackGatewayTransactionId || null,
+  merchantTransactionId: paymentTransaction.merchantTransactionId,
+  amount: paymentTransaction.amount,
+  currency: paymentTransaction.currency,
+  paymentType: paymentTransaction.paymentType,
+  paymentBrand: paymentTransaction.paymentBrand,
+  paymentTransactionId: paymentTransaction.id,
+  paymentStatus: paymentTransaction.paymentStatus,
+  paidAt: paymentTransaction.paidAt ? paymentTransaction.paidAt.toISOString() : null,
+  verificationSource: options.verificationSource,
+});
+
+const canVerifyHyperPayCheckout = (checkoutId: string) => {
+  const now = Date.now();
+  const recent = (hyperPayVerificationAttempts.get(checkoutId) || []).filter((timestamp) => now - timestamp < HYPERPAY_VERIFY_WINDOW_MS);
+  if (recent.length >= HYPERPAY_VERIFY_MAX_REQUESTS) {
+    hyperPayVerificationAttempts.set(checkoutId, recent);
+    return false;
+  }
+
+  recent.push(now);
+  hyperPayVerificationAttempts.set(checkoutId, recent);
+  return true;
+};
+
+const successResultCodePattern = /^(000\.000\.|000\.100\.1|000\.[36]|000\.400\.[1][12]0)/;
+const pendingResultCodePattern = /^(000\.200|800\.400\.5|100\.400\.500)/;
+
+const isSuccessfulHyperPayResultCode = (resultCode: string) => successResultCodePattern.test(resultCode);
+const isPendingHyperPayResultCode = (resultCode: string) => pendingResultCodePattern.test(resultCode);
+
+const verifyDoctorShieldPaymentWithHyperPay = async (
+  doctorShieldRequestId: string,
+  resourcePathValue: unknown,
+) => {
+  const resourcePath = validateHyperPayResourcePath(resourcePathValue);
+  if (!resourcePath) {
+    const error = new Error('A valid HyperPay resourcePath is required.');
+    (error as { status?: number }).status = 400;
+    throw error;
+  }
+
+  const paymentTransaction = await getPaymentTransactionByCheckoutId(resourcePath.checkoutId);
+  if (!paymentTransaction) {
+    const error = new Error('Payment transaction not found for the provided checkout ID.');
+    (error as { status?: number }).status = 404;
+    throw error;
+  }
+
+  if (paymentTransaction.doctorShieldRequestId !== doctorShieldRequestId) {
+    const error = new Error('The payment transaction does not belong to this Doctor Shield request.');
+    (error as { status?: number }).status = 400;
+    throw error;
+  }
+
+  const doctorShieldRequest = await getDoctorShieldRequestById(doctorShieldRequestId);
+  if (!doctorShieldRequest) {
+    const error = new Error('Doctor Shield request not found.');
+    (error as { status?: number }).status = 404;
+    throw error;
+  }
+
+  if (paymentTransaction.paymentStatus === 'succeeded') {
+    const charge = getDoctorShieldCharge(doctorShieldRequest.hasBeenConvicted as 'yes' | 'no');
+    const persistedRequest = doctorShieldRequest.paymentStatus === 'paid'
+      ? doctorShieldRequest
+      : await prisma.doctorShieldRequest.update({
+          where: { id: doctorShieldRequestId },
+          data: {
+            paymentStatus: 'paid',
+            paymentAmount: charge.amountLabel,
+            paymentMethod: paymentTransaction.paymentBrand || doctorShieldRequest.paymentMethod || '',
+            cardBrand: paymentTransaction.paymentBrand || doctorShieldRequest.cardBrand || '',
+        },
+      });
+    const verificationSummary = buildSafeHyperPayVerificationSummary(paymentTransaction, {
+      verificationSuccess: true,
+      resultDescription: paymentTransaction.failureReason,
+      verificationSource: 'stored server-side HyperPay verification',
+      fallbackCheckoutId: resourcePath.checkoutId,
+      fallbackGatewayTransactionId: paymentTransaction.gatewayTransactionId,
+    });
+    return {
+      state: 'paid' as const,
+      doctorShieldRequestId,
+      paymentTransaction,
+      doctorShieldRequest: persistedRequest,
+      verificationResponse: null,
+      verificationSummary,
+    };
+  }
+
+  if (!paymentTransaction.checkoutId && !paymentTransaction.resourcePath) {
+    const error = new Error('No checkout information is available for this payment attempt.');
+    (error as { status?: number }).status = 400;
+    throw error;
+  }
+
+  if (paymentTransaction.checkoutId !== resourcePath.checkoutId) {
+    const error = new Error('The provided resourcePath does not match the stored checkout ID.');
+    (error as { status?: number }).status = 400;
+    throw error;
+  }
+
+  if (!canVerifyHyperPayCheckout(paymentTransaction.checkoutId || resourcePath.checkoutId)) {
+    const error = new Error('Verification limit reached for this checkout. Please try again in a moment.');
+    (error as { status?: number }).status = 429;
+    throw error;
+  }
+
+  const paymentResult = await hyperpayService.getPaymentStatus(resourcePath.resourcePath);
+
+  const authoritativeCharge = getDoctorShieldCharge(doctorShieldRequest.hasBeenConvicted as 'yes' | 'no');
+
+  const verifiedAmount = Number.parseInt(String(paymentResult.amount || authoritativeCharge.amount), 10);
+  const verifiedCurrency = String(paymentResult.currency || config.hyperpay.currency).toUpperCase();
+  const verifiedPaymentType = String(paymentResult.paymentType || config.hyperpay.paymentType).toUpperCase();
+  const verifiedMerchantTransactionId = paymentResult.merchantTransactionId || paymentTransaction.merchantTransactionId;
+  const verifiedPaymentBrand = normalizeHyperPayBrand(paymentResult.paymentBrand || paymentTransaction.paymentBrand);
+  const expectedPaymentBrand = normalizeHyperPayBrand(paymentTransaction.paymentBrand);
+  const paymentResultResourcePath = validateHyperPayResourcePath(paymentResult.resourcePath || resourcePath.resourcePath);
+
+  if (paymentTransaction.gatewayTransactionId && paymentResult.id && paymentTransaction.gatewayTransactionId !== paymentResult.id) {
+    const failed = await setPaymentTransactionFailed(paymentTransaction.id, {
+      resultCode: paymentResult.resultCode,
+      failureReason: 'HyperPay payment ID mismatch.',
+      resourcePath: paymentResult.resourcePath || paymentTransaction.resourcePath,
+      gatewayTransactionId: paymentResult.id,
+      paymentBrand: verifiedPaymentBrand || paymentTransaction.paymentBrand,
+    });
+    const error = new Error('HyperPay payment ID mismatch.');
+    (error as { status?: number; paymentTransaction?: typeof failed }).status = 400;
+    (error as { paymentTransaction?: typeof failed }).paymentTransaction = failed;
+    throw error;
+  }
+
+  if (verifiedMerchantTransactionId !== paymentTransaction.merchantTransactionId) {
+    const failed = await setPaymentTransactionFailed(paymentTransaction.id, {
+      resultCode: paymentResult.resultCode,
+      failureReason: 'Merchant transaction ID mismatch.',
+      resourcePath: paymentResult.resourcePath || paymentTransaction.resourcePath,
+      gatewayTransactionId: paymentResult.id || paymentTransaction.gatewayTransactionId,
+      paymentBrand: verifiedPaymentBrand || paymentTransaction.paymentBrand,
+    });
+    const error = new Error('Merchant transaction ID mismatch.');
+    (error as { status?: number; paymentTransaction?: typeof failed }).status = 400;
+    (error as { paymentTransaction?: typeof failed }).paymentTransaction = failed;
+    throw error;
+  }
+
+  if (verifiedAmount !== authoritativeCharge.amount) {
+    const failed = await setPaymentTransactionFailed(paymentTransaction.id, {
+      resultCode: paymentResult.resultCode,
+      failureReason: `Amount mismatch: expected ${authoritativeCharge.amount}, received ${verifiedAmount}.`,
+      resourcePath: paymentResult.resourcePath || paymentTransaction.resourcePath,
+      gatewayTransactionId: paymentResult.id || paymentTransaction.gatewayTransactionId,
+      paymentBrand: verifiedPaymentBrand || paymentTransaction.paymentBrand,
+    });
+    const error = new Error('Payment amount mismatch.');
+    (error as { status?: number; paymentTransaction?: typeof failed }).status = 400;
+    (error as { paymentTransaction?: typeof failed }).paymentTransaction = failed;
+    throw error;
+  }
+
+  if (verifiedCurrency !== config.hyperpay.currency.toUpperCase()) {
+    const failed = await setPaymentTransactionFailed(paymentTransaction.id, {
+      resultCode: paymentResult.resultCode,
+      failureReason: `Currency mismatch: expected ${config.hyperpay.currency}, received ${verifiedCurrency}.`,
+      resourcePath: paymentResult.resourcePath || paymentTransaction.resourcePath,
+      gatewayTransactionId: paymentResult.id || paymentTransaction.gatewayTransactionId,
+      paymentBrand: verifiedPaymentBrand || paymentTransaction.paymentBrand,
+    });
+    const error = new Error('Payment currency mismatch.');
+    (error as { status?: number; paymentTransaction?: typeof failed }).status = 400;
+    (error as { paymentTransaction?: typeof failed }).paymentTransaction = failed;
+    throw error;
+  }
+
+  if (verifiedPaymentType !== config.hyperpay.paymentType.toUpperCase()) {
+    const failed = await setPaymentTransactionFailed(paymentTransaction.id, {
+      resultCode: paymentResult.resultCode,
+      failureReason: `Payment type mismatch: expected ${config.hyperpay.paymentType}, received ${verifiedPaymentType}.`,
+      resourcePath: paymentResult.resourcePath || paymentTransaction.resourcePath,
+      gatewayTransactionId: paymentResult.id || paymentTransaction.gatewayTransactionId,
+      paymentBrand: verifiedPaymentBrand || paymentTransaction.paymentBrand,
+    });
+    const error = new Error('Payment type mismatch.');
+    (error as { status?: number; paymentTransaction?: typeof failed }).status = 400;
+    (error as { paymentTransaction?: typeof failed }).paymentTransaction = failed;
+    throw error;
+  }
+
+  if (expectedPaymentBrand && verifiedPaymentBrand && expectedPaymentBrand !== verifiedPaymentBrand) {
+    const failed = await setPaymentTransactionFailed(paymentTransaction.id, {
+      resultCode: paymentResult.resultCode,
+      failureReason: `Payment brand mismatch: expected ${expectedPaymentBrand}, received ${verifiedPaymentBrand}.`,
+      resourcePath: paymentResult.resourcePath || paymentTransaction.resourcePath,
+      gatewayTransactionId: paymentResult.id || paymentTransaction.gatewayTransactionId,
+      paymentBrand: verifiedPaymentBrand || paymentTransaction.paymentBrand,
+    });
+    const error = new Error('Payment brand mismatch.');
+    (error as { status?: number; paymentTransaction?: typeof failed }).status = 400;
+    (error as { paymentTransaction?: typeof failed }).paymentTransaction = failed;
+    throw error;
+  }
+
+  if (paymentResultResourcePath && paymentResultResourcePath.resourcePath !== resourcePath.resourcePath) {
+    const failed = await setPaymentTransactionFailed(paymentTransaction.id, {
+      resultCode: paymentResult.resultCode,
+      failureReason: 'HyperPay resourcePath mismatch.',
+      resourcePath: paymentResult.resourcePath || paymentTransaction.resourcePath,
+      gatewayTransactionId: paymentResult.id || paymentTransaction.gatewayTransactionId,
+      paymentBrand: verifiedPaymentBrand || paymentTransaction.paymentBrand,
+    });
+    const error = new Error('HyperPay resourcePath mismatch.');
+    (error as { status?: number; paymentTransaction?: typeof failed }).status = 400;
+    (error as { paymentTransaction?: typeof failed }).paymentTransaction = failed;
+    throw error;
+  }
+
+  const now = new Date();
+  const paymentResponseIsSuccessful = isSuccessfulHyperPayResultCode(paymentResult.resultCode);
+  const paymentResponseIsPending = isPendingHyperPayResultCode(paymentResult.resultCode);
+
+  if (paymentResponseIsSuccessful) {
+    const cardLast4 = extractCardLast4(paymentResult.raw);
+    const [succeeded, updatedRequest] = await prisma.$transaction([
+      prisma.paymentTransaction.update({
+        where: { id: paymentTransaction.id },
+        data: {
+          paymentStatus: 'succeeded',
+          resourcePath: paymentResult.resourcePath || paymentTransaction.resourcePath,
+          gatewayTransactionId: paymentResult.id || paymentTransaction.gatewayTransactionId,
+          paymentBrand: verifiedPaymentBrand || paymentTransaction.paymentBrand,
+          resultCode: paymentResult.resultCode,
+          failureReason: null,
+          paidAt: now,
+        },
+      }),
+      prisma.doctorShieldRequest.update({
+        where: { id: doctorShieldRequestId },
+        data: {
+          paymentStatus: 'paid',
+          paymentAmount: authoritativeCharge.amountLabel,
+          paymentMethod: verifiedPaymentBrand || paymentTransaction.paymentBrand || '',
+          cardBrand: verifiedPaymentBrand || paymentTransaction.paymentBrand || '',
+          ...(cardLast4 ? { cardLast4 } : {}),
+        },
+      }),
+    ]);
+
+    return {
+      state: 'paid' as const,
+      doctorShieldRequestId,
+      paymentTransaction: succeeded,
+      doctorShieldRequest: updatedRequest,
+      verificationResponse: paymentResult,
+      verificationSummary: {
+        verificationSuccess: true,
+        resultCode: paymentResult.resultCode,
+        resultDescription: paymentResult.resultDescription,
+        checkoutId: succeeded.checkoutId || resourcePath.checkoutId,
+        gatewayTransactionId: succeeded.gatewayTransactionId || paymentResult.id || null,
+        merchantTransactionId: succeeded.merchantTransactionId,
+        amount: succeeded.amount,
+        currency: succeeded.currency,
+        paymentType: succeeded.paymentType,
+        paymentBrand: succeeded.paymentBrand,
+        paymentTransactionId: succeeded.id,
+        paymentStatus: succeeded.paymentStatus,
+        paidAt: succeeded.paidAt,
+        verificationSource: 'server-side HyperPay',
+      },
+    };
+  }
+
+  if (paymentResponseIsPending) {
+    const pending = await updatePaymentTransaction(paymentTransaction.id, {
+      checkoutId: paymentTransaction.checkoutId,
+      resourcePath: paymentResult.resourcePath || paymentTransaction.resourcePath,
+      gatewayTransactionId: paymentResult.id || paymentTransaction.gatewayTransactionId,
+      paymentBrand: verifiedPaymentBrand || paymentTransaction.paymentBrand,
+      paymentStatus: 'pending',
+      resultCode: paymentResult.resultCode,
+      failureReason: paymentResult.resultDescription || null,
+    });
+
+    return {
+      state: 'pending' as const,
+      doctorShieldRequestId,
+      paymentTransaction: pending,
+      doctorShieldRequest,
+      verificationResponse: paymentResult,
+      verificationSummary: {
+        verificationSuccess: false,
+        resultCode: paymentResult.resultCode,
+        resultDescription: paymentResult.resultDescription,
+        checkoutId: pending.checkoutId || resourcePath.checkoutId,
+        gatewayTransactionId: pending.gatewayTransactionId || paymentResult.id || null,
+        merchantTransactionId: pending.merchantTransactionId,
+        amount: pending.amount,
+        currency: pending.currency,
+        paymentType: pending.paymentType,
+        paymentBrand: pending.paymentBrand,
+        paymentTransactionId: pending.id,
+        paymentStatus: pending.paymentStatus,
+        paidAt: pending.paidAt,
+        verificationSource: 'server-side HyperPay',
+      },
+    };
+  }
+
+  const failed = await setPaymentTransactionFailed(paymentTransaction.id, {
+    resultCode: paymentResult.resultCode,
+    failureReason: paymentResult.resultDescription || 'Payment verification failed.',
+    resourcePath: paymentResult.resourcePath || paymentTransaction.resourcePath,
+    gatewayTransactionId: paymentResult.id || paymentTransaction.gatewayTransactionId,
+    paymentBrand: verifiedPaymentBrand || paymentTransaction.paymentBrand,
+  });
+
+  return {
+    state: 'failed' as const,
+    doctorShieldRequestId,
+    paymentTransaction: failed,
+    doctorShieldRequest,
+    verificationResponse: paymentResult,
+    verificationSummary: {
+      verificationSuccess: false,
+      resultCode: paymentResult.resultCode,
+      resultDescription: paymentResult.resultDescription,
+      checkoutId: failed.checkoutId || resourcePath.checkoutId,
+      gatewayTransactionId: failed.gatewayTransactionId || paymentResult.id || null,
+      merchantTransactionId: failed.merchantTransactionId,
+      amount: failed.amount,
+      currency: failed.currency,
+      paymentType: failed.paymentType,
+      paymentBrand: failed.paymentBrand,
+      paymentTransactionId: failed.id,
+      paymentStatus: failed.paymentStatus,
+      paidAt: failed.paidAt,
+      verificationSource: 'server-side HyperPay',
+    },
+  };
+};
+
 const loadArticleBySlug = async (slug: string) =>
   prisma.article.findUnique({
     where: { slug },
@@ -1242,163 +1657,70 @@ app.post(
   }),
 );
 
-app.get(
-  '/api/doctor-shield-requests/:id/payment/verify',
-  asyncHandler(async (request, response) => {
-    const doctorShieldRequest = await getDoctorShieldRequestById(request.params.id);
-    if (!doctorShieldRequest) {
-      response.status(404).json({ error: 'Doctor Shield request not found.' });
-      return;
-    }
+const handleDoctorShieldPaymentVerification = asyncHandler(async (request, response) => {
+  const resourcePathInput =
+    (request.method === 'POST' && typeof request.body === 'object' && request.body
+      ? (request.body as { resourcePath?: unknown }).resourcePath
+      : undefined) ??
+    (typeof request.query.resourcePath === 'string' ? request.query.resourcePath : undefined) ??
+    (typeof request.query.checkoutId === 'string' ? `/v1/checkouts/${request.query.checkoutId.trim()}/payment` : undefined);
 
-    const checkoutIdFromQuery = typeof request.query.checkoutId === 'string' ? request.query.checkoutId.trim() : '';
-    const latestTransaction = checkoutIdFromQuery
-      ? await getPaymentTransactionByCheckoutId(checkoutIdFromQuery)
-      : await getLatestPaymentTransactionForRequest(doctorShieldRequest.id);
+  const resourcePath = validateHyperPayResourcePath(resourcePathInput);
+  if (!resourcePath) {
+    response.status(400).json({ error: 'A valid HyperPay resourcePath is required.' });
+    return;
+  }
 
-    if (!latestTransaction) {
-      response.status(404).json({ error: 'Payment transaction not found.' });
-      return;
-    }
+  const paymentTransaction = await getPaymentTransactionByCheckoutId(resourcePath.checkoutId);
+  if (!paymentTransaction) {
+    response.status(404).json({ error: 'Payment transaction not found for the provided checkout ID.' });
+    return;
+  }
 
-    if (latestTransaction.paymentStatus === 'succeeded') {
-      response.json({
-        doctorShieldRequest,
-        paymentTransaction: paymentTransactionToRecord(latestTransaction),
-        verified: true,
-      });
-      return;
-    }
+  const doctorShieldRequest = await getDoctorShieldRequestById(paymentTransaction.doctorShieldRequestId);
+  if (!doctorShieldRequest) {
+    response.status(404).json({ error: 'Doctor Shield request not found.' });
+    return;
+  }
 
-    if (!latestTransaction.checkoutId && !latestTransaction.resourcePath) {
-      response.status(400).json({ error: 'No checkout information is available for this payment attempt.' });
-      return;
-    }
+  try {
+    const result = await verifyDoctorShieldPaymentWithHyperPay(doctorShieldRequest.id, resourcePathInput);
 
-    const paymentResult = await hyperpayService.getPaymentStatus(latestTransaction.resourcePath || latestTransaction.checkoutId || '');
-    const authoritativeCharge = getDoctorShieldCharge(doctorShieldRequest.hasBeenConvicted as 'yes' | 'no');
-
-    const verifiedAmount = Number.parseInt(String(paymentResult.amount || authoritativeCharge.amount), 10);
-    const verifiedCurrency = String(paymentResult.currency || config.hyperpay.currency).toUpperCase();
-    const verifiedPaymentType = String(paymentResult.paymentType || config.hyperpay.paymentType).toUpperCase();
-    const verifiedMerchantTransactionId = paymentResult.merchantTransactionId || latestTransaction.merchantTransactionId;
-    const verifiedPaymentBrand = normalizeHyperPayBrand(paymentResult.paymentBrand || latestTransaction.paymentBrand);
-
-    if (verifiedMerchantTransactionId !== latestTransaction.merchantTransactionId) {
-      const failed = await setPaymentTransactionFailed(latestTransaction.id, {
-        resultCode: paymentResult.resultCode,
-        failureReason: 'Merchant transaction ID mismatch.',
-        resourcePath: paymentResult.resourcePath || latestTransaction.resourcePath,
-        gatewayTransactionId: paymentResult.id || latestTransaction.gatewayTransactionId,
-        paymentBrand: verifiedPaymentBrand || latestTransaction.paymentBrand,
-      });
-      response.status(400).json({
-        error: 'Merchant transaction ID mismatch.',
-        paymentTransaction: paymentTransactionToRecord(failed),
-      });
-      return;
-    }
-
-    if (verifiedAmount !== authoritativeCharge.amount) {
-      const failed = await setPaymentTransactionFailed(latestTransaction.id, {
-        resultCode: paymentResult.resultCode,
-        failureReason: `Amount mismatch: expected ${authoritativeCharge.amount}, received ${verifiedAmount}.`,
-        resourcePath: paymentResult.resourcePath || latestTransaction.resourcePath,
-        gatewayTransactionId: paymentResult.id || latestTransaction.gatewayTransactionId,
-        paymentBrand: verifiedPaymentBrand || latestTransaction.paymentBrand,
-      });
-      response.status(400).json({
-        error: 'Payment amount mismatch.',
-        paymentTransaction: paymentTransactionToRecord(failed),
-      });
-      return;
-    }
-
-    if (verifiedCurrency !== config.hyperpay.currency.toUpperCase()) {
-      const failed = await setPaymentTransactionFailed(latestTransaction.id, {
-        resultCode: paymentResult.resultCode,
-        failureReason: `Currency mismatch: expected ${config.hyperpay.currency}, received ${verifiedCurrency}.`,
-        resourcePath: paymentResult.resourcePath || latestTransaction.resourcePath,
-        gatewayTransactionId: paymentResult.id || latestTransaction.gatewayTransactionId,
-        paymentBrand: verifiedPaymentBrand || latestTransaction.paymentBrand,
-      });
-      response.status(400).json({
-        error: 'Payment currency mismatch.',
-        paymentTransaction: paymentTransactionToRecord(failed),
-      });
-      return;
-    }
-
-    if (verifiedPaymentType !== config.hyperpay.paymentType.toUpperCase()) {
-      const failed = await setPaymentTransactionFailed(latestTransaction.id, {
-        resultCode: paymentResult.resultCode,
-        failureReason: `Payment type mismatch: expected ${config.hyperpay.paymentType}, received ${verifiedPaymentType}.`,
-        resourcePath: paymentResult.resourcePath || latestTransaction.resourcePath,
-        gatewayTransactionId: paymentResult.id || latestTransaction.gatewayTransactionId,
-        paymentBrand: verifiedPaymentBrand || latestTransaction.paymentBrand,
-      });
-      response.status(400).json({
-        error: 'Payment type mismatch.',
-        paymentTransaction: paymentTransactionToRecord(failed),
-      });
-      return;
-    }
-
-    const successCode = paymentResult.resultCode === '000.000.000';
-    const pendingCode = paymentResult.resultCode.startsWith('000.200');
-    const now = new Date();
-
-    if (successCode) {
-      const succeeded = await setPaymentTransactionSucceeded(latestTransaction.id, {
-        resourcePath: paymentResult.resourcePath || latestTransaction.resourcePath,
-        gatewayTransactionId: paymentResult.id || latestTransaction.gatewayTransactionId,
-        paymentBrand: verifiedPaymentBrand || latestTransaction.paymentBrand,
-        resultCode: paymentResult.resultCode,
-        failureReason: null,
-        paidAt: now,
-      });
-
-      const cardLast4 = extractCardLast4((paymentResult.raw as Record<string, unknown>).card);
-      await updateDoctorShieldPaymentSummary(doctorShieldRequest.id, {
-        paymentStatus: 'paid',
-        paymentAmount: authoritativeCharge.amountLabel,
-        paymentMethod: verifiedPaymentBrand || latestTransaction.paymentBrand || '',
-        cardBrand: verifiedPaymentBrand || latestTransaction.paymentBrand || '',
-        cardLast4,
-      });
-
-      response.json({
-        doctorShieldRequest: await getDoctorShieldRequestById(doctorShieldRequest.id),
-        paymentTransaction: paymentTransactionToRecord(succeeded),
-        verified: true,
-      });
-      return;
-    }
-
-    const updated = pendingCode
-      ? await updatePaymentTransaction(latestTransaction.id, {
-        checkoutId: latestTransaction.checkoutId,
-        resourcePath: paymentResult.resourcePath || latestTransaction.resourcePath,
-        gatewayTransactionId: paymentResult.id || latestTransaction.gatewayTransactionId,
-        paymentBrand: verifiedPaymentBrand || latestTransaction.paymentBrand,
-        paymentStatus: 'pending',
-        resultCode: paymentResult.resultCode,
-        failureReason: paymentResult.resultDescription || null,
-      })
-      : await setPaymentTransactionFailed(latestTransaction.id, {
-        resultCode: paymentResult.resultCode,
-        failureReason: paymentResult.resultDescription || 'Payment verification failed.',
-        resourcePath: paymentResult.resourcePath || latestTransaction.resourcePath,
-        gatewayTransactionId: paymentResult.id || latestTransaction.gatewayTransactionId,
-        paymentBrand: verifiedPaymentBrand || latestTransaction.paymentBrand,
-      });
-
-    response.status(400).json({
-      error: pendingCode ? 'Payment is still pending.' : 'Payment verification failed.',
-      paymentTransaction: paymentTransactionToRecord(updated),
+    response.status(200).json({
+      verified: result.state === 'paid',
+      state: result.state,
+      doctorShieldRequest: await getDoctorShieldRequestById(doctorShieldRequest.id),
+      paymentTransaction: paymentTransactionToRecord(result.paymentTransaction),
+      verificationSummary: result.verificationSummary,
     });
-  }),
-);
+  } catch (error) {
+    const status = error && typeof error === 'object' && 'status' in error && typeof (error as { status?: unknown }).status === 'number'
+      ? (error as { status: number }).status
+      : 500;
+    const paymentTransactionError = error && typeof error === 'object' && 'paymentTransaction' in error
+      ? (error as { paymentTransaction?: Parameters<typeof paymentTransactionToRecord>[0] }).paymentTransaction
+      : null;
+
+    response.status(status).json({
+      error: error instanceof Error ? error.message : 'Payment verification failed.',
+      ...(paymentTransactionError ? { paymentTransaction: paymentTransactionToRecord(paymentTransactionError) } : {}),
+      ...(paymentTransactionError
+        ? {
+            verificationSummary: buildSafeHyperPayVerificationSummary(paymentTransactionError, {
+              verificationSuccess: paymentTransactionError.paymentStatus === 'succeeded',
+              resultDescription: paymentTransactionError.failureReason,
+              verificationSource: 'server-side HyperPay verification',
+              fallbackCheckoutId: paymentTransactionError.checkoutId,
+              fallbackGatewayTransactionId: paymentTransactionError.gatewayTransactionId,
+            }),
+          }
+        : {}),
+    });
+  }
+});
+
+app.get('/api/doctor-shield-requests/payment/verify', handleDoctorShieldPaymentVerification);
+app.post('/api/doctor-shield-requests/payment/verify', handleDoctorShieldPaymentVerification);
 
 app.get(
   '/api/admin/doctor-shield-requests',

@@ -1,11 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
+import './hyperpay-widget.css';
+
 declare global {
   interface Window {
     wpwlOptions?: {
       locale?: string;
       paymentTarget?: string;
       numberFormatting?: boolean;
+      style?: string;
+      iframeStyles?: Record<string, string>;
     };
   }
 }
@@ -42,6 +46,17 @@ export default function HyperPayCopyAndPayWidget({
       locale: locale === 'ar' ? 'ar' : 'en',
       paymentTarget: '_top',
       numberFormatting: false,
+      style: 'plain',
+      iframeStyles: {
+        'padding': '0',
+        'font-family': 'sans-serif',
+        'font-size': '16px',
+        'color': '#121212',
+        'background-color': 'transparent',
+        'border': 'none',
+        'outline': 'none',
+        'height': '46px',
+      },
     };
 
     const previousScript = document.getElementById(scriptId);

@@ -1,0 +1,111 @@
+/* Premium Customization for HyperPay COPYandPAY Widget */
+
+.wpwl-container {
+  font-family: inherit !important;
+  color: #121212 !important;
+}
+
+.wpwl-form {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  max-width: 100% !important;
+}
+
+.wpwl-group {
+  margin-bottom: 0 !important; /* Eliminates the huge vertical gaps */
+}
+
+.wpwl-label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.15em !important;
+  color: #A56A1E !important;
+  margin-bottom: 8px !important;
+  display: block !important;
+}
+
+.wpwl-control {
+  border: 1px solid #D8D1C7 !important;
+  border-radius: 12px !important;
+  padding: 0 16px !important;
+  font-size: 16px !important;
+  color: #121212 !important;
+  background-color: #FFFFFF !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02) !important;
+  transition: all 0.2s ease !important;
+  height: 48px !important;
+  line-height: 48px !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+}
+
+.wpwl-control:focus, .wpwl-control.wpwl-has-focus {
+  border-color: #7A563D !important;
+  box-shadow: 0 0 0 4px rgba(122, 86, 61, 0.1) !important;
+  outline: none !important;
+}
+
+.wpwl-control.wpwl-has-error {
+  border-color: #ef4444 !important;
+}
+
+.wpwl-hint-error {
+  color: #ef4444 !important;
+  font-size: 12px !important;
+  margin-top: 4px !important;
+}
+
+/* Pay Button */
+.wpwl-button-pay {
+  background-color: #7A563D !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 14px 24px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease !important;
+  width: 100% !important;
+  margin-top: 12px !important;
+  box-shadow: 0 4px 6px -1px rgba(122, 86, 61, 0.2) !important;
+}
+
+.wpwl-button-pay:hover {
+  background-color: #946B4B !important;
+}
+
+.wpwl-button-pay:active {
+  transform: translateY(1px) !important;
+}
+
+/* Layout for Expiry and CVV */
+@media (min-width: 640px) {
+  .wpwl-group-expiry {
+    display: inline-block !important;
+    width: calc(50% - 8px) !important;
+    vertical-align: top !important;
+  }
+  
+  .wpwl-group-cvv {
+    display: inline-block !important;
+    width: calc(50% - 8px) !important;
+    vertical-align: top !important;
+    margin-left: 16px !important;
+  }
+  
+  [dir="rtl"] .wpwl-group-cvv {
+    margin-left: 0 !important;
+    margin-right: 16px !important;
+  }
+}
+
+/* Brand Selection area */
+.wpwl-brand {
+  margin-bottom: 8px !important;
+  border-radius: 4px !important;
+}

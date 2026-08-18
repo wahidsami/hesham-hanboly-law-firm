@@ -680,8 +680,11 @@ export const backendApi = {
     });
     return mapDoctorShieldRequest(response);
   },
-  getAnalyticsOverview: async (range: AnalyticsRange = '30d'): Promise<AnalyticsOverviewResponse> =>
-    requestJson<AnalyticsOverviewResponse>(`/api/admin/analytics/overview?range=${encodeURIComponent(range)}`),
+  getAnalyticsOverview: async (range: AnalyticsRange = '30d', country = ''): Promise<AnalyticsOverviewResponse> => {
+    const params = new URLSearchParams({ range });
+    if (country.trim()) params.set('country', country.trim());
+    return requestJson<AnalyticsOverviewResponse>(`/api/admin/analytics/overview?${params.toString()}`);
+  },
 
   listPages: async (): Promise<ApiPage[]> => {
     const response = await requestJson<BackendPage[]>('/api/admin/pages');
