@@ -741,13 +741,6 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                     fill="none" 
                   />
 
-                  {/* Medical Cross Symbol (Floating Center Point) */}
-                  <path 
-                    d="M188 135 H212 M200 123 V147" 
-                    stroke="#A56A1E" 
-                    strokeWidth="3.5" 
-                    strokeLinecap="round" 
-                  />
 
                   {/* Small legal seal stamp design bottom right */}
                   <circle cx="310" cy="270" r="30" fill="#F8F5EF" stroke="#7A563D" strokeWidth="1" />

@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Clock3, ExternalLink, FileText, Building, Phone, Search, ShieldCheck, User, Users, Filter } from 'lucide-react';
+import { Clock3, CreditCard, ExternalLink, FileText, Building, Phone, Search, ShieldCheck, User, Users, Filter, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { backendApi } from '../../api/backend';
-import type { ApiDoctorShieldRequest, ConsultationPaymentStatus, ConsultationStatus } from '../../api/types';
+import type { ApiDoctorShieldRequest, ConsultationStatus } from '../../api/types';
 
 interface DoctorShieldRequestsModuleProps {
   lang: 'en' | 'ar';
   onCountChange?: (count: number) => void;
 }
 
+// Expanded to cover all real HyperPay payment statuses stored in the database
+type DsPaymentStatus = 'pending' | 'initiated' | 'succeeded' | 'paid' | 'failed' | 'cancelled' | 'refunded' | string;
 type StatusFilter = ConsultationStatus | 'all';
+type PaymentStatusFilter = DsPaymentStatus | 'all';
 
 const STATUS_LABELS: Record<ConsultationStatus, { en: string; ar: string; color: string }> = {
   new: { en: 'New', ar: 'جديد', color: '#0EA5E9' },
@@ -17,11 +20,31 @@ const STATUS_LABELS: Record<ConsultationStatus, { en: string; ar: string; color:
   closed: { en: 'Closed', ar: 'مغلق', color: '#64748B' },
 };
 
-const PAYMENT_LABELS: Record<ConsultationPaymentStatus, { en: string; ar: string }> = {
-  paid: { en: 'Paid', ar: 'مدفوع' },
-  pending: { en: 'Pending', ar: 'معلق' },
-  refunded: { en: 'Refunded', ar: 'مسترد' },
+// All real payment statuses returned by the HyperPay integration
+const PAYMENT_STATUS_META: Record<string, { en: string; ar: string; color: string }> = {
+  paid:      { en: 'Paid',      ar: 'مدفوع',        color: '#16A34A' },
+  succeeded: { en: 'Succeeded', ar: 'ناجح',          color: '#16A34A' },
+  pending:   { en: 'Pending',   ar: 'معلق',          color: '#C47F17' },
+  initiated: { en: 'Initiated', ar: 'بدأت العملية',  color: '#0EA5E9' },
+  failed:    { en: 'Failed',    ar: 'فاشل',          color: '#DC2626' },
+  cancelled: { en: 'Cancelled', ar: 'ملغى',          color: '#64748B' },
+  refunded:  { en: 'Refunded',  ar: 'مسترد',         color: '#7C3AED' },
 };
+
+function getPaymentMeta(status: string): { en: string; ar: string; color: string } {
+  return PAYMENT_STATUS_META[status] ?? { en: status, ar: status, color: '#64748B' };
+}
+
+function formatSARAmount(amount: number | string | null | undefined): string {
+  if (amount === null || amount === undefined) return '—';
+  if (typeof amount === 'string' && amount.includes('SAR')) return amount.trim();
+  const raw = typeof amount === 'string' ? parseFloat(amount.replace(/,/g, '')) : amount;
+  if (!Number.isFinite(raw)) return amount ? String(amount) : '—';
+  const formatted = raw % 1 === 0
+    ? raw.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+    : raw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `${formatted} SAR`;
+}
 
 function formatDate(iso: string, lang: 'en' | 'ar') {
   const date = new Date(iso);
@@ -38,7 +61,7 @@ export function DoctorShieldRequestsModule({ lang, onCountChange }: DoctorShield
   const [requests, setRequests] = useState<ApiDoctorShieldRequest[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [paymentFilter, setPaymentFilter] = useState<'all' | ConsultationPaymentStatus>('all');
+  const [paymentFilter, setPaymentFilter] = useState<PaymentStatusFilter>('all');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(8);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -81,7 +104,12 @@ export function DoctorShieldRequestsModule({ lang, onCountChange }: DoctorShield
         item.voucherId.toLowerCase().includes(query) ||
         item.notes.toLowerCase().includes(query);
       const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-      const matchesPayment = paymentFilter === 'all' || item.paymentStatus === paymentFilter;
+      // Use loose match: 'paid' matches both 'paid' and 'succeeded' for convenience
+      const matchesPayment =
+        paymentFilter === 'all' ||
+        item.paymentStatus === paymentFilter ||
+        (paymentFilter === 'paid' && item.paymentStatus === 'succeeded') ||
+        (paymentFilter === 'succeeded' && item.paymentStatus === 'paid');
       return matchesQuery && matchesStatus && matchesPayment;
     });
   }, [requests, search, statusFilter, paymentFilter]);
@@ -89,7 +117,8 @@ export function DoctorShieldRequestsModule({ lang, onCountChange }: DoctorShield
   const stats = useMemo(() => ({
     total: requests.length,
     newCount: requests.filter((item) => item.status === 'new').length,
-    paidCount: requests.filter((item) => item.paymentStatus === 'paid').length,
+    paidCount: requests.filter((item) => item.paymentStatus === 'paid' || item.paymentStatus === 'succeeded').length,
+    failedCount: requests.filter((item) => item.paymentStatus === 'failed').length,
     yesConvicted: requests.filter((item) => item.hasBeenConvicted === 'yes').length,
   }), [requests]);
 
@@ -137,8 +166,8 @@ export function DoctorShieldRequestsModule({ lang, onCountChange }: DoctorShield
               {[
                 { label: lang === 'ar' ? 'الإجمالي' : 'Total', value: stats.total, icon: Users },
                 { label: lang === 'ar' ? 'جديدة' : 'New', value: stats.newCount, icon: User },
-                { label: lang === 'ar' ? 'مدفوعة' : 'Paid', value: stats.paidCount, icon: ShieldCheck },
-                { label: lang === 'ar' ? 'إفصاح سابق' : 'Prior case', value: stats.yesConvicted, icon: FileText },
+                { label: lang === 'ar' ? 'مدفوعة' : 'Paid', value: stats.paidCount, icon: CheckCircle2 },
+                { label: lang === 'ar' ? 'فاشلة' : 'Failed', value: stats.failedCount, icon: AlertCircle },
               ].map((card) => {
                 const Icon = card.icon;
                 return (
@@ -176,10 +205,13 @@ export function DoctorShieldRequestsModule({ lang, onCountChange }: DoctorShield
               <option value="responded">{lang === 'ar' ? 'تم الرد' : 'Responded'}</option>
               <option value="closed">{lang === 'ar' ? 'مغلق' : 'Closed'}</option>
             </select>
-            <select value={paymentFilter} onChange={(event) => { setPaymentFilter(event.target.value as 'all' | ConsultationPaymentStatus); setPage(1); }} className="rounded-2xl border border-[#D8D1C7] bg-white px-4 py-3 text-sm text-[#1E1E1E]">
+            <select value={paymentFilter} onChange={(event) => { setPaymentFilter(event.target.value as PaymentStatusFilter); setPage(1); }} className="rounded-2xl border border-[#D8D1C7] bg-white px-4 py-3 text-sm text-[#1E1E1E]">
               <option value="all">{lang === 'ar' ? 'كل المدفوعات' : 'All payment states'}</option>
-              <option value="paid">{lang === 'ar' ? 'مدفوع' : 'Paid'}</option>
+              <option value="paid">{lang === 'ar' ? 'مدفوع / ناجح' : 'Paid / Succeeded'}</option>
               <option value="pending">{lang === 'ar' ? 'معلق' : 'Pending'}</option>
+              <option value="initiated">{lang === 'ar' ? 'بدأت العملية' : 'Initiated'}</option>
+              <option value="failed">{lang === 'ar' ? 'فاشل' : 'Failed'}</option>
+              <option value="cancelled">{lang === 'ar' ? 'ملغى' : 'Cancelled'}</option>
               <option value="refunded">{lang === 'ar' ? 'مسترد' : 'Refunded'}</option>
             </select>
             <div className="flex items-center gap-2 rounded-2xl border border-[#D8D1C7] bg-white px-4 py-3 text-sm text-[#5B5B5B]">
@@ -196,16 +228,20 @@ export function DoctorShieldRequestsModule({ lang, onCountChange }: DoctorShield
                 <th className="px-4 py-3 border-b border-[#E4DBCF]">{lang === 'ar' ? 'الاسم' : 'Name'}</th>
                 <th className="px-4 py-3 border-b border-[#E4DBCF]">{lang === 'ar' ? 'التخصص' : 'Specialty'}</th>
                 <th className="px-4 py-3 border-b border-[#E4DBCF]">{lang === 'ar' ? 'الحالة' : 'Status'}</th>
-                <th className="px-4 py-3 border-b border-[#E4DBCF]">{lang === 'ar' ? 'المدفوع' : 'Payment'}</th>
+                <th className="px-4 py-3 border-b border-[#E4DBCF]">{lang === 'ar' ? 'حالة الدفع' : 'Payment'}</th>
+                <th className="px-4 py-3 border-b border-[#E4DBCF]">{lang === 'ar' ? 'المبلغ' : 'Amount'}</th>
+                <th className="px-4 py-3 border-b border-[#E4DBCF]">{lang === 'ar' ? 'وسيلة الدفع' : 'Brand'}</th>
                 <th className="px-4 py-3 border-b border-[#E4DBCF]">{lang === 'ar' ? 'التاريخ' : 'Submitted'}</th>
                 <th className="px-4 py-3 border-b border-[#E4DBCF] text-end">{lang === 'ar' ? 'إجراء' : 'Action'}</th>
               </tr>
             </thead>
             <tbody>
               {paginated.map((item) => {
-                const statusMeta = STATUS_LABELS[item.status];
-                const paymentMeta = PAYMENT_LABELS[item.paymentStatus];
+                const statusMeta = STATUS_LABELS[item.status] ?? { en: item.status, ar: item.status, color: '#64748B' };
+                const paymentMeta = getPaymentMeta(item.paymentStatus);
                 const isSelected = item.id === selectedId;
+                const isSucceeded = item.paymentStatus === 'paid' || item.paymentStatus === 'succeeded';
+                const isFailed = item.paymentStatus === 'failed';
                 return (
                   <tr key={item.id} className={`transition-colors ${isSelected ? 'bg-[#FFF7ED]' : 'bg-white'}`}>
                     <td className="px-4 py-4 border-b border-[#E4DBCF]">
@@ -214,7 +250,7 @@ export function DoctorShieldRequestsModule({ lang, onCountChange }: DoctorShield
                       <div className="text-xs text-[#A56A1E] font-mono">{item.voucherId}</div>
                     </td>
                     <td className="px-4 py-4 border-b border-[#E4DBCF] text-sm text-[#1E1E1E]">
-                      <div className="max-w-[220px]">{item.specialty}</div>
+                      <div className="max-w-[180px]">{item.specialty}</div>
                       <div className="text-xs text-[#5B5B5B] mt-1">{item.city || item.employer}</div>
                     </td>
                     <td className="px-4 py-4 border-b border-[#E4DBCF]">
@@ -223,9 +259,20 @@ export function DoctorShieldRequestsModule({ lang, onCountChange }: DoctorShield
                         {lang === 'ar' ? statusMeta.ar : statusMeta.en}
                       </span>
                     </td>
+                    <td className="px-4 py-4 border-b border-[#E4DBCF]">
+                      <span
+                        className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+                        style={{ background: `${paymentMeta.color}18`, color: paymentMeta.color }}
+                      >
+                        {isSucceeded ? <CheckCircle2 className="h-3 w-3" /> : isFailed ? <AlertCircle className="h-3 w-3" /> : <Loader2 className="h-3 w-3" />}
+                        {lang === 'ar' ? paymentMeta.ar : paymentMeta.en}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 border-b border-[#E4DBCF] text-sm font-mono text-[#1E1E1E]">
+                      {formatSARAmount(item.paymentAmount)}
+                    </td>
                     <td className="px-4 py-4 border-b border-[#E4DBCF] text-sm text-[#1E1E1E]">
-                      {lang === 'ar' ? paymentMeta.ar : paymentMeta.en}
-                      <div className="text-xs text-[#5B5B5B] mt-1">{item.paymentAmount}</div>
+                      {item.cardBrand || item.paymentMethod || <span className="text-[#9CA3AF]">—</span>}
                     </td>
                     <td className="px-4 py-4 border-b border-[#E4DBCF] text-sm text-[#1E1E1E]">
                       <div className="flex items-center gap-2 text-[#5B5B5B] text-xs">
@@ -294,7 +341,7 @@ export function DoctorShieldRequestsModule({ lang, onCountChange }: DoctorShield
         </div>
       </div>
 
-      <aside className="w-[420px] border-l border-[#E4DBCF] bg-white overflow-y-auto">
+      <aside className="w-[440px] border-l border-[#E4DBCF] bg-white overflow-y-auto">
         {selected ? (
           <div className="p-6 space-y-5">
             <div>
@@ -302,6 +349,34 @@ export function DoctorShieldRequestsModule({ lang, onCountChange }: DoctorShield
               <div className="text-2xl font-extrabold text-[#1E1E1E] mt-1">{selected.fullName}</div>
               <div className="text-sm text-[#5B5B5B] mt-1">{selected.specialty}</div>
             </div>
+
+            {/* Payment status badge */}
+            {(() => {
+              const pm = getPaymentMeta(selected.paymentStatus);
+              const isOk = selected.paymentStatus === 'paid' || selected.paymentStatus === 'succeeded';
+              const isFail = selected.paymentStatus === 'failed';
+              return (
+                <div
+                  className="flex items-center gap-3 rounded-2xl px-4 py-3"
+                  style={{ background: `${pm.color}12`, borderLeft: `4px solid ${pm.color}` }}
+                >
+                  {isOk ? <CheckCircle2 className="h-5 w-5 flex-shrink-0" style={{ color: pm.color }} /> :
+                   isFail ? <AlertCircle className="h-5 w-5 flex-shrink-0" style={{ color: pm.color }} /> :
+                   <Loader2 className="h-5 w-5 flex-shrink-0" style={{ color: pm.color }} />}
+                  <div>
+                    <div className="text-xs uppercase tracking-widest font-bold" style={{ color: pm.color }}>
+                      {lang === 'ar' ? 'حالة الدفع' : 'Payment status'}
+                    </div>
+                    <div className="text-sm font-semibold text-[#1E1E1E] mt-0.5">
+                      {lang === 'ar' ? pm.ar : pm.en}
+                    </div>
+                  </div>
+                  <div className="ml-auto text-right">
+                    <div className="text-xs text-[#7B5A42] font-mono font-bold">{formatSARAmount(selected.paymentAmount)}</div>
+                  </div>
+                </div>
+              );
+            })()}
 
             <div className="rounded-2xl border border-[#E4DBCF] bg-[#FBF8F2] p-4 space-y-3">
               {[
@@ -311,10 +386,10 @@ export function DoctorShieldRequestsModule({ lang, onCountChange }: DoctorShield
                 { label: lang === 'ar' ? 'المدينة' : 'City', value: selected.city || '—', icon: User },
                 { label: lang === 'ar' ? 'جهة العمل' : 'Employer', value: selected.employer || '—', icon: Building },
                 { label: lang === 'ar' ? 'الاعتراف السابق' : 'Has prior conviction', value: selected.hasBeenConvicted === 'yes' ? (lang === 'ar' ? 'نعم' : 'Yes') : (lang === 'ar' ? 'لا' : 'No'), icon: ShieldCheck },
-                { label: lang === 'ar' ? 'فئة الاشتراك' : 'Subscription plan', value: selected.hasBeenConvicted === 'yes' ? (lang === 'ar' ? 'الفئة الشاملة' : 'Comprehensive Plan') : (lang === 'ar' ? 'الفئة الأساسية' : 'Basic Plan'), icon: ShieldCheck },
+                { label: lang === 'ar' ? 'فئة الاشتراك' : 'Subscription plan', value: selected.hasBeenConvicted === 'yes' ? (lang === 'ar' ? 'الفئة الشاملة — ١١٬٥٠٠ ريال' : 'Comprehensive Plan — 11,500 SAR') : (lang === 'ar' ? 'الفئة الأساسية — ٢٬٣٠٠ ريال' : 'Basic Plan — 2,300 SAR'), icon: ShieldCheck },
                 { label: lang === 'ar' ? 'المرجع / القسيمة' : 'Voucher / reference', value: selected.voucherId, icon: FileText },
-                { label: lang === 'ar' ? 'طريقة الدفع' : 'Payment method', value: selected.paymentMethod || selected.cardBrand || '—', icon: ShieldCheck },
-                { label: lang === 'ar' ? 'قيمة الاشتراك' : 'Payment amount', value: selected.paymentAmount, icon: FileText },
+                { label: lang === 'ar' ? 'طريقة الدفع' : 'Payment brand', value: selected.cardBrand || selected.paymentMethod || '—', icon: CreditCard },
+                { label: lang === 'ar' ? 'قيمة الاشتراك' : 'Payment amount', value: formatSARAmount(selected.paymentAmount), icon: FileText },
               ].map((row) => {
                 const Icon = row.icon;
                 return (

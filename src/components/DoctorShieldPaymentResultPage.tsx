@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ShieldCheck, RefreshCcw, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { contentClient } from '../content/contentClient';
 import { useLanguage } from '../contexts/LanguageContext';
+import { formatSARAmount } from '../utils/formatSARAmount';
+
 
 interface DoctorShieldPaymentResultPageProps {
   onBackToDoctorShield?: () => void;
@@ -62,7 +64,7 @@ export default function DoctorShieldPaymentResultPage({
           setStatusMessage(t('تمت عملية الدفع بنجاح.', 'Payment completed successfully.'));
           const verificationSummary = result.verificationSummary;
           setSummary({
-            amountLabel: `${verificationSummary?.amount ?? result.paymentTransaction?.amount ?? 0} ${verificationSummary?.currency ?? 'SAR'}`,
+            amountLabel: formatSARAmount(verificationSummary?.amount ?? result.paymentTransaction?.amount ?? null),
             paymentMethod: verificationSummary?.paymentBrand || result.doctorShieldRequest.paymentMethod || result.doctorShieldRequest.cardBrand || '—',
             confirmation: verificationSummary?.paymentStatus || result.doctorShieldRequest.paymentStatus || 'paid',
             reference: verificationSummary?.merchantTransactionId || result.doctorShieldRequest.voucherId || result.paymentTransaction?.merchantTransactionId || '—',
