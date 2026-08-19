@@ -64,7 +64,7 @@ export default function DoctorShieldPaymentResultPage({
           setStatusMessage(t('تمت عملية الدفع بنجاح.', 'Payment completed successfully.'));
           const verificationSummary = result.verificationSummary;
           setSummary({
-            amountLabel: formatSARAmount(verificationSummary?.amount ?? result.paymentTransaction?.amount ?? null),
+            amountLabel: formatSARAmount(verificationSummary?.amount ?? result.paymentTransaction?.amount ?? null, language),
             paymentMethod: verificationSummary?.paymentBrand || result.doctorShieldRequest.paymentMethod || result.doctorShieldRequest.cardBrand || '—',
             confirmation: verificationSummary?.paymentStatus || result.doctorShieldRequest.paymentStatus || 'paid',
             reference: verificationSummary?.merchantTransactionId || result.doctorShieldRequest.voucherId || result.paymentTransaction?.merchantTransactionId || '—',

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { formatSARAmount } from '../utils/formatSARAmount';
 import { 
   Shield, 
   Scale, 
@@ -214,7 +215,7 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
           'عقد سنوي مستقر ومستمر لحمايتك القانونية. تبلغ كلفة الاشتراك السنوي الشامل لدرع "سند الطبيب" ٢٣٠٠ ريال سعودي فقط، وهي قيمة ثابتة ومقرة وشاملة لضريبة القيمة المضافة بالكامل دون أي رسوم مستترة.',
           'A comprehensive, year-round corporate program designed to ensure peace of mind. The annual membership cost for the "Doctor Shield" program is only 2,300 SAR, a flat fee fully inclusive of Value Added Tax (VAT) with no hidden administrative fees.'
         ),
-        price: t('٢٣٠٠ ريال سعودي سنويًا', '2,300 SAR annually'),
+        price: `${formatSARAmount(2300, language)} ${t('سنويًا', 'annually')}`,
         vatText: t('شامل ضريبة القيمة المضافة مسبقًا', 'Value Added Tax (VAT) fully included'),
         iconColor: '#121212',
         badge: t('قيمة سنوية واضحة', 'Transparent Annual Cost')
@@ -351,8 +352,7 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
     }));
   }, [doctorShieldFaqBlock, t]);
 
-  const doctorShieldPaymentAmount = formData.hasBeenConvicted === 'yes' ? '11,500 SAR' : '2,300 SAR';
-
+  const doctorShieldPaymentAmount = formatSARAmount(formData.hasBeenConvicted === 'yes' ? 11500 : 2300, language);
   const scrollToRef = (ref: React.RefObject<HTMLDivElement | null>) => {
     if (ref.current) {
       const offset = 90;
@@ -486,8 +486,8 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
     {
       title: '2. فئات الاشتراك',
       items: [
-        'الفئة الشاملة (11,500 ريال شامل الضريبة): تغطي القضايا الجديدة والقضايا السابقة لتاريخ الاشتراك.',
-        'الفئة الأساسية (2,300 ريال شامل الضريبة): تغطي القضايا والشكاوى التي تنشأ بعد تاريخ الاشتراك فقط.',
+        'الفئة الشاملة (١١٬٥٠٠ ريال شامل الضريبة): تغطي القضايا الجديدة والقضايا السابقة لتاريخ الاشتراك.',
+        'الفئة الأساسية (٢٬٣٠٠ ريال شامل الضريبة): تغطي القضايا والشكاوى التي تنشأ بعد تاريخ الاشتراك فقط.',
         'تبدأ التغطية بعد سداد كامل قيمة الاشتراك.',
       ],
     },
@@ -764,7 +764,7 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
 
                 <div className="absolute bottom-1/4 left-[5%] bg-white border border-[#D8D1C7] rounded-lg px-3 py-1.5 shadow-sm hidden sm:flex items-center gap-1.5 animate-bounce" style={{ animationDuration: '4.5s' }}>
                   <ShieldCheck className="w-3.5 h-3.5 text-[#A56A1E]" />
-                  <span className="text-[10px] font-bold text-[#121212]/80">{t('٢٣٠٠ ريال سنويًا', '2,300 SAR / Yr')}</span>
+                  <span className="text-[10px] font-bold text-[#121212]/80">{formatSARAmount(2300, language)} {t('/ سنة', '/ Yr')}</span>
                 </div>
               </motion.div>
             </div>
@@ -1569,7 +1569,7 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                               </div>
                               <div className="text-right">
                                 <span className="text-3xl font-black font-serif text-[#121212] tracking-tight">
-                                  {doctorShieldPaymentAmount.startsWith('11,500') ? '١١٥٠٠' : '٢٣٠٠'}
+                                  {new Intl.NumberFormat(language === 'ar' ? 'ar-SA' : 'en-US').format(formData.hasBeenConvicted === 'yes' ? 11500 : 2300)}
                                 </span>
                                 <span className="text-xs font-bold text-[#7A563D] ml-1">{t('ريال', 'SAR')}</span>
                               </div>
@@ -2029,7 +2029,7 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                   </div>
                   <div className="text-right">
                     <span className="text-3xl font-black font-serif text-[#121212] tracking-tight">
-                      {doctorShieldPaymentAmount.startsWith('11,500') ? '١١٥٠٠' : '٢٣٠٠'}
+                      {new Intl.NumberFormat(language === 'ar' ? 'ar-SA' : 'en-US').format(formData.hasBeenConvicted === 'yes' ? 11500 : 2300)}
                     </span>
                     <span className="text-xs font-bold text-[#7A563D] ml-1">{t('ريال', 'SAR')}</span>
                   </div>

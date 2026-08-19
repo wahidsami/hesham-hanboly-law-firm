@@ -35,15 +35,27 @@ function getPaymentMeta(status: string): { en: string; ar: string; color: string
   return PAYMENT_STATUS_META[status] ?? { en: status, ar: status, color: '#64748B' };
 }
 
-function formatSARAmount(amount: number | string | null | undefined): string {
-  if (amount === null || amount === undefined) return '—';
-  if (typeof amount === 'string' && amount.includes('SAR')) return amount.trim();
-  const raw = typeof amount === 'string' ? parseFloat(amount.replace(/,/g, '')) : amount;
-  if (!Number.isFinite(raw)) return amount ? String(amount) : '—';
+function formatSARAmount(amount: number | string | null | undefined, lang: 'en' | 'ar' = 'en'): string {
+  if (amount === null || amount === undefined) return lang === 'ar' ? '— ريال' : '— SAR';
+
+  let raw: number;
+  if (typeof amount === 'string') {
+    const cleanStr = amount.replace(/[^\d.-]/g, '');
+    raw = parseFloat(cleanStr);
+  } else {
+    raw = amount;
+  }
+
+  if (!Number.isFinite(raw)) return lang === 'ar' ? '— ريال' : '— SAR';
+
+  const locale = lang === 'ar' ? 'ar-SA' : 'en-US';
+  const currencyLabel = lang === 'ar' ? 'ريال' : 'SAR';
+
   const formatted = raw % 1 === 0
-    ? raw.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
-    : raw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return `${formatted} SAR`;
+    ? new Intl.NumberFormat(locale, { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(raw)
+    : new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(raw);
+
+  return `${formatted} ${currencyLabel}`;
 }
 
 function formatDate(iso: string, lang: 'en' | 'ar') {
@@ -269,7 +281,7 @@ export function DoctorShieldRequestsModule({ lang, onCountChange }: DoctorShield
                       </span>
                     </td>
                     <td className="px-4 py-4 border-b border-[#E4DBCF] text-sm font-mono text-[#1E1E1E]">
-                      {formatSARAmount(item.paymentAmount)}
+                      {formatSARAmount(item.paymentAmount, lang)}
                     </td>
                     <td className="px-4 py-4 border-b border-[#E4DBCF] text-sm text-[#1E1E1E]">
                       {item.cardBrand || item.paymentMethod || <span className="text-[#9CA3AF]">—</span>}
@@ -372,7 +384,7 @@ export function DoctorShieldRequestsModule({ lang, onCountChange }: DoctorShield
                     </div>
                   </div>
                   <div className="ml-auto text-right">
-                    <div className="text-xs text-[#7B5A42] font-mono font-bold">{formatSARAmount(selected.paymentAmount)}</div>
+                    <div className="text-xs text-[#7B5A42] font-mono font-bold">{formatSARAmount(selected.paymentAmount, lang)}</div>
                   </div>
                 </div>
               );
@@ -389,7 +401,7 @@ export function DoctorShieldRequestsModule({ lang, onCountChange }: DoctorShield
                 { label: lang === 'ar' ? 'فئة الاشتراك' : 'Subscription plan', value: selected.hasBeenConvicted === 'yes' ? (lang === 'ar' ? 'الفئة الشاملة — ١١٬٥٠٠ ريال' : 'Comprehensive Plan — 11,500 SAR') : (lang === 'ar' ? 'الفئة الأساسية — ٢٬٣٠٠ ريال' : 'Basic Plan — 2,300 SAR'), icon: ShieldCheck },
                 { label: lang === 'ar' ? 'المرجع / القسيمة' : 'Voucher / reference', value: selected.voucherId, icon: FileText },
                 { label: lang === 'ar' ? 'طريقة الدفع' : 'Payment brand', value: selected.cardBrand || selected.paymentMethod || '—', icon: CreditCard },
-                { label: lang === 'ar' ? 'قيمة الاشتراك' : 'Payment amount', value: formatSARAmount(selected.paymentAmount), icon: FileText },
+                { label: lang === 'ar' ? 'قيمة الاشتراك' : 'Payment amount', value: formatSARAmount(selected.paymentAmount, lang), icon: FileText },
               ].map((row) => {
                 const Icon = row.icon;
                 return (
