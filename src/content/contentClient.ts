@@ -1,5 +1,16 @@
 import type { ArticleRecord, CMSPublishedPageRecord, DoctorShieldRequestRecord, HeroSlideRecord, PracticeAreaRecord, SiteContent, SiteSettingsRecord, ConsultationRequestRecord } from '../types';
 
+export class ApiError extends Error {
+  public code?: string;
+  public details?: any;
+  constructor(message: string, code?: string, details?: any) {
+    super(message);
+    this.code = code;
+    this.details = details;
+    this.name = 'ApiError';
+  }
+}
+
 const requestJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(url, {
     credentials: 'include',
@@ -11,8 +22,9 @@ const requestJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
   });
 
   if (!response.ok) {
-    const payload = await response.json().catch(() => null) as { error?: string } | null;
-    throw new Error(payload?.error || `Request failed: ${response.status}`);
+    const payload = await response.json().catch(() => null) as { error?: string; message?: string; code?: string } | null;
+    const errorMsg = payload?.message || payload?.error || `Request failed: ${response.status}`;
+    throw new ApiError(errorMsg, payload?.error || payload?.code, payload);
   }
 
   return response.json() as Promise<T>;
@@ -26,8 +38,9 @@ const requestFormData = async <T>(url: string, formData: FormData): Promise<T> =
   });
 
   if (!response.ok) {
-    const payload = await response.json().catch(() => null) as { error?: string } | null;
-    throw new Error(payload?.error || `Request failed: ${response.status}`);
+    const payload = await response.json().catch(() => null) as { error?: string; message?: string; code?: string } | null;
+    const errorMsg = payload?.message || payload?.error || `Request failed: ${response.status}`;
+    throw new ApiError(errorMsg, payload?.error || payload?.code, payload);
   }
 
   return response.json() as Promise<T>;

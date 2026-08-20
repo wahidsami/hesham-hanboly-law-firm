@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSiteContent } from '../content/ContentContext';
-import { contentClient } from '../content/contentClient';
+import { contentClient, ApiError } from '../content/contentClient';
 import type { CMSPublishedPageRecord } from '../types';
 import type { DoctorShieldRequestRecord } from '../types';
 import HyperPayCopyAndPayWidget from './HyperPayCopyAndPayWidget';
@@ -374,9 +374,32 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
     e.preventDefault();
     const errors: Record<string, string> = {};
     if (!formData.fullName.trim()) errors.fullName = t('يجب إدخال الاسم الكامل', 'Full name is required');
-    if (!formData.phone.trim()) errors.phone = t('يجب إدخال رقم الجوال', 'Phone number is required');
+    
+    const phone = formData.phone.trim();
+    if (!phone) {
+      errors.phone = t('يجب إدخال رقم الجوال', 'Phone number is required');
+    } else if (!/^05\d{8}$/.test(phone)) {
+      errors.phone = t('يرجى إدخال رقم جوال سعودي صحيح يبدأ بـ 05 ويتكون من 10 أرقام.', 'Enter a valid Saudi mobile number starting with 05 and containing exactly 10 digits.');
+    }
+
     if (!formData.email.trim()) errors.email = t('يجب إدخال البريد الإلكتروني', 'Email is required');
-    if (!formData.idNumber.trim()) errors.idNumber = t('يجب إدخال رقم الهوية أو الإقامة', 'National ID / Iqama is required');
+    
+    const idNumber = formData.idNumber.trim();
+    if (!idNumber) {
+      errors.idNumber = t('يجب إدخال رقم الهوية أو الإقامة', 'National ID / Iqama is required');
+    } else {
+      const idValidation = validateSaudiId(idNumber);
+      if (!idValidation.valid) {
+        if (idValidation.error === 'INVALID_LENGTH' || idValidation.error === 'INVALID_PREFIX' || idValidation.error === 'INVALID_FORMAT') {
+           errors.idNumber = t('يرجى إدخال رقم هوية وطنية أو إقامة صحيح مكون من 10 أرقام ويبدأ بـ 1 أو 2.', 'Enter a valid 10-digit National ID / Iqama starting with 1 or 2.');
+        } else if (idValidation.error === 'INVALID_CHECKSUM') {
+           errors.idNumber = t('رقم الهوية أو الإقامة غير صحيح (فشل التحقق من صحة الرقم).', 'Invalid National ID / Iqama (checksum verification failed).');
+        } else {
+           errors.idNumber = t('يرجى إدخال رقم هوية وطنية أو إقامة صحيح مكون من 10 أرقام ويبدأ بـ 1 أو 2.', 'Enter a valid 10-digit National ID / Iqama starting with 1 or 2.');
+        }
+      }
+    }
+
     if (!formData.specialty.trim()) errors.specialty = t('يجب إدخال التخصص الطبي', 'Medical specialty is required');
     if (!formData.city.trim()) errors.city = t('يجب إدخال المدينة', 'City is required');
     if (!formData.licenseFile) errors.licenseFile = t('يجب إرفاق صورة سارية المفعول من رخصة هيئة التخصصات الصحية', 'Please attach a valid image of your SCFHS license');
@@ -416,6 +439,15 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
       setPaymentStep(true);
       setTimeout(() => scrollToRef(paymentSectionRef), 80);
     } catch (error) {
+      if (error instanceof ApiError && error.code) {
+        if (error.code === 'invalid_saudi_phone') {
+          setFormErrors({ phone: error.message });
+          return;
+        } else if (error.code === 'invalid_saudi_id') {
+          setFormErrors({ idNumber: error.message });
+          return;
+        }
+      }
       setSubmissionError(error instanceof Error ? error.message : t('فشل إرسال الطلب.', 'Failed to submit request.'));
     } finally {
       setRequestLoading(false);
@@ -1655,11 +1687,20 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                           type="tel"
                           required
                           value={formData.phone}
-                          onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                          onChange={(e) => {
+                            setFormData(prev => ({ ...prev, phone: e.target.value }));
+                            if (formErrors.phone) setFormErrors(prev => ({ ...prev, phone: '' }));
+                          }}
+                          onBlur={(e) => {
+                            const phone = e.target.value.trim();
+                            if (phone && !/^05\d{8}$/.test(phone)) {
+                              setFormErrors(prev => ({ ...prev, phone: t('يرجى إدخال رقم جوال سعودي صحيح يبدأ بـ 05 ويتكون من 10 أرقام.', 'Enter a valid Saudi mobile number starting with 05 and containing exactly 10 digits.') }));
+                            }
+                          }}
                           placeholder="05xxxxxxxx"
                           className="w-full px-4 py-3 text-xs bg-white border border-[#D8D1C7] rounded-xl focus:border-[#A56A1E] focus:outline-none transition-colors placeholder-[#121212]/30"
                         />
-                        {formErrors.phone && <p className="text-[10px] text-red-500">{formErrors.phone}</p>}
+                        {formErrors.phone && <p className="text-[10px] text-red-500 mt-1">{formErrors.phone}</p>}
                       </div>
 
                       {/* Email Input */}
@@ -1689,11 +1730,27 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                           type="text"
                           required
                           value={formData.idNumber}
-                          onChange={(e) => setFormData(prev => ({ ...prev, idNumber: e.target.value }))}
+                          onChange={(e) => {
+                            setFormData(prev => ({ ...prev, idNumber: e.target.value }));
+                            if (formErrors.idNumber) setFormErrors(prev => ({ ...prev, idNumber: '' }));
+                          }}
+                          onBlur={(e) => {
+                            const idNumber = e.target.value.trim();
+                            if (idNumber) {
+                              const idValidation = validateSaudiId(idNumber);
+                              if (!idValidation.valid) {
+                                if (idValidation.error === 'INVALID_CHECKSUM') {
+                                   setFormErrors(prev => ({ ...prev, idNumber: t('رقم الهوية أو الإقامة غير صحيح (فشل التحقق من صحة الرقم).', 'Invalid National ID / Iqama (checksum verification failed).') }));
+                                } else {
+                                   setFormErrors(prev => ({ ...prev, idNumber: t('يرجى إدخال رقم هوية وطنية أو إقامة صحيح مكون من 10 أرقام ويبدأ بـ 1 أو 2.', 'Enter a valid 10-digit National ID / Iqama starting with 1 or 2.') }));
+                                }
+                              }
+                            }
+                          }}
                           placeholder="1xxxxxxxxxx"
                           className="w-full px-4 py-3 text-xs bg-white border border-[#D8D1C7] rounded-xl focus:border-[#A56A1E] focus:outline-none transition-colors placeholder-[#121212]/30"
                         />
-                        {formErrors.idNumber && <p className="text-[10px] text-red-500">{formErrors.idNumber}</p>}
+                        {formErrors.idNumber && <p className="text-[10px] text-red-500 mt-1">{formErrors.idNumber}</p>}
                       </div>
 
                       {/* Specialty input */}

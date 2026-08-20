@@ -6,10 +6,14 @@
  * - Starts with 1 (National ID) or 2 (Iqama)
  * - Passes Luhn checksum
  */
-export function validateSaudiId(idValue: string | undefined | null): boolean {
-  if (!idValue) return false;
-  const digits = idValue.replace(/\D/g, '');
-  if (!/^[12]\d{9}$/.test(digits)) return false;
+export function validateSaudiId(idValue: string | undefined | null): { valid: boolean; error?: 'INVALID_LENGTH' | 'INVALID_PREFIX' | 'INVALID_CHECKSUM' | 'INVALID_FORMAT' } {
+  if (!idValue) return { valid: false, error: 'INVALID_FORMAT' };
+  
+  const digits = idValue.replace(/\s/g, ''); // only strip spaces, keeping alpha to catch them
+  
+  if (!/^\d+$/.test(digits)) return { valid: false, error: 'INVALID_FORMAT' };
+  if (digits.length !== 10) return { valid: false, error: 'INVALID_LENGTH' };
+  if (!/^[12]/.test(digits)) return { valid: false, error: 'INVALID_PREFIX' };
 
   let sum = 0;
   for (let i = 0; i < 10; i++) {
@@ -20,5 +24,10 @@ export function validateSaudiId(idValue: string | undefined | null): boolean {
     }
     sum += digit;
   }
-  return sum % 10 === 0;
+  
+  if (sum % 10 !== 0) {
+    return { valid: false, error: 'INVALID_CHECKSUM' };
+  }
+  
+  return { valid: true };
 }

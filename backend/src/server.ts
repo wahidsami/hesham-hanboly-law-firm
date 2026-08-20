@@ -87,11 +87,11 @@ app.use((request, response, next) => {
     "object-src 'none'",
     "frame-ancestors 'self'",
     "img-src 'self' data: blob: https://eu-test.oppwa.com",
-    "style-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     `script-src 'self' ${devScriptSources.join(' ')} https://eu-test.oppwa.com`.trim(),
     `connect-src 'self' https://eu-test.oppwa.com ${devConnectSources.join(' ')}`.trim(),
     "frame-src 'self' https://eu-test.oppwa.com",
-    "font-src 'self' data:",
+    "font-src 'self' data: https://fonts.gstatic.com",
     "form-action 'self' https://eu-test.oppwa.com",
   ].join('; ');
 
@@ -1460,12 +1460,13 @@ app.post(
     }
 
     if (!/^05\d{8}$/.test(phone)) {
-      response.status(400).json({ error: 'Invalid Saudi phone number. Must be 10 digits and start with 05.' });
+      response.status(400).json({ error: 'invalid_saudi_phone', message: 'Invalid Saudi phone number. Must be 10 digits and start with 05.' });
       return;
     }
 
-    if (!validateSaudiId(idNumber)) {
-      response.status(400).json({ error: 'Invalid Saudi National ID or Iqama number. Must be 10 digits and pass checksum.' });
+    const idValidation = validateSaudiId(idNumber);
+    if (!idValidation.valid) {
+      response.status(400).json({ error: 'invalid_saudi_id', code: idValidation.error, message: 'Invalid Saudi National ID or Iqama number. Must be 10 digits and pass checksum.' });
       return;
     }
 
