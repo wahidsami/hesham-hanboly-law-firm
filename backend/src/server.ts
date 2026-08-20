@@ -67,6 +67,7 @@ import { HyperPayError, hyperpayService } from './hyperpay';
 import { getAnalyticsOverview, recordAnalyticsEvent } from './analytics';
 import { uploadBufferToS3 } from './uploads';
 import { seedDatabase } from './seed';
+import { validateSaudiId } from './utils/validateSaudiId';
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 12 * 1024 * 1024 } });
@@ -1455,6 +1456,16 @@ app.post(
 
     if (!fullName || !phone || !email || !idNumber || !specialty || !licenseFile) {
       response.status(400).json({ error: 'Full name, phone, email, ID number, specialty, and the SCFHS license image are required.' });
+      return;
+    }
+
+    if (!/^05\d{8}$/.test(phone)) {
+      response.status(400).json({ error: 'Invalid Saudi phone number. Must be 10 digits and start with 05.' });
+      return;
+    }
+
+    if (!validateSaudiId(idNumber)) {
+      response.status(400).json({ error: 'Invalid Saudi National ID or Iqama number. Must be 10 digits and pass checksum.' });
       return;
     }
 

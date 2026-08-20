@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatSARAmount } from '../utils/formatSARAmount';
+import { validateSaudiId } from '../utils/validateSaudiId';
 import { 
   Shield, 
   Scale, 
@@ -486,8 +487,8 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
     {
       title: '2. فئات الاشتراك',
       items: [
-        'الفئة الشاملة (١١٬٥٠٠ ريال شامل الضريبة): تغطي القضايا الجديدة والقضايا السابقة لتاريخ الاشتراك.',
-        'الفئة الأساسية (٢٬٣٠٠ ريال شامل الضريبة): تغطي القضايا والشكاوى التي تنشأ بعد تاريخ الاشتراك فقط.',
+        `الفئة الشاملة (${formatSARAmount(11500, language)} شامل الضريبة): تغطي القضايا الجديدة والقضايا السابقة لتاريخ الاشتراك.`,
+        `الفئة الأساسية (${formatSARAmount(2300, language)} شامل الضريبة): تغطي القضايا والشكاوى التي تنشأ بعد تاريخ الاشتراك فقط.`,
         'تبدأ التغطية بعد سداد كامل قيمة الاشتراك.',
       ],
     },
@@ -530,8 +531,8 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
     {
       title: '2. Subscription Plans',
       items: [
-        'Comprehensive Plan (SAR 11,500 incl. VAT): Covers both existing and new cases.',
-        'Basic Plan (SAR 2,300 incl. VAT): Covers only cases and complaints arising after the subscription date.',
+        `Comprehensive Plan (${formatSARAmount(11500, language)} incl. VAT): Covers both existing and new cases.`,
+        `Basic Plan (${formatSARAmount(2300, language)} incl. VAT): Covers only cases and complaints arising after the subscription date.`,
         'Coverage starts upon full payment.',
       ],
     },
@@ -1310,10 +1311,10 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
             <div className="h-[2px] w-16 bg-[#A56A1E] mt-3" />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+          <div className="flex flex-col gap-10 items-center w-full">
             
-            {/* Left side: Subscription Form (Transitioned with Payment Step) */}
-            <div className="lg:col-span-8 bg-[#F8F5EF] rounded-3xl border border-[#D8D1C7] p-8 sm:p-10 shadow-xs relative">
+            {/* Main Form Area */}
+            <div className="w-full max-w-5xl bg-[#F8F5EF] rounded-3xl border border-[#D8D1C7] p-8 sm:p-10 shadow-xs relative">
               
               <AnimatePresence mode="wait">
                 {isSubmitted ? (
@@ -1412,8 +1413,8 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                       </span>
                     </div>
 
-                    <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-                      <div className="space-y-6">
+                    <div className="flex flex-col gap-10 items-center w-full">
+                      <div className="space-y-6 w-full max-w-4xl bg-white rounded-3xl border border-[#D8D1C7] p-6 shadow-sm">
                         <div className="space-y-4">
                           <h3 className="text-lg font-bold text-[#7A563D]">
                             {t('أكمل بيانات الفوترة ثم افتح بوابة الدفع', 'Complete billing details, then load the payment gateway')}
@@ -1543,59 +1544,40 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                         )}
                       </div>
 
-                      <div className="space-y-4">
-                        <div className="rounded-3xl border border-[#D8D1C7] bg-[#F8F5EF] p-5 space-y-4 shadow-sm">
-                          <h3 className="text-md sm:text-lg font-bold text-[#7A563D] pb-2 border-b border-[#D8D1C7]/40 font-serif">
-                            {t('ملخص الطلب', 'Order Details Summary')}
+                      <div className="w-full max-w-[800px] bg-white rounded-2xl border border-[#E4DBCF] p-8 shadow-lg shadow-[#7A563D]/5 space-y-8 relative overflow-hidden">
+                        {/* Decorative Top Bar */}
+                        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#7A563D] via-[#A56A1E] to-[#7A563D]" />
+                        
+                        <div className="text-center space-y-2 border-b border-[#E4DBCF]/60 pb-6">
+                          <h3 className="text-2xl font-bold text-[#7A563D] font-serif tracking-tight">
+                            {t('الدفع الإلكتروني الآمن', 'Secure Online Payment')}
                           </h3>
-
-                          <div className="space-y-3">
-                            <div className="flex justify-between items-center text-xs gap-3">
-                              <span className="text-[#5B5B5B] font-light">{t('البرنامج المعتمد:', 'Selected Program:')}</span>
-                              <span className="font-bold text-[#7A563D] text-end">{t('سند الطبيب المتكامل', 'Integrated Doctor Shield')}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-xs gap-3">
-                              <span className="text-[#5B5B5B] font-light">{t('مدة العقد للرعاية:', 'Active Shield Term:')}</span>
-                              <span className="font-bold text-[#7A563D] text-end">{t('سنة واحدة (١٢ شهراً)', '1 Year (12 Months)')}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-xs gap-3">
-                              <span className="text-[#5B5B5B] font-light">{t('الضريبة المحلية (ZATCA):', 'Local VAT Tax:')}</span>
-                              <span className="font-light text-[#A56A1E] font-mono text-end">{t('مشمولة مسبقاً (١٥٪)', '15% Included')}</span>
-                            </div>
-                            <div className="flex justify-between items-end gap-4 pt-2 border-t border-[#D8D1C7]/35">
-                              <div className="space-y-0.5">
-                                <span className="text-xs font-extrabold text-[#7A563D]">{t('المبلغ الإجمالي السنوي:', 'Total Annual Cost:')}</span>
-                                <span className="text-[10px] text-emerald-600 block">{t('لا مبالغ مستترة أو رسوم دفاعية', 'No hidden filing fees')}</span>
-                              </div>
-                              <div className="text-right">
-                                <span className="text-3xl font-black font-serif text-[#121212] tracking-tight">
-                                  {new Intl.NumberFormat(language === 'ar' ? 'ar-SA' : 'en-US').format(formData.hasBeenConvicted === 'yes' ? 11500 : 2300)}
-                                </span>
-                                <span className="text-xs font-bold text-[#7A563D] ml-1">{t('ريال', 'SAR')}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="p-4 rounded-xl bg-white border border-[#D8D1C7]/40 space-y-2.5">
-                            <div className="flex items-center gap-2 text-[10px] text-[#5B5B5B] font-light">
-                              <Lock className="w-3.5 h-3.5 text-[#A56A1E] shrink-0" />
-                              <span>{t('تشفير المعاملات الرقمية بالكامل SSL', 'Airtight Transaction Protection SSL')}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-[10px] text-[#5B5B5B] font-light">
-                              <ShieldCheck className="w-3.5 h-3.5 text-[#7A563D] shrink-0" />
-                              <span>{t('مضمون من حنبولي الدولية للمحاماة', 'Backed by Hesham Hanboly International')}</span>
-                            </div>
-                          </div>
+                          <p className="text-sm text-[#5B5B5B] font-light">
+                            {t('معاملاتك محمية بتشفير 256-bit عبر HyperPay', 'Your transaction is protected with 256-bit encryption via HyperPay')}
+                          </p>
+                        </div>
+                        
+                        {/* Payment Logos Row */}
+                        <div className="flex items-center justify-center gap-4 pt-2">
+                           <div className="h-10 px-4 bg-[#FBF8F2] rounded-lg border border-[#E4DBCF] flex items-center justify-center shadow-sm">
+                             <img src="https://eu-test.oppwa.com/v1/paymentWidgets/img/brand_mada.png" alt="MADA" className="h-4 object-contain opacity-90" onError={(e) => e.currentTarget.style.display = 'none'} />
+                           </div>
+                           <div className="h-10 px-4 bg-[#FBF8F2] rounded-lg border border-[#E4DBCF] flex items-center justify-center shadow-sm">
+                             <img src="https://eu-test.oppwa.com/v1/paymentWidgets/img/brand_visa.png" alt="VISA" className="h-4 object-contain opacity-90" onError={(e) => e.currentTarget.style.display = 'none'} />
+                           </div>
+                           <div className="h-10 px-4 bg-[#FBF8F2] rounded-lg border border-[#E4DBCF] flex items-center justify-center shadow-sm">
+                             <img src="https://eu-test.oppwa.com/v1/paymentWidgets/img/brand_mastercard.png" alt="MASTERCARD" className="h-5 object-contain opacity-90" onError={(e) => e.currentTarget.style.display = 'none'} />
+                           </div>
                         </div>
 
                         {checkoutLoading && (
-                          <div className="rounded-3xl border border-dashed border-[#D8D1C7] bg-white px-5 py-6 text-sm text-[#5B5B5B]">
-                            {t('Loading secure payment...', 'Loading secure payment...')}
+                          <div className="rounded-xl border border-dashed border-[#D8D1C7] bg-[#FBF8F2] px-5 py-8 text-center text-sm text-[#5B5B5B] font-medium">
+                            {t('جارٍ إعداد بوابة الدفع الآمنة...', 'Initializing secure payment gateway...')}
                           </div>
                         )}
 
                         {checkoutInfo?.checkoutId && checkoutInfo.integrity && shopperResultUrl ? (
-                          <div className="space-y-3">
+                          <div className="space-y-4 pt-4">
                             <HyperPayCopyAndPayWidget
                               checkoutId={checkoutInfo.checkoutId}
                               integrity={checkoutInfo.integrity}
@@ -1604,20 +1586,22 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                               amountLabel={doctorShieldPaymentAmount}
                               retryToken={widgetRetryToken}
                             />
-                            <button
-                              type="button"
-                              onClick={() => setWidgetRetryToken((value) => value + 1)}
-                              className="inline-flex items-center gap-2 rounded-xl border border-[#D8D1C7] bg-white px-4 py-2 text-xs font-bold text-[#7A563D] transition-colors hover:bg-[#FBF8F2]"
-                            >
-                              <RefreshCcw className="w-3.5 h-3.5" />
-                              <span>{t('إعادة تحميل البوابة', 'Reload secure widget')}</span>
-                            </button>
+                            <div className="flex justify-center pt-2">
+                              <button
+                                type="button"
+                                onClick={() => setWidgetRetryToken((value) => value + 1)}
+                                className="inline-flex items-center gap-2 rounded-xl border border-[#D8D1C7] bg-white px-5 py-2.5 text-xs font-bold text-[#7A563D] transition-colors hover:bg-[#FBF8F2] shadow-sm"
+                              >
+                                <RefreshCcw className="w-3.5 h-3.5" />
+                                <span>{t('تحديث البوابة الآمنة', 'Refresh Secure Widget')}</span>
+                              </button>
+                            </div>
                           </div>
                         ) : (
-                          <div className="rounded-3xl border border-dashed border-[#D8D1C7] bg-white p-5 text-sm text-[#5B5B5B] leading-7">
+                          <div className="rounded-xl border border-dashed border-[#D8D1C7] bg-[#FBF8F2] p-8 text-center text-sm text-[#5B5B5B] leading-7">
                             {t(
-                              'أكمل بيانات الفوترة ثم افتح بوابة الدفع الآمنة لعرض HyperPay COPYandPAY.',
-                              'Complete the billing details, then open the secure payment gateway to render HyperPay COPYandPAY.'
+                              'يرجى إكمال بيانات الفوترة أعلاه والضغط على "فتح بوابة الدفع" للمتابعة بأمان.',
+                              'Please complete your billing details above and click "Open secure checkout" to proceed safely.'
                             )}
                           </div>
                         )}
@@ -1994,8 +1978,8 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
 
             </div>
 
-            {/* Right side: Sticky Order Summary */}
-            <div className="lg:col-span-4 lg:sticky lg:top-[120px] bg-[#F8F5EF] rounded-3xl border border-[#D8D1C7] p-8 space-y-6 shadow-xs text-start">
+            {/* Order Summary */}
+            <div className="w-full max-w-5xl bg-[#F8F5EF] rounded-3xl border border-[#D8D1C7] p-8 space-y-6 shadow-xs text-start">
               <h3 className="text-md sm:text-lg font-bold text-[#7A563D] pb-3 border-b border-[#D8D1C7]/40 font-serif">
                 {t('ملخص طلب الاشتراك', 'Order Details Summary')}
               </h3>
@@ -2029,9 +2013,11 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                   </div>
                   <div className="text-right">
                     <span className="text-3xl font-black font-serif text-[#121212] tracking-tight">
-                      {new Intl.NumberFormat(language === 'ar' ? 'ar-SA' : 'en-US').format(formData.hasBeenConvicted === 'yes' ? 11500 : 2300)}
+                      {formatSARAmount(formData.hasBeenConvicted === 'yes' ? 11500 : 2300, language).split(' ')[0]}
                     </span>
-                    <span className="text-xs font-bold text-[#7A563D] ml-1">{t('ريال', 'SAR')}</span>
+                    <span className="text-xs font-bold text-[#7A563D] ml-1">
+                      {formatSARAmount(formData.hasBeenConvicted === 'yes' ? 11500 : 2300, language).split(' ')[1]}
+                    </span>
                   </div>
                 </div>
 
