@@ -391,12 +391,12 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
     } else {
       const idValidation = validateSaudiId(idNumber);
       if (!idValidation.valid) {
-        if (idValidation.error === 'INVALID_LENGTH' || idValidation.error === 'INVALID_PREFIX' || idValidation.error === 'INVALID_FORMAT') {
-           errors.idNumber = t('يرجى إدخال رقم هوية وطنية أو إقامة صحيح مكون من 10 أرقام ويبدأ بـ 1 أو 2.', 'Enter a valid 10-digit National ID / Iqama starting with 1 or 2.');
+        if (idValidation.error === 'INVALID_LENGTH' || idValidation.error === 'INVALID_FORMAT') {
+           errors.idNumber = t('رقم الهوية / الإقامة يجب أن يتكون من 10 أرقام.', 'National ID / Iqama must be exactly 10 digits.');
+        } else if (idValidation.error === 'INVALID_PREFIX') {
+           errors.idNumber = t('رقم الهوية يجب أن يبدأ بـ 1 (للمواطنين) أو 2 (للمقيمين).', 'ID must start with 1 (Citizen) or 2 (Resident).');
         } else if (idValidation.error === 'INVALID_CHECKSUM') {
            errors.idNumber = t('رقم الهوية أو الإقامة غير صحيح (فشل التحقق من صحة الرقم).', 'Invalid National ID / Iqama (checksum verification failed).');
-        } else {
-           errors.idNumber = t('يرجى إدخال رقم هوية وطنية أو إقامة صحيح مكون من 10 أرقام ويبدأ بـ 1 أو 2.', 'Enter a valid 10-digit National ID / Iqama starting with 1 or 2.');
         }
       }
     }
@@ -1730,9 +1730,12 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                         <input
                           type="text"
                           required
+                          maxLength={10}
+                          inputMode="numeric"
                           value={formData.idNumber}
                           onChange={(e) => {
-                            setFormData(prev => ({ ...prev, idNumber: e.target.value }));
+                            const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                            setFormData(prev => ({ ...prev, idNumber: value }));
                             if (formErrors.idNumber) setFormErrors(prev => ({ ...prev, idNumber: '' }));
                           }}
                           onBlur={(e) => {
@@ -1740,10 +1743,12 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                             if (idNumber) {
                               const idValidation = validateSaudiId(idNumber);
                               if (!idValidation.valid) {
-                                if (idValidation.error === 'INVALID_CHECKSUM') {
+                                if (idValidation.error === 'INVALID_LENGTH' || idValidation.error === 'INVALID_FORMAT') {
+                                   setFormErrors(prev => ({ ...prev, idNumber: t('رقم الهوية / الإقامة يجب أن يتكون من 10 أرقام.', 'National ID / Iqama must be exactly 10 digits.') }));
+                                } else if (idValidation.error === 'INVALID_PREFIX') {
+                                   setFormErrors(prev => ({ ...prev, idNumber: t('رقم الهوية يجب أن يبدأ بـ 1 (للمواطنين) أو 2 (للمقيمين).', 'ID must start with 1 (Citizen) or 2 (Resident).') }));
+                                } else if (idValidation.error === 'INVALID_CHECKSUM') {
                                    setFormErrors(prev => ({ ...prev, idNumber: t('رقم الهوية أو الإقامة غير صحيح (فشل التحقق من صحة الرقم).', 'Invalid National ID / Iqama (checksum verification failed).') }));
-                                } else {
-                                   setFormErrors(prev => ({ ...prev, idNumber: t('يرجى إدخال رقم هوية وطنية أو إقامة صحيح مكون من 10 أرقام ويبدأ بـ 1 أو 2.', 'Enter a valid 10-digit National ID / Iqama starting with 1 or 2.') }));
                                 }
                               }
                             }
