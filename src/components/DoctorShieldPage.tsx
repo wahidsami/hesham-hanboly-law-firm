@@ -394,9 +394,7 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
         if (idValidation.error === 'INVALID_LENGTH' || idValidation.error === 'INVALID_FORMAT') {
            errors.idNumber = t('رقم الهوية / الإقامة يجب أن يتكون من 10 أرقام.', 'National ID / Iqama must be exactly 10 digits.');
         } else if (idValidation.error === 'INVALID_PREFIX') {
-           errors.idNumber = t('رقم الهوية يجب أن يبدأ بـ 1 (للمواطنين) أو 2 (للمقيمين).', 'ID must start with 1 (Citizen) or 2 (Resident).');
-        } else if (idValidation.error === 'INVALID_CHECKSUM') {
-           errors.idNumber = t('رقم الهوية أو الإقامة غير صحيح (فشل التحقق من صحة الرقم).', 'Invalid National ID / Iqama (checksum verification failed).');
+           errors.idNumber = t('رقم الهوية يجب أن يبدأ بـ 1 أو الإقامة يجب أن تبدأ بـ 2.', 'National ID must start with 1 or Iqama must start with 2.');
         }
       }
     }
@@ -1746,9 +1744,7 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                                 if (idValidation.error === 'INVALID_LENGTH' || idValidation.error === 'INVALID_FORMAT') {
                                    setFormErrors(prev => ({ ...prev, idNumber: t('رقم الهوية / الإقامة يجب أن يتكون من 10 أرقام.', 'National ID / Iqama must be exactly 10 digits.') }));
                                 } else if (idValidation.error === 'INVALID_PREFIX') {
-                                   setFormErrors(prev => ({ ...prev, idNumber: t('رقم الهوية يجب أن يبدأ بـ 1 (للمواطنين) أو 2 (للمقيمين).', 'ID must start with 1 (Citizen) or 2 (Resident).') }));
-                                } else if (idValidation.error === 'INVALID_CHECKSUM') {
-                                   setFormErrors(prev => ({ ...prev, idNumber: t('رقم الهوية أو الإقامة غير صحيح (فشل التحقق من صحة الرقم).', 'Invalid National ID / Iqama (checksum verification failed).') }));
+                                   setFormErrors(prev => ({ ...prev, idNumber: t('رقم الهوية يجب أن يبدأ بـ 1 أو الإقامة يجب أن تبدأ بـ 2.', 'National ID must start with 1 or Iqama must start with 2.') }));
                                 }
                               }
                             }
