@@ -48,8 +48,17 @@ const requestFormData = async <T>(url: string, formData: FormData): Promise<T> =
 
 export const contentClient = {
   getContent: () => requestJson<SiteContent>('/api/content'),
-  getCmsPage: async (slug: string) => {
+  getCmsPage: async (slug: string, options?: { optional?: boolean }) => {
     const trimmed = slug.trim();
+    
+    if (options?.optional) {
+      const response = await requestJson<{ data: CMSPublishedPageRecord | null } | CMSPublishedPageRecord>(`/api/pages/${encodeURIComponent(trimmed)}?optional=true`);
+      if ('data' in response && response.data === null) {
+        return null as unknown as CMSPublishedPageRecord; // will be handled gracefully by frontend
+      }
+      return response as CMSPublishedPageRecord;
+    }
+
     const attempts = trimmed.startsWith('/')
       ? [trimmed, trimmed.slice(1)]
       : [trimmed, `/${trimmed}`];

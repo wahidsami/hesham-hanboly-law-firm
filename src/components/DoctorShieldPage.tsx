@@ -141,13 +141,14 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
 
     async function loadDoctorShieldPage() {
       try {
-        const page = await contentClient.getCmsPage('doctor-shield');
+        const page = await contentClient.getCmsPage('doctor-shield', { optional: true });
         if (!cancelled) {
           setDoctorShieldCmsPage(page);
         }
-      } catch {
+      } catch (error) {
         if (!cancelled) {
           setDoctorShieldCmsPage(null);
+          console.error('Failed to load optional CMS override for Doctor Shield:', error);
         }
       }
     }

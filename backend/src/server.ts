@@ -1043,9 +1043,14 @@ app.get(
 app.get(
   '/api/pages/:slug',
   asyncHandler(async (request, response) => {
+    const isOptional = request.query.optional === 'true';
     const page = await loadCmsPageBySlug(request.params.slug);
     if (!page || page.status === 'hidden') {
-      response.status(404).json({ error: 'Page not found' });
+      if (isOptional) {
+        response.status(200).json({ data: null });
+      } else {
+        response.status(404).json({ error: 'Page not found' });
+      }
       return;
     }
     const revisions = await listCmsRevisions(page.id);
