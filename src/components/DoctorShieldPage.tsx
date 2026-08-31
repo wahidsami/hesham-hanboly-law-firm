@@ -460,11 +460,22 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
     }
 
     const errors: Record<string, string> = {};
+    const validBillingChars = /^[a-zA-Z0-9\s.,'#\-\/()&]*$/;
+    const errorMsg = t('يرجى إدخال تفاصيل عنوان الدفع بحروف إنجليزية.', 'Please enter billing address details using English characters.');
+
     if (!billingData.street1.trim()) errors.street1 = t('يجب إدخال العنوان', 'Street address is required');
+    else if (!validBillingChars.test(billingData.street1.trim())) errors.street1 = errorMsg;
+
     if (!formData.city.trim()) errors.city = t('يجب إدخال المدينة أولاً', 'City is required first');
+    else if (!validBillingChars.test(formData.city.trim())) errors.city = errorMsg;
+
     if (!billingData.state.trim()) errors.state = t('يجب إدخال المنطقة أو المحافظة', 'State / Province is required');
+    else if (!validBillingChars.test(billingData.state.trim())) errors.state = errorMsg;
+
     if (!billingData.country.trim()) errors.country = t('يجب إدخال الدولة', 'Country is required');
+    
     if (!billingData.postcode.trim()) errors.postcode = t('يجب إدخال الرمز البريدي', 'Postal code is required');
+    else if (!validBillingChars.test(billingData.postcode.trim())) errors.postcode = errorMsg;
 
     if (Object.keys(errors).length > 0) {
       setBillingErrors(errors);

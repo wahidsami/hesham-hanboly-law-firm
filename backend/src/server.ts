@@ -1568,6 +1568,22 @@ app.post(
       return;
     }
 
+    const validBillingChars = /^[a-zA-Z0-9\s.,'#\-\/()&]*$/;
+    const invalidBillingFields = [
+      !validBillingChars.test(street1 || '') && 'billing.street1',
+      !validBillingChars.test(city || '') && 'billing.city',
+      !validBillingChars.test(state || '') && 'billing.state',
+      !validBillingChars.test(postcode || '') && 'billing.postcode',
+    ].filter(Boolean) as string[];
+
+    if (invalidBillingFields.length > 0) {
+      response.status(400).json({
+        error: `HyperPay requires billing addresses in English characters. Invalid fields: ${invalidBillingFields.join(', ')}.`,
+        code: 'INVALID_BILLING_CHARACTERS',
+      });
+      return;
+    }
+
     const currentCharge = getDoctorShieldCharge(doctorShieldRequest.hasBeenConvicted as 'yes' | 'no');
     const clientAmount = readString(body.paymentAmount);
     if (clientAmount && clientAmount !== currentCharge.amountLabel) {
@@ -1607,7 +1623,13 @@ app.post(
     }
 
     const attemptNumber = await getNextAttemptNumber(doctorShieldRequest.id);
-    const merchantTransactionId = `DS-${doctorShieldRequest.id}-${attemptNumber}-${Date.now()}`;
+    const shortRequestId = doctorShieldRequest.id.replace('doctor-shield-', '').slice(-15);
+    const merchantTransactionId = `DS-${shortRequestId}-${attemptNumber}-${Date.now()}`;
+
+    if (merchantTransactionId.length > 41) {
+      response.status(500).json({ error: 'Generated merchantTransactionId exceeds 41 characters constraint.' });
+      return;
+    }
 
     const createdTransaction = await createPaymentTransactionAttempt({
       doctorShieldRequestId: doctorShieldRequest.id,
