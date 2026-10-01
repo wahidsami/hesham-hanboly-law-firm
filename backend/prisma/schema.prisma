@@ -292,8 +292,36 @@ model ConsultationRequest {
   recordingSize     Int?
   attachments       Json
   adminNotes        String   @default("")
+  paymentTransactions ConsultationPaymentTransaction[]
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+}
+
+model ConsultationPaymentTransaction {
+  id                   String               @id @default(cuid())
+  consultationRequestId String
+  merchantTransactionId String               @unique
+  checkoutId            String?              @unique
+  integrity             String?
+  resourcePath          String?
+  gatewayTransactionId  String?              @unique
+  amount                Int
+  currency              String
+  paymentType           String
+  paymentBrand          String               @default("")
+  paymentStatus         String
+  resultCode            String?
+  failureReason         String?
+  paidAt                DateTime?
+  attemptNumber         Int                  @default(1)
+  consultationRequest   ConsultationRequest  @relation(fields: [consultationRequestId], references: [id], onDelete: Restrict)
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
+  @@index([consultationRequestId])
+  @@index([resourcePath])
+  @@index([paymentStatus])
+  @@unique([consultationRequestId, attemptNumber])
 }
 
 model DoctorShieldRequest {

@@ -265,6 +265,72 @@ export const contentClient = {
     }>(`/api/doctor-shield-requests/payment/verify?resourcePath=${encodeURIComponent(payload.resourcePath)}`, {
       method: 'GET',
     }),
+  createConsultationCheckout: (
+    consultationId: string,
+    payload: {
+      customer: {
+        email: string;
+        givenName: string;
+        surname: string;
+      };
+      billing: {
+        street1: string;
+        city: string;
+        state: string;
+        country: string;
+        postcode: string;
+      };
+    },
+  ) =>
+    requestJson<{
+      consultation: ConsultationRequestRecord;
+      paymentTransaction: {
+        id: string;
+        paymentStatus: string;
+        checkoutId: string | null;
+        integrity: string | null;
+        resourcePath: string | null;
+      };
+      checkout?: {
+        checkoutId: string;
+        resourcePath: string | null;
+        integrity: string | null;
+        paymentBrand: string | null;
+        amount: number;
+        currency: string;
+        paymentType: string;
+      };
+      alreadyInProgress?: boolean;
+    }>(`/api/consultations/${encodeURIComponent(consultationId)}/payment`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  verifyConsultationPayment: (
+    payload: {
+      resourcePath: string;
+    },
+  ) =>
+    requestJson<{
+      verified: boolean;
+      state: 'paid' | 'pending' | 'failed';
+      consultation: ConsultationRequestRecord;
+      paymentTransaction?: {
+        id: string;
+        merchantTransactionId: string;
+        paymentStatus: string;
+        checkoutId: string | null;
+        integrity: string | null;
+        resourcePath: string | null;
+        amount: number;
+        currency: string;
+        paymentType: string;
+        paymentBrand: string;
+      };
+    }>('/api/consultations/payment/verify', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
   trackAnalyticsEvent: (payload: {
     visitorId?: string;
     sessionId?: string;

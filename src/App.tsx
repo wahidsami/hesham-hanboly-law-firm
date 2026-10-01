@@ -15,6 +15,7 @@ import ArticleDetailsPage from './components/ArticleDetailsPage';
 import ServiceDetailsPage from './components/ServiceDetailsPage';
 import DoctorShieldPage from './components/DoctorShieldPage';
 import DoctorShieldPaymentResultPage from './components/DoctorShieldPaymentResultPage';
+import ConsultationPaymentResultPage from './components/ConsultationPaymentResultPage';
 import CmsPageRenderer from './components/CmsPageRenderer';
 import DoctorShieldAd from './components/DoctorShieldAd';
 import { useLanguage } from './contexts/LanguageContext';
@@ -38,6 +39,7 @@ const getAnalyticsPath = (
   if (view === 'article-detail') return { path: `/articles/${articleSlug}`, title: articleSlug };
   if (view === 'service-detail') return { path: serviceSlug === 'doctor-shield' ? '/doctor-shield' : `/practice-areas/${serviceSlug}`, title: serviceSlug };
   if (view === 'doctor-shield-result') return { path: '/doctor-shield/payment-result', title: 'Doctor Shield Payment Result' };
+  if (view === 'consultation-result') return { path: '/contact/payment/verify', title: 'Consultation Payment Result' };
   if (view === 'cms-page') return { path: `/${cmsSlug.replace(/^\/+/, '')}`, title: cmsSlug };
   return { path: '/admin', title: 'Admin' };
 };
@@ -51,13 +53,14 @@ const getOrCreateStorageId = (storage: Storage, key: string) => {
 };
 
 export default function App() {
-  type AppView = 'home' | 'about' | 'team' | 'contact' | 'articles' | 'article-detail' | 'service-detail' | 'doctor-shield-result' | 'cms-page' | 'admin';
+  type AppView = 'home' | 'about' | 'team' | 'contact' | 'articles' | 'article-detail' | 'service-detail' | 'doctor-shield-result' | 'consultation-result' | 'cms-page' | 'admin';
   const getInitialRoute = (): { view: AppView; articleSlug: string; serviceSlug: string; cmsSlug: string } => {
     const pathname = window.location.pathname.replace(/\/+$/, '') || '/';
     if (pathname === '/admin') return { view: 'admin', articleSlug: 'appeal-secrets', serviceSlug: 'commercial-consultations', cmsSlug: '' };
     if (pathname === '/about') return { view: 'about', articleSlug: 'appeal-secrets', serviceSlug: 'commercial-consultations', cmsSlug: '' };
     if (pathname === '/team') return { view: 'team', articleSlug: 'appeal-secrets', serviceSlug: 'commercial-consultations', cmsSlug: '' };
     if (pathname === '/contact') return { view: 'contact', articleSlug: 'appeal-secrets', serviceSlug: 'commercial-consultations', cmsSlug: '' };
+    if (pathname === '/contact/payment/verify') return { view: 'consultation-result', articleSlug: 'appeal-secrets', serviceSlug: 'commercial-consultations', cmsSlug: '' };
     if (pathname === '/articles') return { view: 'articles', articleSlug: 'appeal-secrets', serviceSlug: 'commercial-consultations', cmsSlug: '' };
     if (pathname.startsWith('/articles/')) return { view: 'article-detail', articleSlug: pathname.split('/')[2], serviceSlug: 'commercial-consultations', cmsSlug: '' };
     if (pathname === '/doctor-shield/payment-result')
@@ -155,6 +158,8 @@ export default function App() {
       path = param === 'doctor-shield' ? '/doctor-shield' : `/practice-areas/${param}`;
     } else if (view === 'doctor-shield-result') {
       path = '/doctor-shield/payment-result';
+    } else if (view === 'consultation-result') {
+      path = '/contact/payment/verify';
     } else if (view === 'cms-page' && param) {
       path = `/${param.replace(/^\/+/, '')}`;
     }
@@ -255,6 +260,11 @@ export default function App() {
         ) : currentView === 'doctor-shield-result' ? (
           <DoctorShieldPaymentResultPage
             onBackToDoctorShield={() => navigateTo('service-detail', 'doctor-shield')}
+            onBackToHome={() => navigateTo('home')}
+          />
+        ) : currentView === 'consultation-result' ? (
+          <ConsultationPaymentResultPage
+            onBackToContact={() => navigateTo('contact')}
             onBackToHome={() => navigateTo('home')}
           />
         ) : selectedServiceSlug === 'doctor-shield' ? (

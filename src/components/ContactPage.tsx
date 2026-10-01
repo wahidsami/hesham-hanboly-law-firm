@@ -27,6 +27,8 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useSiteContent } from '../content/ContentContext';
 import { contentClient } from '../content/contentClient';
 import type { CMSPublishedPageRecord } from '../types';
+import { HyperPayCopyAndPayWidget } from './HyperPayCopyAndPayWidget';
+import { formatSARAmount } from '../utils/formatSARAmount';
 
 interface ContactPageProps {
   onScrollToContact?: () => void;
@@ -141,6 +143,20 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
     idNumber: '',
     message: '',
   });
+
+  const [billingData, setBillingData] = useState({
+    street1: '',
+    state: '',
+    postcode: '',
+    country: 'SA',
+    city: '',
+  });
+  const [billingErrors, setBillingErrors] = useState<Record<string, string>>({});
+  const [checkoutInfo, setCheckoutInfo] = useState<any>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
+  const [widgetRetryToken, setWidgetRetryToken] = useState(0);
+
   
   const [formData, setFormData] = useState({
     fullName: '',

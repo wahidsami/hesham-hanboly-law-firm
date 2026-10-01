@@ -63,6 +63,19 @@ import {
   updateDoctorShieldPaymentSummary,
   updatePaymentTransaction,
 } from './doctorShieldPayments';
+import {
+  createConsultationPaymentTransactionAttempt,
+  getLatestConsultationPaymentTransactionForRequest,
+  getNextAttemptNumber as getNextConsultationAttemptNumber,
+  getConsultationPaymentTransactionByCheckoutId,
+  getSuccessfulConsultationPaymentTransactionForRequest,
+  hasSuccessfulPaymentForRequest as hasSuccessfulConsultationPaymentForRequest,
+  consultationPaymentTransactionToRecord,
+  setConsultationPaymentTransactionFailed,
+  setConsultationPaymentTransactionInitiated,
+  setConsultationPaymentTransactionSucceeded,
+  updateConsultationPaymentSummary,
+} from './consultationPayments';
 import { HyperPayError, hyperpayService } from './hyperpay';
 import { getAnalyticsOverview, recordAnalyticsEvent } from './analytics';
 import { uploadBufferToS3 } from './uploads';
