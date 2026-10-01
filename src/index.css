@@ -15,6 +15,17 @@
   --color-accent-hover: #946B4B;
   --color-border-soft: #D8D1C7;
   --color-footer-bg: #121212;
+
+  /* Global safe line-heights for large display text */
+  /* This gently relaxes Tailwind's default 1.0 (leading-none) for 5xl+ */
+  --text-2xl--line-height: 1.4;
+  --text-3xl--line-height: 1.4;
+  --text-4xl--line-height: 1.35;
+  --text-5xl--line-height: 1.35;
+  --text-6xl--line-height: 1.35;
+  --text-7xl--line-height: 1.3;
+  --text-8xl--line-height: 1.3;
+  --text-9xl--line-height: 1.3;
 }
 
 @layer base {
@@ -24,6 +35,16 @@
     font-family: "Cairo", system-ui, -apple-system, sans-serif;
     overflow-x: hidden;
     scroll-behavior: smooth;
+  }
+}
+
+@layer utilities {
+  /* Safely boost explicit tight classes in Arabic only to prevent descender clipping */
+  [lang="ar"] .leading-none {
+    line-height: 1.25;
+  }
+  [lang="ar"] .leading-tight {
+    line-height: 1.4;
   }
 }
 
@@ -51,4 +72,3 @@
 .glow-effect:hover {
   box-shadow: 0 0 25px rgba(200, 169, 107, 0.35);
 }
-

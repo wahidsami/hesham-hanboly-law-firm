@@ -1248,11 +1248,11 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                 </span>
                 
                 <div className="space-y-2">
-                  <div className="flex items-baseline justify-center gap-1">
-                    <span className="text-5xl font-black font-serif text-[#121212] tracking-tight">
+                  <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+                    <span className="text-4xl sm:text-5xl font-black font-serif text-[#121212] tracking-tight text-center">
                       {toStringValue(siteSettings?.doctorShieldCirclePriceAr, '٢٣٠٠')}
                     </span>
-                    <span className="text-lg font-bold text-[#7A563D]">
+                    <span className="text-lg font-bold text-[#7A563D] whitespace-nowrap">
                       {t('ريال سعودي', 'SAR')}
                     </span>
                   </div>
