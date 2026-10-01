@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import './hyperpay-widget.css';
 
@@ -9,6 +9,7 @@ declare global {
       paymentTarget?: string;
       numberFormatting?: boolean;
       style?: string;
+      labels?: Record<string, string>;
       iframeStyles?: Record<string, string>;
     };
   }
@@ -33,18 +34,29 @@ export default function HyperPayCopyAndPayWidget({
 }: HyperPayCopyAndPayWidgetProps) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState('');
-
+  
+  const containerRef = useRef<HTMLDivElement>(null);
   const scriptId = useMemo(() => 'hyperpay-copyandpay-widget', []);
 
+  // Use refs to access latest locale/amountLabel without triggering effect reload
+  const localeRef = useRef(locale);
+  const amountLabelRef = useRef(amountLabel);
   useEffect(() => {
-    if (!checkoutId || !integrity) {
+    localeRef.current = locale;
+    amountLabelRef.current = amountLabel;
+  }, [locale, amountLabel]);
+
+  useEffect(() => {
+    if (!checkoutId || !integrity || !containerRef.current) {
       return undefined;
     }
 
     setLoaded(false);
     setError('');
 
-    const isAr = locale === 'ar';
+    const currentLocale = localeRef.current;
+    const currentAmountLabel = amountLabelRef.current;
+    const isAr = currentLocale === 'ar';
 
     window.wpwlOptions = {
       locale: isAr ? 'ar' : 'en',
@@ -52,7 +64,7 @@ export default function HyperPayCopyAndPayWidget({
       numberFormatting: false,
       style: 'plain',
       labels: {
-        submit: isAr ? `ادفع ${amountLabel}` : `Pay ${amountLabel}`
+        submit: isAr ? `ادفع ${currentAmountLabel}` : `Pay ${currentAmountLabel}`
       },
       iframeStyles: {
         'padding': '0',
@@ -66,15 +78,22 @@ export default function HyperPayCopyAndPayWidget({
       },
     };
 
+    // Obtain the container and ensure it is empty
+    const container = containerRef.current;
+    container.innerHTML = '';
+
+    // Create the HyperPay form manually using vanilla DOM APIs
+    const form = document.createElement('form');
+    form.className = 'paymentWidgets';
+    form.action = shopperResultUrl;
+    form.setAttribute('data-brands', 'MADA VISA MASTER');
+    
+    // Append the manually-created form to the container
+    container.appendChild(form);
+
     const previousScript = document.getElementById(scriptId);
     if (previousScript) {
       previousScript.remove();
-    }
-
-    const form = document.querySelector('form.paymentWidgets');
-    if (form) {
-      form.setAttribute('action', shopperResultUrl);
-      form.setAttribute('data-brands', 'MADA VISA MASTER');
     }
 
     const script = document.createElement('script');
@@ -96,9 +115,15 @@ export default function HyperPayCopyAndPayWidget({
     document.body.appendChild(script);
 
     return () => {
-      script.remove();
+      const currentScript = document.getElementById(scriptId);
+      if (currentScript === script) {
+        currentScript.remove();
+      }
+      // Safely clean up the vanilla DOM
+      container.innerHTML = '';
+      delete window.wpwlOptions;
     };
-  }, [checkoutId, integrity, locale, amountLabel, retryToken, scriptId, shopperResultUrl]);
+  }, [checkoutId, integrity, retryToken, shopperResultUrl, scriptId]);
 
   return (
     <div className="rounded-3xl border border-[#D8D1C7] bg-white/95 p-5 sm:p-6 shadow-sm space-y-4">
@@ -126,12 +151,12 @@ export default function HyperPayCopyAndPayWidget({
         </div>
       )}
 
-      <form
-        action={shopperResultUrl}
-        className="paymentWidgets"
-        data-brands="MADA VISA MASTER"
-        key={`${checkoutId}-${retryToken}`}
-      />
+      {/* 
+        React strictly owns this container DIV. 
+        HyperPay generated DOM lives inside it. 
+        React will never attempt to reconcile the children of this DIV.
+      */}
+      <div ref={containerRef} />
     </div>
   );
 }

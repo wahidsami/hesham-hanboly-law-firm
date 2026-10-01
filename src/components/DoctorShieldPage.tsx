@@ -405,6 +405,23 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
     if (!formData.agreed) errors.agreed = t('يجب تأكيد صحة البيانات', 'You must confirm the data is accurate');
     if (!formData.termsAccepted) errors.termsAccepted = t('يجب قبول الشروط والأحكام', 'You must accept the terms of service');
 
+    const validBillingChars = /^[a-zA-Z0-9\s.,'#\-\/()&]*$/;
+    const errorMsg = t('يرجى إدخال تفاصيل عنوان الدفع بحروف إنجليزية.', 'Please enter billing address details using English characters.');
+
+    if (!billingData.street1.trim()) errors.street1 = t('يجب إدخال العنوان', 'Street address is required');
+    else if (!validBillingChars.test(billingData.street1.trim())) errors.street1 = errorMsg;
+
+    if (!formData.city.trim()) errors.city = t('يجب إدخال المدينة أولاً', 'City is required first');
+    else if (!validBillingChars.test(formData.city.trim())) errors.city = errorMsg;
+
+    if (!billingData.state.trim()) errors.state = t('يجب إدخال المنطقة أو المحافظة', 'State / Province is required');
+    else if (!validBillingChars.test(billingData.state.trim())) errors.state = errorMsg;
+
+    if (!billingData.country.trim()) errors.country = t('يجب إدخال الدولة', 'Country is required');
+    
+    if (!billingData.postcode.trim()) errors.postcode = t('يجب إدخال الرمز البريدي', 'Postal code is required');
+    else if (!validBillingChars.test(billingData.postcode.trim())) errors.postcode = errorMsg;
+
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
@@ -459,30 +476,6 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
       return;
     }
 
-    const errors: Record<string, string> = {};
-    const validBillingChars = /^[a-zA-Z0-9\s.,'#\-\/()&]*$/;
-    const errorMsg = t('يرجى إدخال تفاصيل عنوان الدفع بحروف إنجليزية.', 'Please enter billing address details using English characters.');
-
-    if (!billingData.street1.trim()) errors.street1 = t('يجب إدخال العنوان', 'Street address is required');
-    else if (!validBillingChars.test(billingData.street1.trim())) errors.street1 = errorMsg;
-
-    if (!formData.city.trim()) errors.city = t('يجب إدخال المدينة أولاً', 'City is required first');
-    else if (!validBillingChars.test(formData.city.trim())) errors.city = errorMsg;
-
-    if (!billingData.state.trim()) errors.state = t('يجب إدخال المنطقة أو المحافظة', 'State / Province is required');
-    else if (!validBillingChars.test(billingData.state.trim())) errors.state = errorMsg;
-
-    if (!billingData.country.trim()) errors.country = t('يجب إدخال الدولة', 'Country is required');
-    
-    if (!billingData.postcode.trim()) errors.postcode = t('يجب إدخال الرمز البريدي', 'Postal code is required');
-    else if (!validBillingChars.test(billingData.postcode.trim())) errors.postcode = errorMsg;
-
-    if (Object.keys(errors).length > 0) {
-      setBillingErrors(errors);
-      return;
-    }
-
-    setBillingErrors({});
     setCheckoutLoading(true);
     setCheckoutError('');
     setCheckoutInfo(null);
@@ -1459,76 +1452,17 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                       <div className="space-y-6 w-full max-w-4xl bg-white rounded-3xl border border-[#D8D1C7] p-6 shadow-sm">
                         <div className="space-y-4">
                           <h3 className="text-lg font-bold text-[#7A563D]">
-                            {t('أكمل بيانات الفوترة ثم افتح بوابة الدفع', 'Complete billing details, then load the payment gateway')}
+                            {t('الخطوة الأخيرة: فتح بوابة الدفع الآمنة', 'Final Step: Load the payment gateway')}
                           </h3>
                           <p className="text-xs text-[#5B5B5B] font-light leading-relaxed">
                             {t(
-                              `سيتم إنشاء بوابة آمنة للمبلغ ${doctorShieldPaymentAmount} وفق بيانات الفوترة المدخلة وإظهار MADA وVISA وMASTER داخل HyperPay فقط.`,
-                              `We will create a secure checkout for ${doctorShieldPaymentAmount} using the billing details below and show MADA, VISA, and MASTER inside HyperPay only.`
+                              `سيتم إنشاء بوابة آمنة للمبلغ ${doctorShieldPaymentAmount}.`,
+                              `We will create a secure checkout for ${doctorShieldPaymentAmount}.`
                             )}
                           </p>
-                        </div>
-
-                        <div className="rounded-3xl border border-[#D8D1C7] bg-white p-5 space-y-4 shadow-sm">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                              <label className="text-xs font-extrabold text-[#7A563D]">{t('العنوان الأول *', 'Street Address *')}</label>
-                              <input
-                                type="text"
-                                value={billingData.street1}
-                                onChange={(event) => setBillingData((prev) => ({ ...prev, street1: event.target.value }))}
-                                placeholder={t('الشارع، رقم المبنى، اسم الحي', 'Street, building number, neighborhood')}
-                                className="w-full px-4 py-3 text-xs bg-[#FBF8F2] border border-[#D8D1C7] rounded-xl focus:border-[#A56A1E] focus:outline-none transition-colors placeholder-[#121212]/30"
-                              />
-                              {billingErrors.street1 && <p className="text-[10px] text-red-500">{billingErrors.street1}</p>}
-                            </div>
-
-                            <div className="space-y-1">
-                              <label className="text-xs font-extrabold text-[#7A563D]">{t('المنطقة / المحافظة *', 'State / Province *')}</label>
-                              <input
-                                type="text"
-                                value={billingData.state}
-                                onChange={(event) => setBillingData((prev) => ({ ...prev, state: event.target.value }))}
-                                placeholder={t('المنطقة الإدارية', 'Administrative region')}
-                                className="w-full px-4 py-3 text-xs bg-[#FBF8F2] border border-[#D8D1C7] rounded-xl focus:border-[#A56A1E] focus:outline-none transition-colors placeholder-[#121212]/30"
-                              />
-                              {billingErrors.state && <p className="text-[10px] text-red-500">{billingErrors.state}</p>}
-                            </div>
-
-                            <div className="space-y-1">
-                              <label className="text-xs font-extrabold text-[#7A563D]">{t('المدينة', 'City')}</label>
-                              <input
-                                type="text"
-                                value={formData.city}
-                                readOnly
-                                className="w-full px-4 py-3 text-xs bg-[#F4EFE6] border border-[#D8D1C7] rounded-xl text-[#1E1E1E] focus:outline-none"
-                              />
-                              {billingErrors.city && <p className="text-[10px] text-red-500">{billingErrors.city}</p>}
-                            </div>
-
-                            <div className="space-y-1">
-                              <label className="text-xs font-extrabold text-[#7A563D]">{t('الرمز البريدي *', 'Postal Code *')}</label>
-                              <input
-                                type="text"
-                                value={billingData.postcode}
-                                onChange={(event) => setBillingData((prev) => ({ ...prev, postcode: event.target.value }))}
-                                placeholder="12345"
-                                className="w-full px-4 py-3 text-xs bg-[#FBF8F2] border border-[#D8D1C7] rounded-xl focus:border-[#A56A1E] focus:outline-none transition-colors placeholder-[#121212]/30"
-                              />
-                              {billingErrors.postcode && <p className="text-[10px] text-red-500">{billingErrors.postcode}</p>}
-                            </div>
-
-                            <div className="space-y-1 sm:col-span-2">
-                              <label className="text-xs font-extrabold text-[#7A563D]">{t('الدولة *', 'Country *')}</label>
-                              <input
-                                type="text"
-                                value={billingData.country}
-                                readOnly
-                                className="w-full px-4 py-3 text-xs bg-[#F4EFE6] border border-[#D8D1C7] rounded-xl text-[#1E1E1E] focus:outline-none"
-                              />
-                              {billingErrors.country && <p className="text-[10px] text-red-500">{billingErrors.country}</p>}
-                            </div>
-                          </div>
+                          <p className="text-[11px] text-[#A56A1E] font-medium">
+                            {t('عنوان الفوترة الخاص بك تم تقديمه مسبقاً.', 'Your billing address was already provided.')}
+                          </p>
                         </div>
 
                         <div className="rounded-3xl border border-[#D8D1C7] bg-[#FBF8F2] p-5 space-y-4 shadow-sm">
@@ -1927,8 +1861,80 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                       </div>
                     </div>
 
+                    {/* Payment / Billing Address */}
+                    <div className="pt-8 border-t border-[#D8D1C7]/40">
+                      <div className="text-start pb-4">
+                        <span className="text-xs font-bold text-[#A56A1E] uppercase tracking-wider block mb-1">
+                          {t('عنوان الفوترة والدفع', 'Payment / Billing Address')}
+                        </span>
+                        <p className="text-xs text-[#5B5B5B] font-light">
+                          {t('يرجى كتابة عنوان الدفع بالأحرف والأرقام الإنجليزية لضمان معالجة الدفع بنجاح. مثال: King Fahd Road, Riyadh, 12345', 'Please enter your billing address using English letters and numbers so your payment can be processed successfully. Example: King Fahd Road, Riyadh, 12345')}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="text-xs font-extrabold text-[#7A563D]">{t('العنوان الأول *', 'Street Address *')}</label>
+                          <input
+                            type="text"
+                            value={billingData.street1}
+                            onChange={(event) => setBillingData((prev) => ({ ...prev, street1: event.target.value }))}
+                            placeholder={t('الشارع، رقم المبنى، اسم الحي', 'Street, building number, neighborhood')}
+                            className="w-full px-4 py-3 text-xs bg-white border border-[#D8D1C7] rounded-xl focus:border-[#A56A1E] focus:outline-none transition-colors placeholder-[#121212]/30"
+                          />
+                          {formErrors.street1 && <p className="text-[10px] text-red-500">{formErrors.street1}</p>}
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-extrabold text-[#7A563D]">{t('المنطقة / المحافظة *', 'State / Province *')}</label>
+                          <input
+                            type="text"
+                            value={billingData.state}
+                            onChange={(event) => setBillingData((prev) => ({ ...prev, state: event.target.value }))}
+                            placeholder={t('المنطقة الإدارية', 'Administrative region')}
+                            className="w-full px-4 py-3 text-xs bg-white border border-[#D8D1C7] rounded-xl focus:border-[#A56A1E] focus:outline-none transition-colors placeholder-[#121212]/30"
+                          />
+                          {formErrors.state && <p className="text-[10px] text-red-500">{formErrors.state}</p>}
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-extrabold text-[#7A563D]">{t('المدينة', 'City')}</label>
+                          <input
+                            type="text"
+                            value={formData.city}
+                            readOnly
+                            className="w-full px-4 py-3 text-xs bg-[#F4EFE6] border border-[#D8D1C7] rounded-xl text-[#1E1E1E] focus:outline-none cursor-not-allowed"
+                          />
+                          {formErrors.city && <p className="text-[10px] text-red-500">{formErrors.city}</p>}
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-extrabold text-[#7A563D]">{t('الرمز البريدي *', 'Postal Code *')}</label>
+                          <input
+                            type="text"
+                            value={billingData.postcode}
+                            onChange={(event) => setBillingData((prev) => ({ ...prev, postcode: event.target.value }))}
+                            placeholder="12345"
+                            className="w-full px-4 py-3 text-xs bg-white border border-[#D8D1C7] rounded-xl focus:border-[#A56A1E] focus:outline-none transition-colors placeholder-[#121212]/30"
+                          />
+                          {formErrors.postcode && <p className="text-[10px] text-red-500">{formErrors.postcode}</p>}
+                        </div>
+
+                        <div className="space-y-1 sm:col-span-2">
+                          <label className="text-xs font-extrabold text-[#7A563D]">{t('الدولة *', 'Country *')}</label>
+                          <input
+                            type="text"
+                            value={billingData.country}
+                            readOnly
+                            className="w-full px-4 py-3 text-xs bg-[#F4EFE6] border border-[#D8D1C7] rounded-xl text-[#1E1E1E] focus:outline-none cursor-not-allowed"
+                          />
+                          {formErrors.country && <p className="text-[10px] text-red-500">{formErrors.country}</p>}
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Checkbox agreed */}
-                    <div className="relative flex items-start gap-3 pt-2">
+                    <div className="relative flex items-start gap-3 pt-6 border-t border-[#D8D1C7]/40">
                       <div className="flex items-center h-5">
                         <input
                           id="terms-agreed"

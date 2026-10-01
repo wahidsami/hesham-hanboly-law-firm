@@ -87,7 +87,7 @@ app.use((request, response, next) => {
     "object-src 'none'",
     "frame-ancestors 'self'",
     "img-src 'self' data: blob: https://eu-test.oppwa.com",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://eu-test.oppwa.com",
     `script-src 'self' ${devScriptSources.join(' ')} https://eu-test.oppwa.com`.trim(),
     `connect-src 'self' https://eu-test.oppwa.com ${devConnectSources.join(' ')}`.trim(),
     "frame-src 'self' https://eu-test.oppwa.com",
