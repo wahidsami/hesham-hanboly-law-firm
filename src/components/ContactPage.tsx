@@ -167,6 +167,7 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
   const recorderRef = useRef<MediaRecorder | null>(null);
   const recorderStreamRef = useRef<MediaStream | null>(null);
   const recordingChunksRef = useRef<Blob[]>([]);
+  const activeBlobUrlRef = useRef<string>('');
   const recordingTimerRef = useRef<number | null>(null);
   const recordingSupport = useMemo(() => {
     if (typeof window === 'undefined') {
@@ -288,6 +289,7 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
         const blob = new Blob(recordingChunksRef.current, { type: blobType });
         const blobUrl = URL.createObjectURL(blob);
         setRecordingBlobUrl(blobUrl);
+        activeBlobUrlRef.current = blobUrl;
         const fileExtension = blobType.includes('mp4') ? 'm4a' : 'webm';
         setRecordingFile(new File([blob], `consultation-recording-${Date.now()}.${fileExtension}`, { type: blobType }));
         setRecordingStatus('paused');
