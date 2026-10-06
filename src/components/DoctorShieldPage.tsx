@@ -35,6 +35,7 @@ import { useSiteContent } from '../content/ContentContext';
 import { contentClient, ApiError } from '../content/contentClient';
 import type { CMSPublishedPageRecord } from '../types';
 import type { DoctorShieldRequestRecord } from '../types';
+import BillingAddressNotice from './BillingAddressNotice';
 import HyperPayCopyAndPayWidget from './HyperPayCopyAndPayWidget';
 
 interface DoctorShieldPageProps {
@@ -1864,12 +1865,10 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                     {/* Payment / Billing Address */}
                     <div className="pt-8 border-t border-[#D8D1C7]/40">
                       <div className="text-start pb-4">
-                        <span className="text-xs font-bold text-[#A56A1E] uppercase tracking-wider block mb-1">
+                        <span className="text-xs font-bold text-[#A56A1E] uppercase tracking-wider block mb-4">
                           {t('عنوان الفوترة والدفع', 'Payment / Billing Address')}
                         </span>
-                        <p className="text-xs text-[#5B5B5B] font-light">
-                          {t('يرجى كتابة عنوان الدفع بالأحرف والأرقام الإنجليزية لضمان معالجة الدفع بنجاح. مثال: King Fahd Road, Riyadh, 12345', 'Please enter your billing address using English letters and numbers so your payment can be processed successfully. Example: King Fahd Road, Riyadh, 12345')}
-                        </p>
+                        <BillingAddressNotice />
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
