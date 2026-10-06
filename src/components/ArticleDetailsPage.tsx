@@ -241,7 +241,7 @@ export default function ArticleDetailsPage({
                   onClick={() => onNavigateToArticle(related.slug)}
                   className="overflow-hidden rounded-2xl border border-[#D8D1C7] bg-white text-start transition-transform hover:-translate-y-1"
                 >
-                  <img src={related.image} alt={related.titleAr} className="aspect-video w-full object-cover" />
+                  <img src={related.image} alt={related.titleAr} className="aspect-video w-full object-cover object-top" />
                   <div className="space-y-3 p-5">
                     <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#A56A1E]">
                       {language === 'ar' ? related.categoryAr : related.categoryEn}

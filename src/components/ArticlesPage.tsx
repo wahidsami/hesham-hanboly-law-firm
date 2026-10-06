@@ -39,7 +39,7 @@ export default function ArticlesPage({ onScrollToContact, onSelectArticle }: Art
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
   const [savedArticles, setSavedArticles] = useState<string[]>([]);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
-  const { language } = useLanguage();
+  const { language, t, direction } = useLanguage();
   const { content } = useSiteContent();
 
   // Smooth scroll back to top on mount
@@ -84,16 +84,16 @@ export default function ArticlesPage({ onScrollToContact, onSelectArticle }: Art
         url: window.location.href
       }).catch(err => console.log(err));
     } else {
-      setShareFeedback(`تم نسخ رابط المقالة: "${title}" لمشاركته بنجاح.`);
+      setShareFeedback(t(`تم نسخ رابط المقالة: "${title}" لمشاركته بنجاح.`, `Successfully copied link for: "${title}"`));
       setTimeout(() => setShareFeedback(null), 3000);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#F1ECE3] overflow-x-hidden font-sans relative" style={{ direction: 'rtl' }}>
+    <div className="min-h-screen bg-[#F1ECE3] overflow-x-hidden font-sans relative" style={{ direction }}>
       
       {/* 1. CINEMATIC HERO SECTION */}
-      <section className="relative min-h-[65vh] flex items-center justify-center bg-[#121212] py-28 text-white text-right overflow-hidden border-b border-[#A56A1E]/30">
+      <section className="relative min-h-[65vh] flex items-center justify-center bg-[#121212] py-28 text-white text-start overflow-hidden border-b border-[#A56A1E]/30">
         
         {/* Editorial-style background patterns and lighting ambient glows */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(165,106,30,0.22)_0%,transparent_70%)] pointer-events-none" />
@@ -117,7 +117,7 @@ export default function ArticlesPage({ onScrollToContact, onSelectArticle }: Art
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#A56A1E]/15 border border-[#A56A1E]/30 text-xs text-[#E5D5C5] font-semibold uppercase tracking-wider"
           >
             <span className="w-2 h-2 rounded-full bg-[#A56A1E]" />
-            <span>المقالات القانونية والمدونة</span>
+            <span>{t('المقالات القانونية والمدونة', 'Legal Articles & Blog')}</span>
           </motion.div>
 
           <motion.h1
@@ -126,7 +126,7 @@ export default function ArticlesPage({ onScrollToContact, onSelectArticle }: Art
             transition={{ duration: 0.9, delay: 0.15 }}
             className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight"
           >
-            رؤى قانونية متخصصة ومقالات احترافية
+            {t('رؤى قانونية متخصصة ومقالات احترافية', 'Expert Legal Insights & Professional Articles')}
           </motion.h1>
 
           <motion.div
@@ -140,9 +140,9 @@ export default function ArticlesPage({ onScrollToContact, onSelectArticle }: Art
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="text-[#E2DCD3] text-base sm:text-lg lg:text-xl font-light max-w-3xl leading-relaxed text-justify sm:text-right"
+            className="text-[#E2DCD3] text-base sm:text-lg lg:text-xl font-light max-w-3xl leading-relaxed text-justify sm:text-start"
           >
-            مرجع قانوني متجدد يغطي الأنظمة والتشريعات والقضايا القانونية في المملكة العربية السعودية بمحتوى احترافي موثوق يكتبه نخبة من مستشارينا المعتمدين والمحامين المتمرسين.
+            {t('مرجع قانوني متجدد يغطي الأنظمة والتشريعات والقضايا القانونية في المملكة العربية السعودية بمحتوى احترافي موثوق يكتبه نخبة من مستشارينا المعتمدين والمحامين المتمرسين.', 'An updated legal reference covering laws, legislations, and legal cases in Saudi Arabia, featuring reliable professional content written by our certified consultants and experienced attorneys.')}
           </motion.p>
 
         </div>
@@ -158,17 +158,17 @@ export default function ArticlesPage({ onScrollToContact, onSelectArticle }: Art
             <div className="absolute bottom-0 left-0 w-32 h-32 bg-transparent border-l border-b border-[#A56A1E]/10 rounded-bl-3xl w-8 h-8 pointer-events-none" />
             
             <div className="space-y-6 relative z-10">
-              <div className="flex items-center gap-3 text-[#A56A1E] border-r-2 border-[#A56A1E] pr-3">
+              <div className={`flex items-center gap-3 text-[#A56A1E] ${direction === 'rtl' ? 'border-r-2 pr-3' : 'border-l-2 pl-3'}`}>
                 <BookOpen className="w-5 h-5 stroke-[1.5]" />
-                <span className="font-extrabold text-sm uppercase tracking-wider">الرسالة المعرفية للشركة</span>
+                <span className="font-extrabold text-sm uppercase tracking-wider">{t('الرسالة المعرفية للشركة', 'Our Knowledge Mission')}</span>
               </div>
               
               <p className="text-[#1E1E1E] text-sm sm:text-base leading-loose font-normal text-justify">
-                تعتبر مدونة شركة هشام حسن حنبولي الدولية للاستشارات القانونية والمحاماة مرجعًا أساسيًا لكل من يبحث عن معلومات قانونية مفيدة ومتخصصة، وتضم المدونة مقالات متنوعة ومحدثة بانتظام تغطي مجموعة واسعة من المواضيع القانونية المهمة والمتعلقة بالقوانين والتشريعات في المملكة العربية السعودية وخارجها وأي استشارات قانونية قد تحتاج إليها.
+                {t('تعتبر مدونة شركة هشام حسن حنبولي الدولية للاستشارات القانونية والمحاماة مرجعًا أساسيًا لكل من يبحث عن معلومات قانونية مفيدة ومتخصصة، وتضم المدونة مقالات متنوعة ومحدثة بانتظام تغطي مجموعة واسعة من المواضيع القانونية المهمة والمتعلقة بالقوانين والتشريعات في المملكة العربية السعودية وخارجها وأي استشارات قانونية قد تحتاج إليها.', 'The blog of Hesham Hanboly International Law Firm is an essential reference for anyone seeking useful and specialized legal information. It features diverse, regularly updated articles covering a wide range of important legal topics related to laws and legislations in Saudi Arabia and beyond.')}
               </p>
 
               <p className="text-[#5B5B5B] text-sm leading-loose font-light text-justify pt-1 border-t border-[#D8D1C7]/20">
-                سواء كنت محاميًا محترفًا أو فردًا يبحث عن استشارات قانونية، ستجد في هذه المدونة الإجابات والتوجيهات التي تحتاج إليها لحماية حقوقك وتحقيق تماسك منشآتك واستثماراتك بأرقى مستويات الفقه والتحليل النظامي.
+                {t('سواء كنت محاميًا محترفًا أو فردًا يبحث عن استشارات قانونية، ستجد في هذه المدونة الإجابات والتوجيهات التي تحتاج إليها لحماية حقوقك وتحقيق تماسك منشآتك واستثماراتك بأرقى مستويات الفقه والتحليل النظامي.', 'Whether you are a professional attorney or an individual seeking legal counsel, you will find the answers and guidance needed to protect your rights and ensure the stability of your business and investments with the highest levels of legal jurisprudence and regulatory analysis.')}
               </p>
             </div>
           </div>
@@ -183,12 +183,12 @@ export default function ArticlesPage({ onScrollToContact, onSelectArticle }: Art
           
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-16 border-b border-[#D8D1C7]/40 pb-6">
             <div className="space-y-2">
-              <span className="text-xs font-bold text-[#A56A1E] tracking-widest block">الدراسات والأبحاث والمقالات المنشورة</span>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E1E1E]">رؤى قانونية من كبار الشركاء والمحامين</h2>
+              <span className="text-xs font-bold text-[#A56A1E] tracking-widest block">{t('الدراسات والأبحاث والمقالات المنشورة', 'Published Studies, Research, and Articles')}</span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E1E1E]">{t('رؤى قانونية من كبار الشركاء والمحامين', 'Legal Insights from Senior Partners and Attorneys')}</h2>
             </div>
             
             <div className="text-xs font-mono font-bold text-[#7B5A42] bg-[#A56A1E]/10 px-3 py-1.5 rounded-lg border border-[#A56A1E]/20">
-              تصفح {articles.length} منشورات رئيسية
+              {t(`تصفح ${articles.length} منشورات رئيسية`, `Browse ${articles.length} featured posts`)}
             </div>
           </div>
 
@@ -213,7 +213,7 @@ export default function ArticlesPage({ onScrollToContact, onSelectArticle }: Art
                       src={item.image} 
                       alt={item.title}
                       referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover/card:scale-105"
+                      className="w-full h-full object-cover object-top transition-transform duration-700 ease-out group-hover/card:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
                     
@@ -232,7 +232,7 @@ export default function ArticlesPage({ onScrollToContact, onSelectArticle }: Art
                               ? 'border-[#A56A1E] text-[#A56A1E]' 
                               : 'border-[#D8D1C7]/60 text-gray-500 hover:text-[#A56A1E] hover:border-[#A56A1E]'
                           }`}
-                          title={isSaved ? "إلغاء حفظ المقال" : "حفظ المقال للرجوع إليه لاحقاً"}
+                          title={isSaved ? t("إلغاء حفظ المقال", "Unsave article") : t("حفظ المقال للرجوع إليه لاحقاً", "Save article for later")}
                         >
                           <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-[#A56A1E]' : ''}`} />
                         </button>
@@ -241,7 +241,7 @@ export default function ArticlesPage({ onScrollToContact, onSelectArticle }: Art
                         <button
                           onClick={(e) => handleShare(item.title, e)}
                           className="w-8 h-8 rounded-full border border-[#D8D1C7]/60 bg-white/95 backdrop-blur-md flex items-center justify-center text-gray-500 hover:text-[#A56A1E] hover:border-[#A56A1E] transition-all cursor-pointer"
-                          title="مشاركة المقال"
+                          title={t("مشاركة المقال", "Share article")}
                         >
                           <Share2 className="w-3.5 h-3.5" />
                         </button>
