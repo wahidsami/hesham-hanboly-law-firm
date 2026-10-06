@@ -1249,13 +1249,21 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                 </span>
                 
                 <div className="space-y-2">
-                  <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-                    <span className="text-4xl sm:text-5xl font-black font-serif text-[#121212] tracking-tight text-center">
-                      {toStringValue(siteSettings?.doctorShieldCirclePriceAr, '٢٣٠٠')}
+                  <div className="flex flex-wrap items-end justify-center gap-x-2 gap-y-1">
+                    <span className="text-4xl sm:text-5xl font-black font-serif text-[#121212] tracking-tight text-center leading-none">
+                      {(() => {
+                        const formatted = formatNumberOnly(language === 'ar' ? siteSettings?.doctorShieldCirclePriceAr : siteSettings?.doctorShieldCirclePriceEn, language);
+                        return formatted !== '—' ? formatted : formatNumberOnly(2300, language);
+                      })()}
                     </span>
-                    <span className="text-lg font-bold text-[#7A563D] whitespace-nowrap">
-                      {t('ريال سعودي', 'SAR')}
-                    </span>
+                    <div className="flex items-baseline gap-1 mb-1">
+                      <span className="text-lg font-bold text-[#7A563D] whitespace-nowrap">
+                        {getCurrencyLabel(language)}
+                      </span>
+                      <span className="text-sm font-bold text-[#7A563D] whitespace-nowrap">
+                        {t('/ سنة', '/ Yr')}
+                      </span>
+                    </div>
                   </div>
                   <span className="text-xs font-medium text-[#A56A1E] bg-[#A56A1E]/10 py-1 px-3 rounded-full inline-block">
                     {t(
