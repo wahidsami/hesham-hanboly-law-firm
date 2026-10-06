@@ -9,30 +9,35 @@
  *   formatSARAmount(2300, 'ar')        -> "٢٬٣٠٠ ريال"
  *   formatSARAmount("11,500 SAR", 'ar') -> "١١٬٥٠٠ ريال"
  */
-export function formatSARAmount(amount: number | string | null | undefined, lang: 'en' | 'ar' = 'en'): string {
-  if (amount === null || amount === undefined) return lang === 'ar' ? '— ريال' : '— SAR';
+export function getCurrencyLabel(lang: 'en' | 'ar' = 'en'): string {
+  return lang === 'ar' ? 'ريال سعودي' : 'SAR';
+}
 
-  // Extract the numeric value from strings like "11,500 SAR"
+export function formatNumberOnly(amount: number | string | null | undefined, lang: 'en' | 'ar' = 'en'): string {
+  if (amount === null || amount === undefined) return '—';
+
   let raw: number;
   if (typeof amount === 'string') {
-    // Remove anything that is not a digit, minus sign, or decimal point
-    // This safely strips commas, 'SAR', and spaces.
     const cleanStr = amount.replace(/[^\d.-]/g, '');
     raw = parseFloat(cleanStr);
   } else {
     raw = amount;
   }
 
-  if (!Number.isFinite(raw)) return lang === 'ar' ? '— ريال' : '— SAR';
+  if (!Number.isFinite(raw)) return '—';
 
-  const locale = lang === 'ar' ? 'ar-SA' : 'en-US';
-  const currencyLabel = lang === 'ar' ? 'ريال' : 'SAR';
+  const formatterOptions: Intl.NumberFormatOptions = {
+    useGrouping: true,
+    minimumFractionDigits: raw % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: raw % 1 === 0 ? 0 : 2
+  };
+  
+  return new Intl.NumberFormat('en-US', formatterOptions).format(raw);
+}
 
-  // Format with thousands separator, no decimal places for whole numbers
-  const formatted = raw % 1 === 0
-    ? new Intl.NumberFormat(locale, { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(raw)
-    : new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(raw);
-
-  return `${formatted} ${currencyLabel}`;
+export function formatSARAmount(amount: number | string | null | undefined, lang: 'en' | 'ar' = 'en'): string {
+  const numStr = formatNumberOnly(amount, lang);
+  if (numStr === '—') return lang === 'ar' ? '— ريال سعودي' : '— SAR';
+  return `${numStr} ${getCurrencyLabel(lang)}`;
 }
 

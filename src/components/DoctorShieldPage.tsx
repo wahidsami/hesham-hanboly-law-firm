@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { formatSARAmount } from '../utils/formatSARAmount';
+import { formatSARAmount, formatNumberOnly, getCurrencyLabel } from '../utils/formatSARAmount';
 import { validateSaudiId } from '../utils/validateSaudiId';
 import { 
   Shield, 
@@ -2089,10 +2089,10 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                   </div>
                   <div className="text-right">
                     <span className="text-3xl font-black font-serif text-[#121212] tracking-tight">
-                      {formatSARAmount(formData.hasBeenConvicted === 'yes' ? 11500 : 2300, language).split(' ')[0]}
+                      {formatNumberOnly(formData.hasBeenConvicted === 'yes' ? 11500 : 2300, language)}
                     </span>
                     <span className="text-xs font-bold text-[#7A563D] ml-1">
-                      {formatSARAmount(formData.hasBeenConvicted === 'yes' ? 11500 : 2300, language).split(' ')[1]}
+                      {getCurrencyLabel(language)}
                     </span>
                   </div>
                 </div>

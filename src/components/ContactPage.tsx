@@ -27,7 +27,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useSiteContent } from '../content/ContentContext';
 import { contentClient } from '../content/contentClient';
 import type { CMSPublishedPageRecord } from '../types';
-import { HyperPayCopyAndPayWidget } from './HyperPayCopyAndPayWidget';
+import HyperPayCopyAndPayWidget from './HyperPayCopyAndPayWidget';
 import { formatSARAmount } from '../utils/formatSARAmount';
 
 interface ContactPageProps {
@@ -394,7 +394,7 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
         idNumber: paymentSummary.idNumber || idNumber,
         message: paymentSummary.message || formData.message,
         voucherId: generatedVoucherId,
-        paymentAmount: '80.00 SAR',
+        paymentAmount: formatSARAmount(92, language),
         paymentStatus: 'paid',
         cardBrand: detectCardBrand(cardNumber),
         cardLast4: cardNumber.replace(/\D/g, '').slice(-4),
@@ -1106,7 +1106,7 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
                         <div className="space-y-1">
                           <h4 className="text-lg font-extrabold text-[#1E1E1E]">{t('بوابة الدفع الآمنة', 'Secure payment gateway')}</h4>
                           <p className="text-sm text-[#5B5B5B]">
-                            {t('سداد رمزي بقيمة 80.00 ريال سعودي مع شارة الأمان SAMA والبطاقة ثلاثية الأبعاد.', 'A symbolic 80.00 SAR payment with SAMA security badges and a 3D card widget.')}
+                            {t('سداد رسوم الاستشارة شاملة الضريبة مع شارة الأمان SAMA.', 'Consultation payment including VAT with SAMA security badges.')}
                           </p>
                         </div>
                         <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
@@ -1153,7 +1153,7 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
                                 <div className="mt-10 flex items-end justify-between text-sm">
                                   <div>
                                     <p className="text-white/50 text-[10px] uppercase tracking-[0.2em]">{t('المبلغ', 'Amount')}</p>
-                                    <p className="font-bold">80.00 SAR</p>
+                                    <p className="font-bold">{formatSARAmount(92, language)}</p>
                                   </div>
                                   <div className="text-right">
                                     <p className="text-white/50 text-[10px] uppercase tracking-[0.2em]">{t('البطاقة', 'Card type')}</p>
@@ -1226,7 +1226,7 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
                           <div className="rounded-2xl border border-[#D8D1C7] bg-[#FBF8F2] p-4 space-y-3">
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-[#5B5B5B]">{t('رسوم الاستشارة الرمزية', 'Symbolic advisory fee')}</span>
-                              <span className="font-bold text-[#1E1E1E]">80.00 SAR</span>
+                              <span className="font-bold text-[#1E1E1E]">{formatSARAmount(92, language)}</span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-[#5B5B5B]">{t('الهوية المعتمدة', 'Validated ID')}</span>
@@ -1248,7 +1248,7 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
                               <span>{t('جارٍ المعالجة...', 'Processing...')}</span>
                             ) : (
                               <>
-                                <span>{t('ادفع 80.00 ريال', 'Pay 80.00 SAR')}</span>
+                                <span>{t('ادفع ', 'Pay ')} {formatSARAmount(92, language)}</span>
                                 <ArrowRight className="w-4 h-4" />
                               </>
                             )}
@@ -1292,7 +1292,7 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
                         <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600" />{t('الهوية / الإقامة', 'ID / Iqama')}</li>
                         <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600" />{t('المرفقات والملفات الداعمة', 'Supporting attachments')}</li>
                         <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600" />{t('المذكرة الصوتية القصيرة', 'Short voice note')}</li>
-                        <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600" />{t('سند الدفع بقيمة 80.00 ريال', '80.00 SAR payment receipt')}</li>
+                        <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600" />{t('سند الدفع بقيمة ', 'Payment receipt for ')} {formatSARAmount(92, language)}</li>
                       </ul>
                     </div>
 
@@ -1420,7 +1420,11 @@ export default function ContactPage({ onScrollToContact, onBackToHome }: Contact
                     <p><span className="font-semibold">{t('الاسم:', 'Name:')}</span> {paymentSummary.fullName}</p>
                     <p><span className="font-semibold">{t('الجوال:', 'Phone:')}</span> {paymentSummary.phone}</p>
                     <p><span className="font-semibold">{t('الهوية:', 'ID:')}</span> {paymentSummary.idNumber}</p>
-                    <p><span className="font-semibold">{t('الرسوم:', 'Fee:')}</span> 80.00 SAR</p>
+                    <div className="space-y-1">
+    <p className="flex justify-between"><span className="font-semibold">{t('الخدمة:', 'Service:')}</span> <span>{formatSARAmount(80, language)}</span></p>
+    <p className="flex justify-between text-xs text-[#5B5B5B]"><span className="font-semibold">{t('ضريبة القيمة المضافة (15%):', 'VAT (15%):')}</span> <span>{formatSARAmount(12, language)}</span></p>
+    <p className="flex justify-between pt-1 border-t border-[#D8D1C7]/30"><span className="font-bold">{t('الإجمالي:', 'Total:')}</span> <span className="font-bold">{formatSARAmount(92, language)}</span></p>
+  </div>
                   </div>
                 </div>
               </div>
