@@ -17,34 +17,72 @@ function HomeField({
   onChange,
   multiline = false,
   dir = 'ltr',
+  placeholder,
+  rows = 4,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   multiline?: boolean;
   dir?: 'ltr' | 'rtl';
+  placeholder?: string;
+  rows?: number;
 }) {
   const common = {
     width: '100%',
-    border: '1px solid var(--border)',
+    border: '1px solid #D8D1C7',
     borderRadius: 12,
-    padding: '11px 14px',
-    background: 'var(--card)',
-    color: 'var(--foreground)',
+    padding: '10px 14px',
+    background: '#FFFFFF',
+    color: '#1E1E1E',
     fontFamily: dir === 'rtl' ? 'Cairo, sans-serif' : 'Poppins, sans-serif',
     fontSize: 13,
+    lineHeight: 1.5,
     resize: 'vertical' as const,
-    boxSizing: 'border-box',
+    boxSizing: 'border-box' as const,
     direction: dir,
+    outline: 'none',
   };
 
   return (
-    <label style={{ display: 'grid', gap: 6 }}>
-      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted-foreground)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{label}</span>
+    <label style={{ display: 'grid', gap: 6, minWidth: 0, width: '100%' }}>
+      <span
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          color: '#8A6B52',
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          direction: dir,
+          textAlign: dir === 'rtl' ? 'right' : 'left',
+          whiteSpace: 'normal',
+          lineHeight: 1.3,
+        }}
+      >
+        {label}
+      </span>
       {multiline ? (
-        <textarea value={value} onChange={(event) => onChange(event.target.value)} style={{ ...common, minHeight: 88 }} />
+        <textarea
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          rows={rows}
+          style={{
+            ...common,
+            minHeight: Math.max(rows * 26 + 20, 110),
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+          }}
+          className="focus:border-[#A56A1E] focus:ring-1 focus:ring-[#A56A1E]/30"
+        />
       ) : (
-        <input value={value} onChange={(event) => onChange(event.target.value)} style={common} />
+        <input
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          style={common}
+          className="focus:border-[#A56A1E] focus:ring-1 focus:ring-[#A56A1E]/30"
+        />
       )}
     </label>
   );
@@ -273,8 +311,8 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
             </button>
           </div>
 
-          <div className="mt-5 grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
-            <div className="space-y-3">
+          <div className="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+            <div className="flex flex-col gap-3 min-w-0">
               {heroSlides.map((slide, index) => {
                 const isSelected = slide.id === selectedSlideId;
                 return (
@@ -283,18 +321,18 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
                     onClick={() => setSelectedSlideId(slide.id)}
                     role="button"
                     tabIndex={0}
-                    className="flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition"
+                    className="flex w-full items-center gap-3 rounded-2xl border px-3.5 py-3 text-left transition cursor-pointer"
                     style={{
                       borderColor: isSelected ? '#A56A1E' : '#D8D1C7',
                       background: isSelected ? 'rgba(165,106,30,0.08)' : '#FBF7F0',
                     }}
                   >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#A56A1E]">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#A56A1E] shadow-xs">
                       <ImageIcon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-semibold text-[#1E1E1E]">{slide.titleEnLine1 || `Slide ${index + 1}`}</div>
-                      <div className="truncate text-xs text-[#5B5B5B]">{slide.badgeEn || slide.badgeAr || 'Homepage slide'}</div>
+                      <div className="truncate text-sm font-bold text-[#1E1E1E]">{slide.titleEnLine1 || slide.titleArLine1 || `Slide ${index + 1}`}</div>
+                      <div className="truncate text-xs text-[#6F6F7A]">{slide.badgeEn || slide.badgeAr || 'Homepage slide'}</div>
                     </div>
                     <button
                       type="button"
@@ -302,7 +340,8 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
                         event.stopPropagation();
                         removeSlide(slide.id);
                       }}
-                      className="rounded-full p-2 text-[#8A6B52] transition hover:bg-white"
+                      className="shrink-0 rounded-full p-2 text-[#8A6B52] transition hover:bg-white hover:text-red-600"
+                      title={lang === 'ar' ? 'حذف الشريحة' : 'Delete slide'}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -310,51 +349,70 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
                 );
               })}
               {heroSlides.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-[#D8D1C7] bg-[#FFFDF9] p-4 text-sm text-[#5B5B5B]">
-                  No slides yet. Add the first slide to start editing the homepage banner.
+                <div className="rounded-2xl border border-dashed border-[#D8D1C7] bg-[#FFFDF9] p-4 text-center text-sm text-[#6F6F7A]">
+                  {lang === 'ar' ? 'لا توجد شرائح حالياً. أضف شريحة للبدء.' : 'No slides yet. Add the first slide to start editing.'}
                 </div>
               )}
               <button
                 type="button"
                 onClick={saveHeroSlides}
                 disabled={savingHero || heroSlides.length === 0}
-                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#121212] px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#121212] px-4 py-3 text-sm font-bold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {savingHero ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                Save hero slides
+                {lang === 'ar' ? 'حفظ شرائح البانر' : 'Save hero slides'}
               </button>
             </div>
 
             {selectedSlide ? (
-              <div className="rounded-[28px] border border-[#D8D1C7] bg-white p-6 shadow-sm">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <div className="text-xs font-bold uppercase tracking-[0.25em] text-[#A56A1E]">Selected slide</div>
-                    <h3 className="mt-1 text-2xl font-extrabold text-[#1E1E1E]">Edit slide content and image</h3>
+              <div className="flex flex-col rounded-[24px] border border-[#D8D1C7] bg-[#FCFAF6] p-5 md:p-6 lg:p-7 shadow-xs min-w-0">
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E8E0D3] pb-5">
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold uppercase tracking-[0.25em] text-[#A56A1E]">
+                      {lang === 'ar' ? 'الشريحة المحددة' : 'Selected slide'}
+                    </div>
+                    <h3 className="mt-1 text-xl lg:text-2xl font-extrabold text-[#1E1E1E] truncate">
+                      {selectedSlide.titleEnLine1 || selectedSlide.titleArLine1 || (lang === 'ar' ? 'شريحة بدون عنوان' : 'Untitled slide')}
+                    </h3>
+                    <p className="mt-1 text-xs text-[#6F6F7A]">
+                      ID: <span className="font-mono text-[#1E1E1E]">{selectedSlide.id}</span>
+                    </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setPickerOpen(true)}
-                    className="rounded-xl border border-[#D8D1C7] bg-[#FBF7F0] px-4 py-2 text-sm font-semibold text-[#1E1E1E]"
-                  >
-                    Choose image from media library
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPickerOpen(true)}
+                      className="inline-flex items-center gap-2 rounded-xl border border-[#D8D1C7] bg-white px-3.5 py-2 text-xs font-semibold text-[#1E1E1E] shadow-xs transition hover:border-[#A56A1E] hover:text-[#A56A1E]"
+                    >
+                      <ImageIcon className="h-4 w-4 text-[#A56A1E]" />
+                      {lang === 'ar' ? 'اختيار من مكتبة الوسائط' : 'Media library'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeSlide(selectedSlide.id)}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50/60 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100"
+                      title={lang === 'ar' ? 'حذف الشريحة' : 'Delete slide'}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      {lang === 'ar' ? 'حذف' : 'Delete'}
+                    </button>
+                  </div>
                 </div>
 
-                <div className="mt-5 flex flex-wrap gap-2 rounded-2xl border border-[#E8E0D3] bg-[#FBF7F0] p-2">
+                <div className="mt-5 flex flex-wrap gap-2 rounded-2xl border border-[#E8E0D3] bg-white p-1.5">
                   {[
-                    ['content', 'Content'],
-                    ['image', 'Image'],
-                    ['advanced', 'Advanced'],
+                    ['content', lang === 'ar' ? 'المحتوى والنصوص' : 'Content'],
+                    ['image', lang === 'ar' ? 'الصورة والوسائط' : 'Image'],
+                    ['advanced', lang === 'ar' ? 'إعدادات متقدمة' : 'Advanced'],
                   ].map(([id, label]) => (
                     <button
                       key={id}
                       type="button"
                       onClick={() => setHeroEditorSection(id as typeof heroEditorSection)}
-                      className="rounded-full px-4 py-2 text-xs font-semibold transition"
+                      className="rounded-xl px-4 py-2 text-xs font-bold transition"
                       style={{
                         background: heroEditorSection === id ? '#121212' : 'transparent',
-                        color: heroEditorSection === id ? '#fff' : '#1E1E1E',
+                        color: heroEditorSection === id ? '#fff' : '#4B4B4B',
                       }}
                     >
                       {label}
@@ -362,76 +420,307 @@ export function HomePageEditor({ pageTitle, pageSlug, lang }: HomePageEditorProp
                   ))}
                 </div>
 
-                <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-                  <div className="space-y-5">
-                    {heroEditorSection === 'content' && (
-                      <div className="rounded-3xl border border-[#D8D1C7] bg-[#FBF7F0] p-5">
-                        <div className="mb-4 text-xs font-bold uppercase tracking-[0.25em] text-[#A56A1E]">Slide content</div>
-                        <div className="grid gap-5 xl:grid-cols-2">
-                          <div className="grid gap-4">
-                            <div className="rounded-2xl border border-[#E8E0D3] bg-white p-4">
-                              <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#8A6B52]">Labels</div>
-                              <div className="grid gap-4 md:grid-cols-2">
-                                <HomeField label={lang === 'ar' ? 'الشارة بالعربية' : 'Badge (Arabic)'} value={selectedSlide.badgeAr} onChange={(value) => updateSlide(selectedSlide.id, { badgeAr: value })} dir="rtl" />
-                                <HomeField label={lang === 'ar' ? 'Badge in English' : 'Badge (English)'} value={selectedSlide.badgeEn} onChange={(value) => updateSlide(selectedSlide.id, { badgeEn: value })} />
-                                <HomeField label={lang === 'ar' ? 'زر الإجراء' : 'CTA label'} value={selectedSlide.ctaTextEn} onChange={(value) => updateSlide(selectedSlide.id, { ctaTextEn: value })} />
-                                <HomeField label={lang === 'ar' ? 'زر الإجراء بالعربية' : 'CTA label (Arabic)'} value={selectedSlide.ctaTextAr} onChange={(value) => updateSlide(selectedSlide.id, { ctaTextAr: value })} dir="rtl" />
-                              </div>
-                            </div>
-                            <div className="rounded-2xl border border-[#E8E0D3] bg-white p-4">
-                              <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#8A6B52]">Titles</div>
-                              <div className="grid gap-4 md:grid-cols-2">
-                                <HomeField label={lang === 'ar' ? 'العنوان السطر الأول' : 'Title line 1'} value={selectedSlide.titleEnLine1} onChange={(value) => updateSlide(selectedSlide.id, { titleEnLine1: value })} />
-                                <HomeField label={lang === 'ar' ? 'العنوان السطر الثاني' : 'Title line 2'} value={selectedSlide.titleEnLine2} onChange={(value) => updateSlide(selectedSlide.id, { titleEnLine2: value })} />
-                              </div>
-                            </div>
+                <div className="mt-6 flex-1 min-w-0">
+                  {heroEditorSection === 'content' && (
+                    <div className="space-y-5">
+                      {/* Badge Group */}
+                      <div className="rounded-2xl border border-[#E8E0D3] bg-white p-5 shadow-xs">
+                        <div className="mb-4 border-b border-[#F4EFE6] pb-3">
+                          <h4 className="text-sm font-bold text-[#1E1E1E]">
+                            {lang === 'ar' ? 'شارة الشريحة' : 'Slide Badge'}
+                          </h4>
+                          <p className="text-xs text-[#6F6F7A] mt-0.5">
+                            {lang === 'ar' ? 'الشارة العلوية المصغرة المعروضة أعلى العنوان الرئيسي' : 'Small top badge displayed above the main headline'}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <HomeField
+                            label={lang === 'ar' ? 'الشارة (باللغة الإنجليزية)' : 'Badge (English)'}
+                            value={selectedSlide.badgeEn}
+                            onChange={(value) => updateSlide(selectedSlide.id, { badgeEn: value })}
+                            placeholder="e.g. MEDICAL DEFENSE"
+                            dir="ltr"
+                          />
+                          <HomeField
+                            label={lang === 'ar' ? 'الشارة (باللغة العربية)' : 'Badge (Arabic)'}
+                            value={selectedSlide.badgeAr}
+                            onChange={(value) => updateSlide(selectedSlide.id, { badgeAr: value })}
+                            placeholder="مثال: الحماية الطبية"
+                            dir="rtl"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Titles Group */}
+                      <div className="rounded-2xl border border-[#E8E0D3] bg-white p-5 shadow-xs">
+                        <div className="mb-4 border-b border-[#F4EFE6] pb-3">
+                          <h4 className="text-sm font-bold text-[#1E1E1E]">
+                            {lang === 'ar' ? 'عناوين الشريحة' : 'Slide Titles'}
+                          </h4>
+                          <p className="text-xs text-[#6F6F7A] mt-0.5">
+                            {lang === 'ar' ? 'السطران الأول والثاني للعنوان الرئيسي للشريحة' : 'First and second lines of the hero title'}
+                          </p>
+                        </div>
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <HomeField
+                              label={lang === 'ar' ? 'العنوان - السطر 1 (بالإنجليزية)' : 'Title Line 1 (English)'}
+                              value={selectedSlide.titleEnLine1}
+                              onChange={(value) => updateSlide(selectedSlide.id, { titleEnLine1: value })}
+                              placeholder="e.g. DOCTOR SHIELD"
+                              dir="ltr"
+                            />
+                            <HomeField
+                              label={lang === 'ar' ? 'العنوان - السطر 1 (بالعربية)' : 'Title Line 1 (Arabic)'}
+                              value={selectedSlide.titleArLine1}
+                              onChange={(value) => updateSlide(selectedSlide.id, { titleArLine1: value })}
+                              placeholder="مثال: درع الطبيب"
+                              dir="rtl"
+                            />
                           </div>
-                          <div className="grid gap-4">
-                            <div className="rounded-2xl border border-[#E8E0D3] bg-white p-4">
-                              <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#8A6B52]">Description</div>
-                              <div className="grid gap-4">
-                                <HomeField label={lang === 'ar' ? 'الوصف' : 'Description'} value={selectedSlide.descriptionEn} onChange={(value) => updateSlide(selectedSlide.id, { descriptionEn: value })} multiline />
-                                <HomeField label={lang === 'ar' ? 'وصف عربي' : 'Arabic description'} value={selectedSlide.descriptionAr} onChange={(value) => updateSlide(selectedSlide.id, { descriptionAr: value })} multiline dir="rtl" />
-                              </div>
-                            </div>
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <HomeField
+                              label={lang === 'ar' ? 'العنوان - السطر 2 (بالإنجليزية)' : 'Title Line 2 (English)'}
+                              value={selectedSlide.titleEnLine2}
+                              onChange={(value) => updateSlide(selectedSlide.id, { titleEnLine2: value })}
+                              placeholder="e.g. COMPREHENSIVE MEDICAL DEFENSE"
+                              dir="ltr"
+                            />
+                            <HomeField
+                              label={lang === 'ar' ? 'العنوان - السطر 2 (بالعربية)' : 'Title Line 2 (Arabic)'}
+                              value={selectedSlide.titleArLine2}
+                              onChange={(value) => updateSlide(selectedSlide.id, { titleArLine2: value })}
+                              placeholder="مثال: حماية قانونية شاملة للكوادر الصحية"
+                              dir="rtl"
+                            />
                           </div>
                         </div>
                       </div>
-                    )}
 
-                    {heroEditorSection === 'image' && (
-                      <div className="space-y-4 rounded-3xl border border-[#D8D1C7] bg-[#FBF7F0] p-5">
-                        <div className="text-xs font-bold uppercase tracking-[0.25em] text-[#A56A1E]">Slide image</div>
-                        <div className="overflow-hidden rounded-2xl border border-[#D8D1C7] bg-white">
+                      {/* Description Group */}
+                      <div className="rounded-2xl border border-[#E8E0D3] bg-white p-5 shadow-xs">
+                        <div className="mb-4 border-b border-[#F4EFE6] pb-3">
+                          <h4 className="text-sm font-bold text-[#1E1E1E]">
+                            {lang === 'ar' ? 'وصف الشريحة' : 'Slide Description'}
+                          </h4>
+                          <p className="text-xs text-[#6F6F7A] mt-0.5">
+                            {lang === 'ar' ? 'النص التعريفي والتفصيلي المعروض أسفل العنوان' : 'Detailed paragraph copy shown below the headline'}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <HomeField
+                            label={lang === 'ar' ? 'الوصف (باللغة الإنجليزية)' : 'Description (English)'}
+                            value={selectedSlide.descriptionEn}
+                            onChange={(value) => updateSlide(selectedSlide.id, { descriptionEn: value })}
+                            placeholder="Enter English description..."
+                            multiline
+                            dir="ltr"
+                            rows={4}
+                          />
+                          <HomeField
+                            label={lang === 'ar' ? 'الوصف (باللغة العربية)' : 'Description (Arabic)'}
+                            value={selectedSlide.descriptionAr}
+                            onChange={(value) => updateSlide(selectedSlide.id, { descriptionAr: value })}
+                            placeholder="اكتب الوصف باللغة العربية..."
+                            multiline
+                            dir="rtl"
+                            rows={4}
+                          />
+                        </div>
+                      </div>
+
+                      {/* CTA Group */}
+                      <div className="rounded-2xl border border-[#E8E0D3] bg-white p-5 shadow-xs">
+                        <div className="mb-4 border-b border-[#F4EFE6] pb-3">
+                          <h4 className="text-sm font-bold text-[#1E1E1E]">
+                            {lang === 'ar' ? 'زر الإجراء (CTA)' : 'Call to Action Button (CTA)'}
+                          </h4>
+                          <p className="text-xs text-[#6F6F7A] mt-0.5">
+                            {lang === 'ar' ? 'النص المعروض على زر الإجراء في الشريحة' : 'Button label text displayed on the slide'}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <HomeField
+                            label={lang === 'ar' ? 'نص الزر (بالإنجليزية)' : 'Button Label (English)'}
+                            value={selectedSlide.ctaTextEn}
+                            onChange={(value) => updateSlide(selectedSlide.id, { ctaTextEn: value })}
+                            placeholder="e.g. Subscribe Now"
+                            dir="ltr"
+                          />
+                          <HomeField
+                            label={lang === 'ar' ? 'نص الزر (بالعربية)' : 'Button Label (Arabic)'}
+                            value={selectedSlide.ctaTextAr}
+                            onChange={(value) => updateSlide(selectedSlide.id, { ctaTextAr: value })}
+                            placeholder="مثال: اشترك الآن"
+                            dir="rtl"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {heroEditorSection === 'image' && (
+                    <div className="space-y-5">
+                      <div className="rounded-2xl border border-[#E8E0D3] bg-white p-5 shadow-xs space-y-5">
+                        <div className="border-b border-[#F4EFE6] pb-3">
+                          <h4 className="text-sm font-bold text-[#1E1E1E]">
+                            {lang === 'ar' ? 'صورة الشريحة' : 'Slide Image'}
+                          </h4>
+                          <p className="text-xs text-[#6F6F7A] mt-0.5">
+                            {lang === 'ar' ? 'معاينة الصورة وروابط الوسائط والنصوص البديلة' : 'Image preview, media library selection, and accessibility tags'}
+                          </p>
+                        </div>
+
+                        <div className="overflow-hidden rounded-2xl border border-[#D8D1C7] bg-[#FAF7F1]">
                           {selectedSlide.image ? (
-                            <img src={selectedSlide.image} alt={selectedSlide.imageAltEn || selectedSlide.imageAltAr} className="h-56 w-full object-contain bg-[#FAF7F1]" />
+                            <div className="flex flex-col items-center justify-center p-4">
+                              <img
+                                src={selectedSlide.image}
+                                alt={selectedSlide.imageAltEn || selectedSlide.imageAltAr || 'Slide preview'}
+                                className="max-h-72 w-auto max-w-full rounded-xl object-contain shadow-xs"
+                              />
+                            </div>
                           ) : (
-                            <div className="flex h-56 items-center justify-center text-sm text-[#8A8A8A]">No image selected</div>
+                            <div className="flex h-56 flex-col items-center justify-center gap-2 text-[#8A8A8A]">
+                              <ImageIcon className="h-8 w-8 text-[#D8D1C7]" />
+                              <span className="text-xs font-semibold">
+                                {lang === 'ar' ? 'لم يتم تحديد صورة بعد' : 'No image selected'}
+                              </span>
+                            </div>
                           )}
                         </div>
-                        <HomeField label={lang === 'ar' ? 'رابط الصورة' : 'Image URL'} value={selectedSlide.image} onChange={(value) => updateSlide(selectedSlide.id, { image: value })} />
-                        <button type="button" onClick={() => setPickerOpen(true)} className="rounded-xl border border-[#D8D1C7] bg-white px-4 py-3 text-sm font-semibold text-[#1E1E1E]">
-                          Choose image from media library
-                        </button>
-                      </div>
-                    )}
 
-                    {heroEditorSection === 'advanced' && (
-                      <div className="grid gap-4 rounded-3xl border border-[#D8D1C7] bg-[#FBF7F0] p-5">
-                        <div className="text-xs font-bold uppercase tracking-[0.25em] text-[#A56A1E]">Advanced</div>
-                        <HomeField label={lang === 'ar' ? 'معرّف الإجراء' : 'Action param'} value={selectedSlide.actionParam || ''} onChange={(value) => updateSlide(selectedSlide.id, { actionParam: value })} />
-                        <HomeField label={lang === 'ar' ? 'نص الصورة البديل' : 'Image alt'} value={selectedSlide.imageAltEn} onChange={(value) => updateSlide(selectedSlide.id, { imageAltEn: value })} />
-                        <HomeField label={lang === 'ar' ? 'وصف الصورة البديل بالعربية' : 'Image alt (Arabic)'} value={selectedSlide.imageAltAr} onChange={(value) => updateSlide(selectedSlide.id, { imageAltAr: value })} dir="rtl" />
+                        <div className="space-y-3">
+                          <HomeField
+                            label={lang === 'ar' ? 'رابط الصورة' : 'Image URL'}
+                            value={selectedSlide.image}
+                            onChange={(value) => updateSlide(selectedSlide.id, { image: value })}
+                            placeholder="https://... or /assets/..."
+                            dir="ltr"
+                          />
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() => setPickerOpen(true)}
+                              className="inline-flex items-center gap-2 rounded-xl border border-[#D8D1C7] bg-[#FBF7F0] px-4 py-2.5 text-xs font-bold text-[#1E1E1E] transition hover:border-[#A56A1E] hover:text-[#A56A1E]"
+                            >
+                              <ImageIcon className="h-4 w-4 text-[#A56A1E]" />
+                              {lang === 'ar' ? 'اختيار من مكتبة الوسائط' : 'Choose image from media library'}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-[#F4EFE6] pt-4">
+                          <div className="mb-3 text-xs font-bold uppercase tracking-[0.08em] text-[#8A6B52]">
+                            {lang === 'ar' ? 'النص البديل للصورة (SEO وإمكانية الوصول)' : 'Image Alt Text (SEO & Accessibility)'}
+                          </div>
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <HomeField
+                              label={lang === 'ar' ? 'النص البديل (بالإنجليزية)' : 'Image Alt (English)'}
+                              value={selectedSlide.imageAltEn}
+                              onChange={(value) => updateSlide(selectedSlide.id, { imageAltEn: value })}
+                              placeholder="e.g. Doctor Shield healthcare defense"
+                              dir="ltr"
+                            />
+                            <HomeField
+                              label={lang === 'ar' ? 'النص البديل (بالعربية)' : 'Image Alt (Arabic)'}
+                              value={selectedSlide.imageAltAr}
+                              onChange={(value) => updateSlide(selectedSlide.id, { imageAltAr: value })}
+                              placeholder="مثال: خدمة درع الطبيب للحماية القانونية"
+                              dir="rtl"
+                            />
+                          </div>
+                        </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
+
+                  {heroEditorSection === 'advanced' && (
+                    <div className="space-y-5">
+                      <div className="rounded-2xl border border-[#E8E0D3] bg-white p-5 shadow-xs space-y-5">
+                        <div className="border-b border-[#F4EFE6] pb-3">
+                          <h4 className="text-sm font-bold text-[#1E1E1E]">
+                            {lang === 'ar' ? 'الإعدادات المتقدمة والإجراءات' : 'Advanced & Navigation Settings'}
+                          </h4>
+                          <p className="text-xs text-[#6F6F7A] mt-0.5">
+                            {lang === 'ar' ? 'معرّف الشريحة، نوع التوجيه، ومعرّفات الربط' : 'Slide ID, action routing, and badge icons'}
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <label style={{ display: 'grid', gap: 6, minWidth: 0, width: '100%' }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: '#8A6B52', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                              {lang === 'ar' ? 'معرّف الشريحة (ID)' : 'Slide Identifier (ID)'}
+                            </span>
+                            <input
+                              value={selectedSlide.id}
+                              onChange={(e) => {
+                                const nextId = e.target.value;
+                                setHeroSlides((curr) => curr.map((s) => (s.id === selectedSlide.id ? { ...s, id: nextId } : s)));
+                                setSelectedSlideId(nextId);
+                              }}
+                              className="w-full rounded-xl border border-[#D8D1C7] bg-[#FCFAF6] px-3.5 py-2.5 text-xs font-mono text-[#1E1E1E] focus:border-[#A56A1E] focus:outline-none"
+                            />
+                          </label>
+
+                          <label style={{ display: 'grid', gap: 6, minWidth: 0, width: '100%' }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: '#8A6B52', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                              {lang === 'ar' ? 'أيقونة الشارة' : 'Badge Icon'}
+                            </span>
+                            <select
+                              value={selectedSlide.badgeIcon || 'Scale'}
+                              onChange={(e) => updateSlide(selectedSlide.id, { badgeIcon: e.target.value })}
+                              className="w-full rounded-xl border border-[#D8D1C7] bg-white px-3.5 py-2.5 text-xs font-medium text-[#1E1E1E] focus:border-[#A56A1E] focus:outline-none"
+                            >
+                              <option value="Scale">Scale (ميزان العدالة)</option>
+                              <option value="ShieldCheck">ShieldCheck (درع الحماية)</option>
+                              <option value="Sparkles">Sparkles (تميز وقيمة)</option>
+                              <option value="MessageSquare">MessageSquare (استشارة وتواصل)</option>
+                            </select>
+                          </label>
+
+                          <label style={{ display: 'grid', gap: 6, minWidth: 0, width: '100%' }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: '#8A6B52', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                              {lang === 'ar' ? 'نوع الإجراء (Action Type)' : 'Action Type'}
+                            </span>
+                            <select
+                              value={selectedSlide.actionType || 'contact'}
+                              onChange={(e) => updateSlide(selectedSlide.id, { actionType: e.target.value as HeroSlideRecord['actionType'] })}
+                              className="w-full rounded-xl border border-[#D8D1C7] bg-white px-3.5 py-2.5 text-xs font-medium text-[#1E1E1E] focus:border-[#A56A1E] focus:outline-none"
+                            >
+                              <option value="about">About (صفحة من نحن)</option>
+                              <option value="service-detail">Service Detail (تفاصيل الخدمة)</option>
+                              <option value="contact">Contact (تواصل معنا)</option>
+                              <option value="custom">Custom (مخصص)</option>
+                            </select>
+                          </label>
+
+                          <HomeField
+                            label={lang === 'ar' ? 'معرّف الإجراء / الرابط (Action Param)' : 'Action Parameter'}
+                            value={selectedSlide.actionParam || ''}
+                            onChange={(value) => updateSlide(selectedSlide.id, { actionParam: value })}
+                            placeholder="e.g. doctor-shield or section-id"
+                            dir="ltr"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div className="mt-6 flex flex-wrap items-center gap-3">
-                  <button type="button" onClick={saveHeroSlides} disabled={savingHero} className="inline-flex items-center gap-2 rounded-xl bg-[#A56A1E] px-5 py-3 text-sm font-bold text-white disabled:opacity-50">
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-[#E8E0D3] pt-5">
+                  <button
+                    type="button"
+                    onClick={saveHeroSlides}
+                    disabled={savingHero}
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#A56A1E] px-6 py-3 text-sm font-bold text-white shadow-xs transition hover:bg-[#8F5916] disabled:opacity-50"
+                  >
                     {savingHero ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    Save slide changes
+                    {lang === 'ar' ? 'حفظ تعديلات الشريحة' : 'Save hero slides'}
                   </button>
+                  <div className="text-xs text-[#6F6F7A]">
+                    {heroSlides.length} {lang === 'ar' ? 'شرائح إجمالاً' : 'slides total'}
+                  </div>
                 </div>
               </div>
             ) : (
