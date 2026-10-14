@@ -459,7 +459,7 @@ export const heroSlidesData: HeroSlide[] = [
     descriptionAr: 'برنامج سنوي متخصص يوفر حماية قانونية متكاملة للأطباء والكوادر الصحية، ويشمل التمثيل القانوني والاستشارات والمتابعة القضائية.',
     descriptionEn: 'A comprehensive professional protective scheme custom-engineered for physicians and health practitioners in Saudi Arabia. Practice with absolute clarity and legal confidence.',
     highlightBox: {
-      priceAr: '٢٣٠٠ ريال سنوياً',
+      priceAr: '٢٬٣٠٠ ريال سنوياً',
       priceEn: '2,300 SAR / Year',
       noteAr: 'شامل ضريبة القيمة المضافة',
       noteEn: 'VAT Fully Included'

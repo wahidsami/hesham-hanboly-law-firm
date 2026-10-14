@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, ArrowDown, ShieldCheck, Sparkles, Scale, Message
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSiteContent } from '../content/ContentContext';
 import { heroSlidesData } from '../data';
+import { formatNumberOnly } from '../utils/formatSARAmount';
 
 interface HeroProps {
   onNavigate: (view: 'home' | 'about' | 'team' | 'contact' | 'articles' | 'article-detail' | 'service-detail', param?: string) => void;
@@ -35,7 +36,13 @@ export default function Hero({ onNavigate }: HeroProps) {
     image: rawSlide.image,
     imageAlt: language === 'ar' ? rawSlide.imageAltAr : rawSlide.imageAltEn,
     highlightBox: rawSlide.highlightBox ? {
-      price: language === 'ar' ? rawSlide.highlightBox.priceAr : rawSlide.highlightBox.priceEn,
+      price: (() => {
+        const rawPrice = language === 'ar' ? rawSlide.highlightBox.priceAr : rawSlide.highlightBox.priceEn;
+        const formattedNum = formatNumberOnly(rawPrice, language);
+        if (formattedNum === '—') return rawPrice;
+        const suffix = language === 'ar' ? 'ريال سنوياً' : 'SAR / Year';
+        return `${formattedNum} ${suffix}`;
+      })(),
       note: language === 'ar' ? rawSlide.highlightBox.noteAr : rawSlide.highlightBox.noteEn,
     } : undefined,
     action: () => {
