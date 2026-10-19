@@ -37,6 +37,7 @@ import type { CMSPublishedPageRecord } from '../types';
 import type { DoctorShieldRequestRecord } from '../types';
 import BillingAddressNotice from './BillingAddressNotice';
 import HyperPayCopyAndPayWidget from './HyperPayCopyAndPayWidget';
+import { SAUDI_CITIES } from '../data/saudiCities';
 
 interface DoctorShieldPageProps {
   onScrollToContact?: () => void;
@@ -1726,20 +1727,49 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                         {formErrors.specialty && <p className="text-[10px] text-red-500">{formErrors.specialty}</p>}
                       </div>
 
-                      {/* City input */}
+                      {/* City dropdown */}
                       <div className="space-y-1">
-                        <label className="text-xs font-extrabold text-[#7A563D] flex items-center gap-1.5">
+                        <label htmlFor="doctor-shield-city" className="text-xs font-extrabold text-[#7A563D] flex items-center gap-1.5">
                           <MapPin className="w-3.5 h-3.5 text-[#A56A1E]" />
-                          <span>{t('المدينة', 'City')}</span>
+                          <span>{t('المدينة *', 'City *')}</span>
                         </label>
-                        <input
-                          type="text"
-                          value={formData.city}
-                          onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                          placeholder={t('جدة، الرياض، الخبر الخ', 'Jeddah, Riyadh, etc.')}
-                          className="w-full px-4 py-3 text-xs bg-white border border-[#D8D1C7] rounded-xl focus:border-[#A56A1E] focus:outline-none transition-colors placeholder-[#121212]/30"
-                        />
-                        {formErrors.city && <p className="text-[10px] text-red-500">{formErrors.city}</p>}
+                        <div className="relative">
+                          <select
+                            id="doctor-shield-city"
+                            name="city"
+                            required
+                            value={formData.city}
+                            onChange={(e) => {
+                              const selectedCity = e.target.value;
+                              setFormData(prev => ({ ...prev, city: selectedCity }));
+                              if (formErrors.city) {
+                                setFormErrors(prev => {
+                                  const next = { ...prev };
+                                  delete next.city;
+                                  return next;
+                                });
+                              }
+                            }}
+                            className={`w-full px-4 py-3 text-xs bg-white border rounded-xl focus:border-[#A56A1E] focus:outline-none transition-colors appearance-none cursor-pointer pr-10 rtl:pr-4 rtl:pl-10 ${
+                              formData.city ? 'text-[#121212]' : 'text-[#121212]/40'
+                            } ${formErrors.city ? 'border-red-400' : 'border-[#D8D1C7]'}`}
+                          >
+                            <option value="" disabled>
+                              {t('اختر المدينة — Select City', 'Select City — اختر المدينة')}
+                            </option>
+                            {SAUDI_CITIES.map((city) => (
+                              <option key={city.value} value={city.value} className="text-[#121212]">
+                                {city.label}
+                              </option>
+                            ))}
+                          </select>
+                          <div className={`absolute top-1/2 -translate-y-1/2 pointer-events-none text-[#A56A1E] ${
+                            direction === 'rtl' ? 'left-3.5' : 'right-3.5'
+                          }`}>
+                            <ChevronDown className="w-4 h-4" />
+                          </div>
+                        </div>
+                        {formErrors.city && <p className="text-[10px] text-red-500 mt-1">{formErrors.city}</p>}
                       </div>
 
                       {/* Workplace / Employer */}
@@ -1910,6 +1940,7 @@ export default function DoctorShieldPage({ onScrollToContact, onBackToHome }: Do
                             type="text"
                             value={formData.city}
                             readOnly
+                            placeholder={t('اختر المدينة من الأعلى', 'Select city above')}
                             className="w-full px-4 py-3 text-xs bg-[#F4EFE6] border border-[#D8D1C7] rounded-xl text-[#1E1E1E] focus:outline-none cursor-not-allowed"
                           />
                           {formErrors.city && <p className="text-[10px] text-red-500">{formErrors.city}</p>}
